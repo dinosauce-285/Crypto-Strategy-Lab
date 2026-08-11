@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Hướng dẫn thiết kế bộ config cho coding agent, kèm nội dung mẫu thật của từng file.">
+<title>Thiết kế bộ config cho Coding Agent</title>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  :root {
+    --ground: #f4f5f7;
+    --surface: #ffffff;
+    --panel: #0f151b;      /* code panel bg (dark on light theme too) */
+    --panel-ink: #d6dde4;
+    --panel-cmt: #6f7d8a;
+    --panel-tab: #1b232c;
+    --ink: #141a1f;
+    --muted: #59636d;
+    --faint: #8b96a0;
+    --line: #dde1e6;
+    --line-strong: #c7cdd4;
+    --accent: #0b6e99;
+    --accent-soft: #e2f0f6;
+    --good: #2f8f57;
+    --warn: #b57e12;
+    --bad: #c0433f;
+    --good-bg: #e6f2ea;
+    --warn-bg: #f6eeda;
+    --bad-bg: #f6e5e4;
+    --radius: 5px;
+    --spine: 74ch;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0e1216;
+      --surface: #151b21;
+      --panel: #0a0e12;
+      --panel-ink: #cdd5dd;
+      --panel-cmt: #63707c;
+      --panel-tab: #141a20;
+      --ink: #e7ebef;
+      --muted: #97a2ac;
+      --faint: #6c7780;
+      --line: #262f38;
+      --line-strong: #313c46;
+      --accent: #38bdf8;
+      --accent-soft: #10222c;
+      --good: #56c98a;
+      --warn: #e0ad3d;
+      --bad: #ec6b67;
+      --good-bg: #10201a;
+      --warn-bg: #211c10;
+      --bad-bg: #241412;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f4f5f7; --surface: #ffffff; --panel: #0f151b; --panel-ink: #d6dde4;
+    --panel-cmt: #6f7d8a; --panel-tab: #1b232c; --ink: #141a1f; --muted: #59636d;
+    --faint: #8b96a0; --line: #dde1e6; --line-strong: #c7cdd4; --accent: #0b6e99;
+    --accent-soft: #e2f0f6; --good: #2f8f57; --warn: #b57e12; --bad: #c0433f;
+    --good-bg: #e6f2ea; --warn-bg: #f6eeda; --bad-bg: #f6e5e4;
+  }
+  :root[data-theme="dark"] {
+    --ground: #0e1216; --surface: #151b21; --panel: #0a0e12; --panel-ink: #cdd5dd;
+    --panel-cmt: #63707c; --panel-tab: #141a20; --ink: #e7ebef; --muted: #97a2ac;
+    --faint: #6c7780; --line: #262f38; --line-strong: #313c46; --accent: #38bdf8;
+    --accent-soft: #10222c; --good: #56c98a; --warn: #e0ad3d; --bad: #ec6b67;
+    --good-bg: #10201a; --warn-bg: #211c10; --bad-bg: #241412;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: clamp(1.4rem, 4vw, 3.2rem) clamp(1.1rem, 4vw, 2.4rem) 5rem;
+  }
+  .prose, p.lead, .step-body > p, .note { max-width: var(--spine); }
+
+  /* ---------- header ---------- */
+  header.masthead { border-bottom: 1px solid var(--line); padding-bottom: 2.2rem; margin-bottom: 2.6rem; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+    display: flex; align-items: center; gap: .7rem;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--accent); display: inline-block; }
+  h1 {
+    font-size: clamp(2.1rem, 5.4vw, 3.1rem);
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    font-weight: 750;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+  h1 .thin { color: var(--muted); font-weight: 450; }
+  p.lead { font-size: 1.16rem; color: var(--muted); margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: .5rem .5rem; margin-top: 1.6rem;
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .02em;
+  }
+  .chip {
+    border: 1px solid var(--line-strong); border-radius: 999px;
+    padding: .28rem .7rem; color: var(--muted); background: var(--surface);
+  }
+
+  /* ---------- principles ---------- */
+  .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin: 2.4rem 0 3.2rem; }
+  .principles > div { background: var(--surface); padding: 1.3rem 1.25rem 1.45rem; }
+  .principles h3 { font-size: 1rem; margin: 0 0 .5rem; letter-spacing: -0.01em; }
+  .principles .n { font-family: var(--mono); font-size: .72rem; color: var(--accent); letter-spacing: .1em; }
+  .principles p { margin: .35rem 0 0; font-size: .92rem; color: var(--muted); line-height: 1.55; }
+  @media (max-width: 720px) { .principles { grid-template-columns: 1fr; } }
+
+  /* ---------- section / step ---------- */
+  section { margin: 3.4rem 0; scroll-margin-top: 1.5rem; }
+  .step-head { display: flex; gap: 1rem; align-items: baseline; margin-bottom: 1rem; }
+  .step-n {
+    font-family: var(--mono); font-size: 1.05rem; font-weight: 600;
+    color: var(--accent); flex: none; min-width: 2.4ch;
+    padding-top: .1rem;
+  }
+  .kicker { font-family: var(--mono); font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin: 0 0 .25rem; }
+  h2 { font-size: 1.42rem; letter-spacing: -0.015em; font-weight: 700; margin: 0; line-height: 1.2; text-wrap: balance; }
+  .step-body { padding-left: calc(2.4ch + 1rem); }
+  @media (max-width: 560px) { .step-body { padding-left: 0; } }
+  .step-body > p { margin: 0 0 1.1rem; }
+  .step-body strong { font-weight: 650; color: var(--ink); }
+
+  h2.plain { margin-bottom: 1.1rem; }
+
+  /* ---------- file panel ---------- */
+  .file { border-radius: var(--radius); overflow: hidden; margin: 1.3rem 0; border: 1px solid var(--line-strong); box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+  .file-tab {
+    background: var(--panel-tab); color: #aeb9c4;
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .02em;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .5rem .85rem; border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .file-tab .name { color: #dde4ea; }
+  .file-tab .name::before { content: "› "; color: var(--accent); }
+  .file-tab .lang { color: #7c8894; text-transform: uppercase; letter-spacing: .14em; font-size: .64rem; }
+  .file pre { margin: 0; background: var(--panel); color: var(--panel-ink); padding: 1rem 1.1rem; overflow-x: auto; font-family: var(--mono); font-size: 13.4px; line-height: 1.6; tab-size: 2; }
+  .file pre .c { color: var(--panel-cmt); }
+  .file pre .a { color: #6cc7ec; }        /* accented token */
+  .file pre .s { color: #9ecec0; }        /* string-ish */
+  .caption { font-size: .84rem; color: var(--faint); font-family: var(--mono); margin: -.4rem 0 0; padding-left: .1rem; }
+
+  /* ---------- directory tree ---------- */
+  .tree-wrap { border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; margin: 1.6rem 0 0; }
+  .tree-wrap .file-tab { }
+  .tree pre { }
+  .tree .p { color: var(--accent); }
+  .tree .c { color: var(--panel-cmt); }
+
+  /* ---------- lifecycle table ---------- */
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); margin: 1.3rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 520px; }
+  th, td { text-align: left; padding: .62rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { background: var(--surface); font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+  td code, td .m { font-family: var(--mono); font-size: .82rem; color: var(--accent); }
+
+  /* ---------- permission traffic light ---------- */
+  .perms { display: grid; gap: .7rem; margin: 1.3rem 0; }
+  .perm { display: grid; grid-template-columns: auto 1fr; gap: .85rem; align-items: start; border: 1px solid var(--line); border-left-width: 3px; border-radius: var(--radius); padding: .85rem 1rem; background: var(--surface); }
+  .perm.allow { border-left-color: var(--good); }
+  .perm.ask { border-left-color: var(--warn); }
+  .perm.deny { border-left-color: var(--bad); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; margin-top: .42rem; flex: none; }
+  .allow .dot { background: var(--good); }
+  .ask .dot { background: var(--warn); }
+  .deny .dot { background: var(--bad); }
+  .perm .t { font-family: var(--mono); font-weight: 600; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; }
+  .allow .t { color: var(--good); }
+  .ask .t { color: var(--warn); }
+  .deny .t { color: var(--bad); }
+  .perm p { margin: .2rem 0 0; font-size: .9rem; color: var(--muted); line-height: 1.5; }
+  .perm .ex { font-family: var(--mono); font-size: .78rem; color: var(--ink); }
+
+  /* ---------- callout ---------- */
+  .note { border: 1px solid var(--line-strong); background: var(--accent-soft); border-radius: var(--radius); padding: .95rem 1.1rem; margin: 1.4rem 0; font-size: .92rem; line-height: 1.55; }
+  .note .lbl { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: .3rem; }
+  .note code { font-family: var(--mono); font-size: .85em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .05em .35em; border-radius: 3px; }
+
+  /* inline code in prose */
+  .step-body p code, li code { font-family: var(--mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 7%, transparent); padding: .06em .38em; border-radius: 3px; }
+
+  /* ---------- checklist ---------- */
+  .checklist { list-style: none; padding: 0; margin: 1.2rem 0 0; max-width: var(--spine); }
+  .checklist li { position: relative; padding: .55rem 0 .55rem 2.1rem; border-bottom: 1px solid var(--line); font-size: .96rem; }
+  .checklist li::before { content: attr(data-n); position: absolute; left: 0; top: .55rem; font-family: var(--mono); font-size: .74rem; color: var(--accent); font-weight: 600; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist strong { font-weight: 650; }
+
+  hr.div { border: none; border-top: 1px solid var(--line); margin: 3.4rem 0 0; }
+
+  footer { margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .74rem; color: var(--faint); letter-spacing: .02em; }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+  a:hover { border-bottom-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    header.masthead { animation: rise .5s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Coding Agent · Setup Guide</p>
+    <h1>Thiết kế bộ config cho một coding agent <span class="thin">— và nội dung nên có bên trong từng file</span></h1>
+    <p class="lead">Đặt tên file thôi thì không ai biết viết gì cho tốt. Trang này đi qua từng thành phần, giải thích vì sao nó tồn tại, và cho xem một mẫu nội dung thật (dạng chung, không secret) để bạn sao chép khi khởi tạo dự án mới.</p>
+    <div class="meta-row">
+      <span class="chip">AGENTS.md + CLAUDE.md</span>
+      <span class="chip">permissions</span>
+      <span class="chip">hooks vòng đời</span>
+      <span class="chip">subagents</span>
+      <span class="chip">skills</span>
+      <span class="chip">bảo mật secret</span>
+    </div>
+  </header>
+
+  <!-- philosophy -->
+  <div class="principles">
+    <div>
+      <span class="n">A</span>
+      <h3>Tách luật khỏi máy móc</h3>
+      <p>Workflow &amp; quy ước là <em>policy</em> — viết một lần, mọi tool đọc chung. Hook/skill/agent là <em>runtime</em> — riêng từng tool.</p>
+    </div>
+    <div>
+      <span class="n">B</span>
+      <h3>Config là code</h3>
+      <p>Nằm trong git, review như code, có script tự kiểm tính hợp lệ. Không để nó mục nát theo thời gian.</p>
+    </div>
+    <div>
+      <span class="n">C</span>
+      <h3>Ràng buộc bằng cơ chế</h3>
+      <p>Muốn agent "luôn format", "không đọc secret", "test trước khi commit" → dùng <em>hook</em> để cưỡng chế, đừng chỉ ghi trong hướng dẫn.</p>
+    </div>
+  </div>
+
+  <!-- map -->
+  <section id="map">
+    <h2 class="plain">Bản đồ toàn cảnh</h2>
+    <p class="prose">Ba file chỉ dẫn ở gốc repo, cộng một thư mục runtime cho tool. Đây là bộ khung; các bước bên dưới lấp đầy từng phần.</p>
+    <div class="tree-wrap tree">
+      <div class="file-tab"><span class="name">repo/</span><span class="lang">structure</span></div>
+      <pre><span class="p">repo/</span>
+├── AGENTS.md              <span class="c"># luật chung — MỌI tool đọc file này</span>
+├── CLAUDE.md              <span class="c"># điểm vào của tool — trỏ về AGENTS.md</span>
+├── apps/&lt;app&gt;/CLAUDE.md   <span class="c"># chỉ dẫn lồng, theo từng thư mục con</span>
+└── <span class="p">.claude/</span>
+    ├── settings.json      <span class="c"># permission · hook · model · statusline</span>
+    ├── rules/             <span class="c"># luật chi tiết (workflow, orchestration)</span>
+    ├── agents/            <span class="c"># subagent chuyên biệt (frontmatter + prompt)</span>
+    ├── skills/            <span class="c"># skill nạp theo nhu cầu (mỗi folder 1 SKILL.md)</span>
+    ├── hooks/             <span class="c"># script vòng đời, nối qua settings.json</span>
+    ├── scripts/           <span class="c"># bảo trì (regen index, validate, audit)</span>
+    ├── schemas/           <span class="c"># JSON schema validate frontmatter</span>
+    └── plans/             <span class="c"># artifact theo task (gitignored)</span></pre>
+    </div>
+  </section>
+
+  <!-- 01 -->
+  <section id="s1">
+    <div class="step-head">
+      <span class="step-n">01</span>
+      <div><p class="kicker">Nền tảng</p><h2>Hai lớp file chỉ dẫn</h2></div>
+    </div>
+    <div class="step-body">
+      <p><strong>AGENTS.md</strong> là nguồn chân lý chung, không phụ thuộc tool: kiến trúc, workflow, "Iron Rules", quy ước, quality gates. <strong>CLAUDE.md</strong> (hay file tương đương của tool bạn dùng) chỉ là điểm vào — câu đầu trỏ về AGENTS.md và <em>không lặp lại</em> luật, chỉ thêm phần máy móc riêng. Nhờ vậy đổi/thêm tool không phải viết lại luật.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">AGENTS.md</span><span class="lang">markdown</span></div>
+<pre><span class="c"># AGENTS.md — Project Kit</span>
+
+Universal instructions for any AI coding agent (Claude, Codex,
+Cursor, Windsurf…). This is the canonical source of truth.
+Tool-specific machinery lives in .claude/, .codex/, .gemini/ …
+
+<span class="c">## Architecture</span>
+FE (React) → API (Express) → Worker (FastAPI + queue)
+
+<span class="c">## Workflow</span>
+Classify (Large | Hotfix) → Understand → [Plan] → Implement
+  → [Simplify] → Test → [Review] → Ship
+
+<span class="c">## Iron Rules</span>
+1. Large task: ticket → branch=TICKET-ID → PR → squash merge
+2. Hotfix: show the diff + confirm before pushing
+3. Conventional commits, scope = module (not the ticket id)
+4. Quality gates must pass before any commit
+5. Every finding needs a file:line citation + confidence 0-100
+
+<span class="c">## Development discipline</span>
+- YAGNI / KISS / DRY — three similar lines beat a premature abstraction
+- ~200-line file limit — split focused modules, don't grow files
+- No mocks just to make a test pass — fix the real issue
+- Naming: kebab-case for files, PascalCase for components</pre>
+      </div>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">CLAUDE.md</span><span class="lang">markdown</span></div>
+<pre><span class="c"># Project — Claude Code entry</span>
+
+The universal workflow &amp; rules live in AGENTS.md. **Read it first.**
+This file only adds the tool-specific machinery on top.
+
+<span class="c">## Skill picker — load the matching skill BEFORE implementing</span>
+<span class="c">&lt;!-- auto-generated from SKILL.md frontmatter --&gt;</span>
+| Skill    | When to load                          |
+| -------- | ------------------------------------- |
+| scout    | Map files at the start of a big task  |
+| research | Deep technical research before coding |
+
+<span class="c">## Agent picker</span>
+| Agent         | Use for                        |
+| ------------- | ------------------------------ |
+| planner       | Research + plan before coding  |
+| code-reviewer | Two-pass review before merge   |</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section id="s2">
+    <div class="step-head">
+      <span class="step-n">02</span>
+      <div><p class="kicker">Nền tảng</p><h2>Chỉ dẫn lồng theo thư mục</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Với dự án lớn, đặt thêm một <code>CLAUDE.md</code> ở mỗi thư mục con quan trọng. File gốc chỉ liệt kê "thư mục nào có chỉ dẫn riêng"; agent đọc file con <strong>trước khi</strong> đụng vào nơi đó. Context được nạp đúng phạm vi, không phình.</p>
+      <div class="note">
+        <span class="lbl">Nguyên tắc</span>
+        File gốc mô tả toàn cục &amp; điều hướng. File con mô tả pattern và cạm bẫy <em>chỉ của thư mục đó</em>. Đừng nhồi mọi thứ vào một file khổng lồ.
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section id="s3">
+    <div class="step-head">
+      <span class="step-n">03</span>
+      <div><p class="kicker">settings.json</p><h2>Phân quyền công cụ (permissions)</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Chia quyền thành ba nhóm. Đây cũng là hàng rào bảo mật ở tầng công cụ: <strong>deny</strong> chặn agent đọc/ghi mọi file secret ngay cả khi bạn lỡ tay.</p>
+
+      <div class="perms">
+        <div class="perm allow">
+          <span class="dot"></span>
+          <div>
+            <span class="t">allow — chạy im lặng</span>
+            <p class="ex">Bash(git status*) · Bash(npm *) · Bash(ls *) · Bash(grep *)</p>
+            <p>Lệnh an toàn, chỉ đọc hoặc build/test. Không hỏi từng lần.</p>
+          </div>
+        </div>
+        <div class="perm ask">
+          <span class="dot"></span>
+          <div>
+            <span class="t">ask — xác nhận mỗi lần</span>
+            <p class="ex">Bash(git push*) · Bash(rm -rf *) · Bash(docker *) · Bash(ssh *)</p>
+            <p>Lệnh nhạy cảm hoặc khó undo. Bắt buộc người xác nhận.</p>
+          </div>
+        </div>
+        <div class="perm deny">
+          <span class="dot"></span>
+          <div>
+            <span class="t">deny — cấm tuyệt đối</span>
+            <p class="ex">Read(**/.env) · Read(**/*.pem) · Read(**/credentials*.json)</p>
+            <p>Secret. Bị chặn ngay ở tầng tool, agent không đọc được.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/settings.json</span><span class="lang">json</span></div>
+<pre>{
+  <span class="a">"permissions"</span>: {
+    <span class="a">"allow"</span>: [
+      <span class="s">"Bash(git status*)"</span>, <span class="s">"Bash(git diff*)"</span>,
+      <span class="s">"Bash(npm *)"</span>, <span class="s">"Bash(ls *)"</span>, <span class="s">"Bash(grep *)"</span>
+    ],
+    <span class="a">"ask"</span>: [
+      <span class="s">"Bash(git push*)"</span>, <span class="s">"Bash(rm -rf *)"</span>, <span class="s">"Bash(docker *)"</span>
+    ],
+    <span class="a">"deny"</span>: [
+      <span class="s">"Read(**/.env)"</span>, <span class="s">"Read(**/*.pem)"</span>,
+      <span class="s">"Read(**/credentials*.json)"</span>, <span class="s">"Read(./secrets/**)"</span>
+    ],
+    <span class="a">"defaultMode"</span>: <span class="s">"acceptEdits"</span>   <span class="c">// tự sửa file, không hỏi từng lần</span>
+  },
+  <span class="a">"model"</span>: <span class="s">"claude-opus-4-8"</span>
+}</pre>
+      </div>
+      <div class="note">
+        <span class="lbl">Mẹo</span>
+        Để khối <code>deny</code> cho secret <strong>ngay từ đầu</strong>, kể cả khi chưa có file secret nào — lỡ sau này tạo ra thì đã chặn sẵn.
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section id="s4">
+    <div class="step-head">
+      <span class="step-n">04</span>
+      <div><p class="kicker">settings.json</p><h2>Nối hook vào vòng đời</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Hook là điểm để biến "hướng dẫn" thành "ràng buộc thật". Mỗi sự kiện vòng đời trỏ tới một script; script quyết định cho phép, chặn, hoặc bơm thêm context.</p>
+
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Sự kiện</th><th>Kích hoạt khi</th><th>Dùng để</th></tr></thead>
+          <tbody>
+            <tr><td><span class="m">SessionStart</span></td><td>Mở/nối lại phiên</td><td>Bơm skill khởi động, nạp lại trạng thái phiên trước, cảnh báo lệch .env</td></tr>
+            <tr><td><span class="m">UserPromptSubmit</span></td><td>Người gửi prompt</td><td>Phát hiện ngữ cảnh, nhắc dev-rules, gate bắt lập kế hoạch trước khi code</td></tr>
+            <tr><td><span class="m">PreToolUse</span></td><td>Trước khi chạy tool</td><td><strong>Chặn</strong> đọc thư mục rác; chặn commit chưa đúng convention / chưa chạy test</td></tr>
+            <tr><td><span class="m">PostToolUse</span></td><td>Sau Write/Edit</td><td><strong>Tự động format</strong>, nhắc rút gọn code, nhắc đồng bộ design</td></tr>
+            <tr><td><span class="m">SubagentStart/Stop</span></td><td>Vòng đời subagent</td><td>Bơm context tối thiểu; verify kết quả; lưu trạng thái</td></tr>
+            <tr><td><span class="m">PreCompact</span></td><td>Trước khi nén hội thoại</td><td>Lưu đầy đủ trạng thái để không mất mạch làm việc</td></tr>
+            <tr><td><span class="m">Stop</span></td><td>Agent trả lời xong</td><td>Báo hiệu (âm thanh), lưu trạng thái</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/settings.json</span><span class="lang">json · hooks</span></div>
+<pre>{
+  <span class="a">"hooks"</span>: {
+    <span class="a">"SessionStart"</span>: [{ <span class="a">"matcher"</span>: <span class="s">"startup|resume"</span>,
+      <span class="a">"hooks"</span>: [{ <span class="a">"type"</span>: <span class="s">"command"</span>,
+        <span class="a">"command"</span>: <span class="s">"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"</span> }] }],
+
+    <span class="a">"PreToolUse"</span>: [{ <span class="a">"matcher"</span>: <span class="s">"Bash"</span>,
+      <span class="a">"hooks"</span>: [{ <span class="a">"type"</span>: <span class="s">"command"</span>,
+        <span class="a">"command"</span>: <span class="s">"$CLAUDE_PROJECT_DIR/.claude/hooks/ship-gate.sh"</span> }] }],
+
+    <span class="a">"PostToolUse"</span>: [{ <span class="a">"matcher"</span>: <span class="s">"Write|Edit"</span>,
+      <span class="a">"hooks"</span>: [{ <span class="a">"type"</span>: <span class="s">"command"</span>,
+        <span class="a">"command"</span>: <span class="s">"$CLAUDE_PROJECT_DIR/.claude/hooks/auto-format.sh"</span> }] }]
+  }
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section id="s5">
+    <div class="step-head">
+      <span class="step-n">05</span>
+      <div><p class="kicker">hooks/</p><h2>Một hook script trông thế nào</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Hook nhận JSON qua <em>stdin</em>, trả về bằng <em>exit code</em>: <code>0</code> = cho phép, <code>2</code> = chặn (kèm lý do ra stderr). Ví dụ chặn agent đọc thư mục sinh tự động để khỏi phí token.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/hooks/scout-block.sh</span><span class="lang">bash</span></div>
+<pre><span class="c">#!/bin/bash</span>
+<span class="c"># PreToolUse: chặn đọc vào thư mục nặng/sinh tự động.</span>
+<span class="c"># Exit 0 = cho phép · Exit 2 = chặn.</span>
+<span class="c"># Tắt bằng: export HOOK_SCOUT_BLOCK=0</span>
+[ <span class="s">"${HOOK_SCOUT_BLOCK:-1}"</span> = <span class="s">"0"</span> ] &amp;&amp; exit 0
+
+INPUT=$(cat)
+PATH_ARG=$(echo <span class="s">"$INPUT"</span> | jq -r <span class="s">'.tool_input.file_path // empty'</span>)
+
+BLOCKED=<span class="s">'(^|/)(node_modules|dist|build|\.git|__pycache__|\.venv)(/|$)'</span>
+
+if echo <span class="s">"$PATH_ARG"</span> | grep -qE <span class="s">"$BLOCKED"</span>; then
+  echo <span class="s">"Blocked: $PATH_ARG is generated. Search source instead."</span> &gt;&amp;2
+  exit 2
+fi
+exit 0</pre>
+      </div>
+      <div class="note">
+        <span class="lbl">Quy ước hook tốt</span>
+        Chạy nhanh, không phụ thuộc mạng, idempotent, và <strong>mỗi hook có công tắc tắt qua biến môi trường</strong> để không cản trở khi cần khẩn cấp.
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section id="s6">
+    <div class="step-head">
+      <span class="step-n">06</span>
+      <div><p class="kicker">agents/</p><h2>Subagent: các "chuyên gia" vai trò hẹp</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Mỗi subagent là một file markdown: <strong>frontmatter</strong> khai báo tên, mô tả (dùng để orchestrator tự chọn), model và <em>whitelist công cụ</em>; phần thân là system prompt với một checklist tự kiểm. Một agent = một việc hẹp (planner, reviewer, debugger…).</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/agents/planner.md</span><span class="lang">markdown · frontmatter</span></div>
+<pre><span class="c">---</span>
+<span class="a">name</span>: planner
+<span class="a">description</span>: Research and create an implementation plan before
+  coding. Use for non-trivial features or multi-service changes.
+<span class="a">model</span>: opus
+<span class="a">tools</span>: Glob, Grep, Read, Bash, WebSearch     <span class="c"># chỉ cấp đúng nhu cầu</span>
+<span class="c">---</span>
+
+You are the Tech Lead. You lock architecture before code is written.
+
+<span class="c">## Checklist (verify before delivering the plan)</span>
+- [ ] Data flow explicit — which services are touched?
+- [ ] Risks assessed per phase (likelihood × impact + mitigation)
+- [ ] Test strategy defined per repo
+- [ ] Every decision carries a confidence score (0-100)
+
+End the report with a status: DONE | BLOCKED | NEEDS_CONTEXT</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 -->
+  <section id="s7">
+    <div class="step-head">
+      <span class="step-n">07</span>
+      <div><p class="kicker">skills/ + schemas/</p><h2>Skill nạp theo nhu cầu, có schema kiểm</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Mỗi skill là một folder chứa <code>SKILL.md</code> (kèm script/reference nếu cần). Frontmatter được chuẩn hóa bằng JSON schema — nhờ đó một script có thể validate và <em>tự sinh</em> bảng "intent matrix" trong CLAUDE.md.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/skills/scout/SKILL.md</span><span class="lang">markdown · frontmatter</span></div>
+<pre><span class="c">---</span>
+<span class="a">name</span>: scout
+<span class="a">description</span>: Fast, token-efficient codebase scouting using parallel
+  explore subagents. Returns a file map before planning.
+<span class="a">when_to_use</span>: At the start of a large task, or "where is X / find Y".
+<span class="a">user-invocable</span>: true
+<span class="a">category</span>: planning
+<span class="a">keywords</span>: [codebase, search, file-discovery]
+<span class="c">---</span>
+
+<span class="c"># Scout</span>
+Fast codebase orientation. Sends explore subagents in parallel to
+map the files relevant to a task, then summarizes them…</pre>
+      </div>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/schemas/skill-frontmatter.schema.json</span><span class="lang">json</span></div>
+<pre>{
+  <span class="a">"required"</span>: [<span class="s">"name"</span>, <span class="s">"description"</span>],
+  <span class="a">"properties"</span>: {
+    <span class="a">"name"</span>:        { <span class="a">"pattern"</span>: <span class="s">"^[a-z][a-z0-9-]*[a-z0-9]$"</span> },
+    <span class="a">"description"</span>: { <span class="a">"minLength"</span>: 30, <span class="a">"maxLength"</span>: 512 },
+    <span class="a">"category"</span>:    { <span class="a">"enum"</span>: [<span class="s">"debugging"</span>,<span class="s">"frontend"</span>,<span class="s">"planning"</span>,<span class="s">"meta"</span>] }
+  }
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section id="s8">
+    <div class="step-head">
+      <span class="step-n">08</span>
+      <div><p class="kicker">rules/</p><h2>Status protocol &amp; hợp đồng ủy thác</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Để nhiều agent phối hợp mà không loạn, đặt ra một "hợp đồng": mọi subagent kết thúc bằng một <strong>mã trạng thái chuẩn</strong>, và mọi phát hiện phải kèm <strong>trích dẫn <code>file:line</code></strong> + <strong>điểm tự tin 0–100</strong>. Dưới ngưỡng thì phải hỏi lại người dùng thay vì đoán.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">.claude/rules/orchestration-protocol.md</span><span class="lang">markdown</span></div>
+<pre><span class="c">## Status protocol — every subagent ends with one of:</span>
+| Status             | Meaning                                    |
+| ------------------ | ------------------------------------------ |
+| DONE               | Completed successfully                     |
+| DONE_WITH_CONCERNS | Completed, but flagged a concern           |
+| BLOCKED            | Cannot proceed without external action     |
+| NEEDS_CONTEXT      | Missing info — specify exactly what        |
+
+<span class="c">## Required for every finding / decision</span>
+- file:line citation  (not "auth is broken" → src/auth/mw.ts:42)
+- confidence 0-100    (anything &lt; 85 surfaces as an Open Question)
+
+<span class="c">## Reports</span>
+Long output → a file under reports/ + a 1-line chat summary.
+Knowledge compounds; the chat stays readable.</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section id="s9">
+    <div class="step-head">
+      <span class="step-n">09</span>
+      <div><p class="kicker">Bảo mật</p><h2>Giữ secret ra khỏi tầm agent (và git)</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Ba lớp phòng thủ: <strong>(1)</strong> mã hóa file env, <strong>(2)</strong> gitignore khóa + config thật, <strong>(3)</strong> khối <code>deny</code> trong settings.json. Chỉ commit template <code>*.example</code>.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">secrets &amp; env — quy ước</span><span class="lang">bash</span></div>
+<pre><span class="c"># File env được mã hóa (vd bằng `age`); khóa giải mã gitignored.</span>
+./scripts/env-decrypt.sh    <span class="c"># giải mã trước khi chạy</span>
+./scripts/env-encrypt.sh    <span class="c"># mã hóa lại sau khi sửa</span>
+
+<span class="c"># .env.key           → gitignored  (KHÔNG BAO GIỜ commit)</span>
+<span class="c"># .env               → gitignored  (đã mã hóa khi commit)</span>
+<span class="c"># .mcp.json          → gitignored  (config thật, có token)</span>
+<span class="c"># .mcp.json.example  → committed   (template, không secret)</span></pre>
+      </div>
+      <div class="caption">env-check chạy trong SessionStart để cảnh báo khi .env lệch .env.example.</div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="s10">
+    <div class="step-head">
+      <span class="step-n">10</span>
+      <div><p class="kicker">scripts/ + CI</p><h2>Tự động hóa để config không mục nát</h2></div>
+    </div>
+    <div class="step-body">
+      <p>Vài script thuần stdlib giữ cho bộ config luôn hợp lệ, rồi nối vào git hook và CI để không merge nhầm config hỏng.</p>
+
+      <div class="file">
+        <div class="file-tab"><span class="name">maintenance</span><span class="lang">bash</span></div>
+<pre><span class="c"># sinh lại bảng skill trong CLAUDE.md từ frontmatter</span>
+python3 .claude/scripts/regen-skill-index.py --check   <span class="c"># CI: fail nếu lệch</span>
+
+<span class="c"># validate mọi SKILL.md / agent theo JSON schema</span>
+python3 .claude/scripts/validate-skill-frontmatter.py
+
+<span class="c"># tìm file "mồ côi" trong .claude/ mà không ai tham chiếu</span>
+bash .claude/scripts/audit-claude-dir.sh</pre>
+      </div>
+      <div class="file">
+        <div class="file-tab"><span class="name">.husky/pre-push</span><span class="lang">bash</span></div>
+<pre><span class="c"># chặn push nếu config không hợp lệ</span>
+python3 .claude/scripts/regen-skill-index.py --check
+python3 .claude/scripts/validate-skill-frontmatter.py</pre>
+      </div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <!-- checklist -->
+  <section id="checklist">
+    <h2 class="plain">Checklist khi init dự án mới</h2>
+    <ol class="checklist">
+      <li data-n="01"><strong>AGENTS.md</strong> (luật chung) + <strong>CLAUDE.md</strong> (điểm vào, trỏ về AGENTS.md).</li>
+      <li data-n="02">Thêm <strong>CLAUDE.md cấp thư mục con</strong> nếu dự án lớn.</li>
+      <li data-n="03">Dựng khung <code>.claude/{rules,agents,skills,hooks,scripts,schemas,plans}</code>.</li>
+      <li data-n="04"><strong>settings.json</strong>: permission allow / ask / <strong>deny secret</strong> + model.</li>
+      <li data-n="05">Nối <strong>hook</strong>: auto-format, chặn thư mục rác, gate quality trước commit — mỗi hook có công tắc tắt.</li>
+      <li data-n="06">Định nghĩa vài <strong>subagent</strong> vai trò hẹp với frontmatter + whitelist tool.</li>
+      <li data-n="07">Tạo <strong>skill</strong> có schema chuẩn hóa + bảng intent matrix tự sinh.</li>
+      <li data-n="08">Đặt <strong>status protocol</strong>: mã trạng thái + file:line + confidence.</li>
+      <li data-n="09"><strong>Mã hóa secret</strong>, gitignore khóa &amp; config thật, commit template .example.</li>
+      <li data-n="10">Thêm <strong>script maintenance</strong> + nối vào CI / husky.</li>
+    </ol>
+  </section>
+
+  <footer>
+    Coding Agent Setup Guide · nội dung mẫu ở dạng chung, có thể sao chép và chỉnh cho dự án của bạn.
+  </footer>
+
+</div>
+
+</body>
+</html>

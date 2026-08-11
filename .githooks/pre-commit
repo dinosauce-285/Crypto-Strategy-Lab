@@ -1,0 +1,55 @@
+#!/bin/sh
+# Fast local gate. Anything slow belongs in pre-push so commits stay cheap.
+#   1. .claude config stays valid (frontmatter + generated index in sync)
+#   2. lint + typecheck the packages that actually changed
+#   3. refuse a commit that ships a secret
+# Skip in an emergency with: SKIP_GATE=1 git commit ...
+set -e
+[ "${SKIP_GATE:-0}" = "1" ] && exit 0
+
+ROOT=$(git rev-parse --show-toplevel)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$STAGED" ] && exit 0
+
+# --- 1. secrets ---------------------------------------------------------------
+# Plaintext env, private keys and credential dumps. envs/*.age is encrypted and
+# .env.example is a template, so both are allowed through.
+SECRET='(^|/)\.env$|(^|/)\.env\.key$|(^|/)\.env\.local|\.pem$|\.p12$|\.pfx$|(^|/)credentials.*\.json$|(^|/)\.mcp\.json$'
+if echo "$STAGED" | grep -qE "$SECRET"; then
+  echo "[pre-commit] Refusing: a secret file is staged." >&2
+  echo "$STAGED" | grep -E "$SECRET" | sed 's/^/    /' >&2
+  echo "  Commit the encrypted copy instead: pnpm env:encrypt" >&2
+  exit 1
+fi
+
+# --- 2. .claude config --------------------------------------------------------
+if echo "$STAGED" | grep -q '^\.claude/'; then
+  node "$ROOT/.claude/scripts/validate-skill-frontmatter.cjs" || exit 1
+  node "$ROOT/.claude/scripts/validate-agent-frontmatter.cjs" || exit 1
+  node "$ROOT/.claude/scripts/regen-skill-index.cjs" --check || {
+    echo "[pre-commit] .claude/skill-index.md is stale — run: node .claude/scripts/regen-skill-index.cjs" >&2
+    exit 1
+  }
+fi
+
+# --- 3. lint what changed -----------------------------------------------------
+[ -d "$ROOT/node_modules" ] || { echo "[pre-commit] no node_modules — skipping lint"; exit 0; }
+
+if echo "$STAGED" | grep -q '^apps/api/src/'; then
+  echo "[pre-commit] apps/api"
+  pnpm --dir "$ROOT/apps/api" exec eslint "src/**/*.ts" || exit 1
+  pnpm --dir "$ROOT/apps/api" exec tsc --noEmit || exit 1
+fi
+
+if echo "$STAGED" | grep -q '^apps/web/src/'; then
+  echo "[pre-commit] apps/web"
+  pnpm --dir "$ROOT/apps/web" lint || exit 1
+  pnpm --dir "$ROOT/apps/web" lint:ui || exit 1
+fi
+
+if echo "$STAGED" | grep -q '^packages/contracts/src/'; then
+  echo "[pre-commit] packages/contracts"
+  pnpm --dir "$ROOT/packages/contracts" build || exit 1
+fi
+
+exit 0

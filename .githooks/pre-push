@@ -1,0 +1,45 @@
+#!/bin/sh
+# Runs once per push, not per commit. The expensive gate lives here.
+#   1. full build across the workspace
+#   2. tests
+#   3. decision gate — a contract change with no decision record is refused
+# Skip in an emergency with: SKIP_GATE=1 git push ...
+set -e
+[ "${SKIP_GATE:-0}" = "1" ] && exit 0
+
+ROOT=$(git rev-parse --show-toplevel)
+[ -d "$ROOT/node_modules" ] || { echo "[pre-push] no node_modules — skipping"; exit 0; }
+
+# --- 3. decision gate ---------------------------------------------------------
+# Compare against the upstream branch when there is one, otherwise the whole branch.
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo '')
+if [ -n "$UPSTREAM" ]; then
+  RANGE="$UPSTREAM..HEAD"
+else
+  RANGE="HEAD"
+fi
+CHANGED=$(git diff --name-only "$RANGE" 2>/dev/null || echo '')
+
+CONTRACT='^(packages/contracts/src/|apps/api/prisma/schema\.prisma|apps/api/prisma\.config\.ts|.*\.module\.ts$)'
+if echo "$CHANGED" | grep -qE "$CONTRACT"; then
+  if ! echo "$CHANGED" | grep -q '^docs/decisions/'; then
+    echo "" >&2
+    echo "[pre-push] A contract changed but no decision record did." >&2
+    echo "" >&2
+    echo "$CHANGED" | grep -E "$CONTRACT" | sed 's/^/    /' >&2
+    echo "" >&2
+    echo "  Shared types, the schema, and module wiring define how the rest of the" >&2
+    echo "  system fits together. If this change settled a decision, write it down in" >&2
+    echo "  docs/decisions/ — why, what else you considered, what it costs." >&2
+    echo "  If it settled nothing, push with: SKIP_GATE=1 git push" >&2
+    echo "" >&2
+    exit 1
+  fi
+fi
+
+echo "[pre-push] build"
+pnpm --dir "$ROOT" build || exit 1
+echo "[pre-push] test"
+pnpm --dir "$ROOT/apps/api" test || exit 1
+
+exit 0

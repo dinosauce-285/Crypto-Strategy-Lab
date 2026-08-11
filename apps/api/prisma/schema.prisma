@@ -1,0 +1,23 @@
+// Data model for Crypto Strategy Lab.
+//
+// Postgres and Prisma are ADR 0002. The tables themselves are task T03, and
+// several of them wait on decisions that are still open — what identifies a
+// dataset, how a strategy version is stamped, and whether the leaderboard is
+// stored or recomputed. So this file deliberately declares no models yet.
+//
+// The connection is still proven end to end: the health endpoint runs a raw
+// `SELECT 1`, which fails loudly if the database is unreachable. That is the
+// "one path from the database to the screen" T01 asks for, without inventing a
+// schema ahead of the decisions that shape it.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 keeps the connection URL out of the schema — it lives in
+// prisma.config.ts for the CLI, and is handed to PrismaClient as a driver
+// adapter at runtime (see src/prisma/prisma.service.ts).
+datasource db {
+  provider = "postgresql"
+}

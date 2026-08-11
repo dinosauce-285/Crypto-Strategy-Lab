@@ -1,0 +1,33 @@
+{
+  "name": "crypto-strategy-lab",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Platform for combining, backtesting and ranking crypto trading strategies",
+  "scripts": {
+    "prepare": "node scripts/setup-githooks.js",
+    "commit": "node scripts/commit.js",
+    "dev": "npx concurrently -n \"API,WEB\" -c \"blue,green\" \"pnpm --dir apps/api dev\" \"pnpm --dir apps/web dev\"",
+    "dev:api": "pnpm --dir apps/api dev",
+    "dev:web": "pnpm --dir apps/web dev",
+    "build": "pnpm --dir packages/contracts build && pnpm --dir apps/api build && pnpm --dir apps/web build",
+    "build:contracts": "pnpm --dir packages/contracts build",
+    "build:api": "pnpm --dir apps/api build",
+    "build:web": "pnpm --dir apps/web build",
+    "lint": "pnpm --dir apps/api lint && pnpm --dir apps/web lint && pnpm --dir apps/web lint:ui",
+    "test": "pnpm --dir apps/api test",
+    "db:generate": "pnpm --dir apps/api db:generate",
+    "db:migrate": "pnpm --dir apps/api db:migrate",
+    "db:studio": "pnpm --dir apps/api db:studio",
+    "setup": "pnpm install && pnpm db:generate && pnpm build:contracts",
+    "quality": "node .claude/scripts/validate-skill-frontmatter.cjs && node .claude/scripts/validate-agent-frontmatter.cjs && node .claude/scripts/regen-skill-index.cjs --check && node .claude/scripts/audit-claude-dir.cjs && pnpm lint && pnpm build",
+    "env:encrypt": "node scripts/env-encrypt.cjs",
+    "env:decrypt": "node scripts/env-decrypt.cjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.5.1"
+}

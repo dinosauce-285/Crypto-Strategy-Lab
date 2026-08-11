@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+
+# env & secrets. Plaintext never lands in git; the age-encrypted copy under envs/ does.
+**/.env
+**/.env.*
+!**/.env.example
+.env.key
+*.pem
+*.key
+credentials*.json
+
+# tool config holding real tokens
+.mcp.json
+!.mcp.json.example
+
+# local data
+*.log
+.DS_Store
+.vscode/
+.idea/
+# (postgres data lives in a docker named volume, not the repo)
+
+# prisma 7 generates the client into the source tree
+apps/api/src/generated/
+
+# agent runtime artefacts
+.claude/plans/*
+!.claude/plans/.gitkeep
+.claude/journals/
