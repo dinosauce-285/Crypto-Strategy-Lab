@@ -30,8 +30,8 @@ Generated from frontmatter — see [`.claude/skill-index.md`](.claude/skill-inde
 
 ## Hooks
 
-Wired across eight lifecycle events. Each has an env off switch; turning one off is a
-decision, so say so in the commit message.
+Wired across eight lifecycle events. Each has an env off switch except one; turning one off
+is a decision, so say so in the commit message.
 
 | Hook | Event | Does | Off switch |
 | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ decision, so say so in the commit message.
 | `user-prompt-submit` | UserPromptSubmit | spots a task id, points at its row and the branch name | `HOOK_USER_PROMPT=0` |
 | `dev-rules-reminder` | UserPromptSubmit | re-states the discipline every ~10 prompts | `HOOK_DEV_RULES=0` |
 | `scout-block` | PreToolUse | blocks reads into `node_modules`, `dist`, `generated` | `HOOK_SCOUT_BLOCK=0` |
-| `bash-security-guard` | PreToolUse | blocks dangerous shell | `HOOK_BASH_SECURITY=0` |
+| `bash-security-guard` | PreToolUse | see below | **none, by design** |
 | `auto-format` | PostToolUse | formats what was just written | `HOOK_AUTO_FORMAT=0` |
 | `decision-reminder` | PostToolUse | nudges when a contract file changes | `HOOK_DECISION_REMINDER=0` |
 | `descriptive-name` | PostToolUse | flags vague file names | `HOOK_DESCRIPTIVE_NAME=0` |
@@ -47,6 +47,20 @@ decision, so say so in the commit message.
 | `subagent-verify` | SubagentStop | warns on fabricated tool calls | `HOOK_SUBAGENT_VERIFY=0` |
 | `pre-compact` | PreCompact | checkpoints branch and working tree | `HOOK_PRE_COMPACT=0` |
 | `stop-notify` | Stop | signals the turn finished | `HOOK_STOP_NOTIFY=0` |
+
+### bash-security-guard — the one hook you cannot turn off
+
+It has no env switch on purpose: a boundary that a variable can disable is not a boundary.
+It blocks three things in a `Bash` command:
+
+- any path that looks like a secret — `.env` (except `.env.example`), `.mcp.json`,
+  `credentials*.json`, `*.pem|key|p12|pfx|crt|jks`, `secrets/`
+- `git commit` run directly — use `pnpm commit` so the message stays conventional
+- **any shell chaining at all** — `&&`, `||`, `;`, `|`, `<`, `>`, backticks, `$(…)`
+
+That third rule is the one you will hit constantly, and it is the price of the first: a
+chained command cannot be checked safely, so it is refused rather than guessed at. Run one
+command per call, or reach for the file tools instead of shelling out.
 
 ## Git gates
 

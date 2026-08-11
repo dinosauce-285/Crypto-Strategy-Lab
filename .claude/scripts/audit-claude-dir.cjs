@@ -27,7 +27,6 @@ const EXTERNAL_REFERENCE_FILES = [
   'CLAUDE.md',
   '.githooks/pre-commit',
   '.githooks/pre-push',
-  '.github/workflows/ci.yml',
 ];
 
 // This audit is about COMMITTED .claude content. Local-only files (settings.local.json,
