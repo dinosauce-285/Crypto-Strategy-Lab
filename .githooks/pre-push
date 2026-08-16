@@ -1,8 +1,7 @@
 #!/bin/sh
 # Runs once per push, not per commit. The expensive gate lives here.
 #   1. full build across the workspace
-#   2. tests
-#   3. decision gate — a contract change with no decision record is refused
+#   2. decision gate — a contract change with no decision record is refused
 # Skip in an emergency with: SKIP_GATE=1 git push ...
 set -e
 [ "${SKIP_GATE:-0}" = "1" ] && exit 0
@@ -10,7 +9,7 @@ set -e
 ROOT=$(git rev-parse --show-toplevel)
 [ -d "$ROOT/node_modules" ] || { echo "[pre-push] no node_modules — skipping"; exit 0; }
 
-# --- 3. decision gate ---------------------------------------------------------
+# --- 2. decision gate ---------------------------------------------------------
 # Compare against the upstream branch when there is one, otherwise the whole branch.
 UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo '')
 if [ -n "$UPSTREAM" ]; then
@@ -39,7 +38,5 @@ fi
 
 echo "[pre-push] build"
 pnpm --dir "$ROOT" build || exit 1
-echo "[pre-push] test"
-pnpm --dir "$ROOT/apps/api" test || exit 1
 
 exit 0

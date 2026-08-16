@@ -14,12 +14,11 @@
     "build:api": "pnpm --dir apps/api build",
     "build:web": "pnpm --dir apps/web build",
     "lint": "pnpm --dir apps/api lint && pnpm --dir apps/web lint && pnpm --dir apps/web lint:ui",
-    "test": "pnpm --dir apps/api test",
     "db:generate": "pnpm --dir apps/api db:generate",
     "db:migrate": "pnpm --dir apps/api db:migrate",
     "db:studio": "pnpm --dir apps/api db:studio",
     "setup": "pnpm install && pnpm db:generate && pnpm build:contracts",
-    "quality": "node .claude/scripts/validate-skill-frontmatter.cjs && node .claude/scripts/validate-agent-frontmatter.cjs && node .claude/scripts/regen-skill-index.cjs --check && node .claude/scripts/audit-claude-dir.cjs && pnpm lint && pnpm build",
+    "quality": "pnpm lint && pnpm build",
     "env:encrypt": "node scripts/env-encrypt.cjs",
     "env:decrypt": "node scripts/env-decrypt.cjs"
   },

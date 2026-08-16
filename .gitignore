@@ -28,6 +28,12 @@ credentials*.json
 apps/api/src/generated/
 
 # agent runtime artefacts
+.claude/
+.codex/
+.cursor/
+.windsurf/
+CLAUDE.md
+**/CLAUDE.md
 .claude/plans/*
 !.claude/plans/.gitkeep
 .claude/journals/

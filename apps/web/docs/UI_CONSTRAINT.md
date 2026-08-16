@@ -2,9 +2,10 @@
 
 Binding for every file under `src/`. Read before writing any screen or component.
 
-The design work itself is done through the `impeccable` skill, which is installed at
-`.claude/skills/impeccable`. This file holds the rules that survive whatever the design
-turns into — the ones a reviewer can check without opinion.
+Design work should use the frontend design helper available in the contributor's local
+agent harness. In the author's local Claude setup that helper is `impeccable`; another
+agent may name or implement it differently. This file holds the rules that survive
+whatever the design turns into — the ones a reviewer can check without opinion.
 
 ## Two rules that outrank the rest
 

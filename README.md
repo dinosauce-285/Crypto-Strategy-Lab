@@ -46,12 +46,12 @@ there and every secret stays in `apps/api/.env`.
 | `pnpm dev` | API and web together, colour-coded output |
 | `pnpm dev:api` · `pnpm dev:web` | one side only |
 | `pnpm build` | contracts, then API, then web |
-| `pnpm lint` · `pnpm test` | across the workspace |
+| `pnpm lint` | across the workspace |
 | `pnpm db:generate` | regenerate the Prisma client |
 | `pnpm db:migrate` · `pnpm db:studio` | Prisma migrations, Prisma Studio |
 | `pnpm commit` | guided conventional commit — use this instead of `git commit` |
 | `pnpm env:decrypt` · `pnpm env:encrypt` | the API env, encrypted with age |
-| `pnpm quality` | config validity + lint + build — the same gate CI runs |
+| `pnpm quality` | lint + build — the same shared gate CI runs |
 
 ## Layout
 
@@ -60,11 +60,13 @@ apps/api            NestJS — modules are the architecture
 apps/web            React + Vite — renders, never computes
 packages/contracts  shared types, imported by both
 docs/               the brief, the task breakdown, the decision records
-.claude/            agent rules, subagents, hooks, skills
 ```
 
-Agent instructions: [`AGENTS.md`](AGENTS.md) is the law, [`CLAUDE.md`](CLAUDE.md) is the
-Claude Code entry point, and each app has its own binding constraint document.
+Agent instructions: [`AGENTS.md`](AGENTS.md) is the law, and
+[`docs/agent-harness.md`](docs/agent-harness.md) tells Claude, Codex, Cursor,
+Windsurf or another coding agent how to create its own local harness. Tool-specific
+files such as `.claude/`, `.codex/`, `.cursor/`, `CLAUDE.md` and nested `CLAUDE.md`
+files stay local and ignored; the committed files are the shared contract.
 
 ## Committing
 

@@ -25,11 +25,6 @@ const TYPES = [
     name: "perf:     🚀  A code change that improves performance",
   },
   {
-    value: "test",
-    emoji: "🚨",
-    name: "test:     🚨  Adding missing tests or correcting existing tests",
-  },
-  {
     value: "build",
     emoji: "🛠",
     name: "build:    🛠   Changes that affect the build system or external dependencies",
@@ -198,7 +193,7 @@ const runNonInteractive = ({ rl, args }) => {
 
   const selectedType = getTypeByInput(args.type);
   if (!selectedType) {
-    console.log("\n❌ Invalid or missing --type. Use one of: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert or number 1-11.\n");
+    console.log("\n❌ Invalid or missing --type. Use one of: feat, fix, docs, style, refactor, perf, build, ci, chore, revert or number 1-10.\n");
     process.exit(1);
   }
 

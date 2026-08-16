@@ -231,7 +231,7 @@
     <h1>Thiết kế bộ config cho một coding agent <span class="thin">— và nội dung nên có bên trong từng file</span></h1>
     <p class="lead">Đặt tên file thôi thì không ai biết viết gì cho tốt. Trang này đi qua từng thành phần, giải thích vì sao nó tồn tại, và cho xem một mẫu nội dung thật (dạng chung, không secret) để bạn sao chép khi khởi tạo dự án mới.</p>
     <div class="meta-row">
-      <span class="chip">AGENTS.md + CLAUDE.md</span>
+      <span class="chip">AGENTS.md + local entry</span>
       <span class="chip">permissions</span>
       <span class="chip">hooks vòng đời</span>
       <span class="chip">subagents</span>
@@ -250,26 +250,25 @@
     <div>
       <span class="n">B</span>
       <h3>Config là code</h3>
-      <p>Nằm trong git, review như code, có script tự kiểm tính hợp lệ. Không để nó mục nát theo thời gian.</p>
+      <p>Luật và gate chung nằm trong git, review như code. Runtime của từng tool nằm local/ignored, nhưng vẫn nên có script tự kiểm để không mục nát theo thời gian.</p>
     </div>
     <div>
       <span class="n">C</span>
       <h3>Ràng buộc bằng cơ chế</h3>
-      <p>Muốn agent "luôn format", "không đọc secret", "test trước khi commit" → dùng <em>hook</em> để cưỡng chế, đừng chỉ ghi trong hướng dẫn.</p>
+      <p>Muốn agent "luôn format", "không đọc secret", "build trước khi commit" → dùng <em>hook</em> để cưỡng chế, đừng chỉ ghi trong hướng dẫn.</p>
     </div>
   </div>
 
   <!-- map -->
   <section id="map">
     <h2 class="plain">Bản đồ toàn cảnh</h2>
-    <p class="prose">Ba file chỉ dẫn ở gốc repo, cộng một thư mục runtime cho tool. Đây là bộ khung; các bước bên dưới lấp đầy từng phần.</p>
+    <p class="prose">Luật chung nằm trong repo; entrypoint và runtime của từng tool nằm local/ignored. Đây là bộ khung; các bước bên dưới lấp đầy từng phần.</p>
     <div class="tree-wrap tree">
       <div class="file-tab"><span class="name">repo/</span><span class="lang">structure</span></div>
       <pre><span class="p">repo/</span>
 ├── AGENTS.md              <span class="c"># luật chung — MỌI tool đọc file này</span>
-├── CLAUDE.md              <span class="c"># điểm vào của tool — trỏ về AGENTS.md</span>
-├── apps/&lt;app&gt;/CLAUDE.md   <span class="c"># chỉ dẫn lồng, theo từng thư mục con</span>
-└── <span class="p">.claude/</span>
+├── docs/agent-harness.md  <span class="c"># agent đọc để tự dựng harness local</span>
+└── <span class="p">.&lt;tool&gt;/</span>              <span class="c"># ví dụ: .claude, .codex, .cursor — gitignored</span>
     ├── settings.json      <span class="c"># permission · hook · model · statusline</span>
     ├── rules/             <span class="c"># luật chi tiết (workflow, orchestration)</span>
     ├── agents/            <span class="c"># subagent chuyên biệt (frontmatter + prompt)</span>
@@ -288,7 +287,7 @@
       <div><p class="kicker">Nền tảng</p><h2>Hai lớp file chỉ dẫn</h2></div>
     </div>
     <div class="step-body">
-      <p><strong>AGENTS.md</strong> là nguồn chân lý chung, không phụ thuộc tool: kiến trúc, workflow, "Iron Rules", quy ước, quality gates. <strong>CLAUDE.md</strong> (hay file tương đương của tool bạn dùng) chỉ là điểm vào — câu đầu trỏ về AGENTS.md và <em>không lặp lại</em> luật, chỉ thêm phần máy móc riêng. Nhờ vậy đổi/thêm tool không phải viết lại luật.</p>
+      <p><strong>AGENTS.md</strong> là nguồn chân lý chung, không phụ thuộc tool: kiến trúc, workflow, "Iron Rules", quy ước, quality gates. <strong>docs/agent-harness.md</strong> nói agent phải dựng local runtime như thế nào. File entry của từng tool — ví dụ <code>CLAUDE.md</code>, Codex memory, Cursor rules — chỉ trỏ về hai file đó và <em>không lặp lại</em> luật.</p>
 
       <div class="file">
         <div class="file-tab"><span class="name">AGENTS.md</span><span class="lang">markdown</span></div>
@@ -296,7 +295,8 @@
 
 Universal instructions for any AI coding agent (Claude, Codex,
 Cursor, Windsurf…). This is the canonical source of truth.
-Tool-specific machinery lives in .claude/, .codex/, .gemini/ …
+Tool-specific machinery is local and ignored: .claude/, .codex/,
+.cursor/, .windsurf/ or the equivalent for that agent.
 
 <span class="c">## Architecture</span>
 FE (React) → API (Express) → Worker (FastAPI + queue)
@@ -315,16 +315,17 @@ Classify (Large | Hotfix) → Understand → [Plan] → Implement
 <span class="c">## Development discipline</span>
 - YAGNI / KISS / DRY — three similar lines beat a premature abstraction
 - ~200-line file limit — split focused modules, don't grow files
-- No mocks just to make a test pass — fix the real issue
+- No mocks that hide the real failure
 - Naming: kebab-case for files, PascalCase for components</pre>
       </div>
 
       <div class="file">
-        <div class="file-tab"><span class="name">CLAUDE.md</span><span class="lang">markdown</span></div>
-<pre><span class="c"># Project — Claude Code entry</span>
+        <div class="file-tab"><span class="name">local tool entry</span><span class="lang">markdown</span></div>
+<pre><span class="c"># Project — local coding-agent entry</span>
 
 The universal workflow &amp; rules live in AGENTS.md. **Read it first.**
-This file only adds the tool-specific machinery on top.
+Then read docs/agent-harness.md and create/use this tool's local runtime.
+This file only adds tool-specific machinery on top.
 
 <span class="c">## Skill picker — load the matching skill BEFORE implementing</span>
 <span class="c">&lt;!-- auto-generated from SKILL.md frontmatter --&gt;</span>
@@ -349,7 +350,7 @@ This file only adds the tool-specific machinery on top.
       <div><p class="kicker">Nền tảng</p><h2>Chỉ dẫn lồng theo thư mục</h2></div>
     </div>
     <div class="step-body">
-      <p>Với dự án lớn, đặt thêm một <code>CLAUDE.md</code> ở mỗi thư mục con quan trọng. File gốc chỉ liệt kê "thư mục nào có chỉ dẫn riêng"; agent đọc file con <strong>trước khi</strong> đụng vào nơi đó. Context được nạp đúng phạm vi, không phình.</p>
+      <p>Với dự án lớn, đặt chỉ dẫn theo thư mục ở dạng mà tool của bạn hiểu, hoặc dùng các file constraint chung như <code>apps/api/docs/BACKEND_CONSTRAINT.md</code> và <code>apps/web/docs/UI_CONSTRAINT.md</code>. File gốc chỉ liệt kê "thư mục nào có chỉ dẫn riêng"; agent đọc file con <strong>trước khi</strong> đụng vào nơi đó. Context được nạp đúng phạm vi, không phình.</p>
       <div class="note">
         <span class="lbl">Nguyên tắc</span>
         File gốc mô tả toàn cục &amp; điều hướng. File con mô tả pattern và cạm bẫy <em>chỉ của thư mục đó</em>. Đừng nhồi mọi thứ vào một file khổng lồ.
@@ -372,7 +373,7 @@ This file only adds the tool-specific machinery on top.
           <div>
             <span class="t">allow — chạy im lặng</span>
             <p class="ex">Bash(git status*) · Bash(npm *) · Bash(ls *) · Bash(grep *)</p>
-            <p>Lệnh an toàn, chỉ đọc hoặc build/test. Không hỏi từng lần.</p>
+            <p>Lệnh an toàn, chỉ đọc hoặc build/lint. Không hỏi từng lần.</p>
           </div>
         </div>
         <div class="perm ask">
@@ -435,7 +436,7 @@ This file only adds the tool-specific machinery on top.
           <tbody>
             <tr><td><span class="m">SessionStart</span></td><td>Mở/nối lại phiên</td><td>Bơm skill khởi động, nạp lại trạng thái phiên trước, cảnh báo lệch .env</td></tr>
             <tr><td><span class="m">UserPromptSubmit</span></td><td>Người gửi prompt</td><td>Phát hiện ngữ cảnh, nhắc dev-rules, gate bắt lập kế hoạch trước khi code</td></tr>
-            <tr><td><span class="m">PreToolUse</span></td><td>Trước khi chạy tool</td><td><strong>Chặn</strong> đọc thư mục rác; chặn commit chưa đúng convention / chưa chạy test</td></tr>
+            <tr><td><span class="m">PreToolUse</span></td><td>Trước khi chạy tool</td><td><strong>Chặn</strong> đọc thư mục rác; chặn commit chưa đúng convention / chưa chạy build</td></tr>
             <tr><td><span class="m">PostToolUse</span></td><td>Sau Write/Edit</td><td><strong>Tự động format</strong>, nhắc rút gọn code, nhắc đồng bộ design</td></tr>
             <tr><td><span class="m">SubagentStart/Stop</span></td><td>Vòng đời subagent</td><td>Bơm context tối thiểu; verify kết quả; lưu trạng thái</td></tr>
             <tr><td><span class="m">PreCompact</span></td><td>Trước khi nén hội thoại</td><td>Lưu đầy đủ trạng thái để không mất mạch làm việc</td></tr>
@@ -637,20 +638,20 @@ Knowledge compounds; the chat stays readable.</pre>
 
       <div class="file">
         <div class="file-tab"><span class="name">maintenance</span><span class="lang">bash</span></div>
-<pre><span class="c"># sinh lại bảng skill trong CLAUDE.md từ frontmatter</span>
-python3 .claude/scripts/regen-skill-index.py --check   <span class="c"># CI: fail nếu lệch</span>
+<pre><span class="c"># sinh lại bảng skill trong local entry từ frontmatter</span>
+python3 .agent/scripts/regen-skill-index.py --check   <span class="c"># local gate: fail nếu lệch</span>
 
 <span class="c"># validate mọi SKILL.md / agent theo JSON schema</span>
-python3 .claude/scripts/validate-skill-frontmatter.py
+python3 .agent/scripts/validate-skill-frontmatter.py
 
-<span class="c"># tìm file "mồ côi" trong .claude/ mà không ai tham chiếu</span>
-bash .claude/scripts/audit-claude-dir.sh</pre>
+<span class="c"># tìm file "mồ côi" trong harness local mà không ai tham chiếu</span>
+bash .agent/scripts/audit-agent-dir.sh</pre>
       </div>
       <div class="file">
         <div class="file-tab"><span class="name">.husky/pre-push</span><span class="lang">bash</span></div>
-<pre><span class="c"># chặn push nếu config không hợp lệ</span>
-python3 .claude/scripts/regen-skill-index.py --check
-python3 .claude/scripts/validate-skill-frontmatter.py</pre>
+<pre><span class="c"># chặn push nếu config dùng chung không hợp lệ</span>
+pnpm lint
+pnpm build</pre>
       </div>
     </div>
   </section>
@@ -661,9 +662,9 @@ python3 .claude/scripts/validate-skill-frontmatter.py</pre>
   <section id="checklist">
     <h2 class="plain">Checklist khi init dự án mới</h2>
     <ol class="checklist">
-      <li data-n="01"><strong>AGENTS.md</strong> (luật chung) + <strong>CLAUDE.md</strong> (điểm vào, trỏ về AGENTS.md).</li>
-      <li data-n="02">Thêm <strong>CLAUDE.md cấp thư mục con</strong> nếu dự án lớn.</li>
-      <li data-n="03">Dựng khung <code>.claude/{rules,agents,skills,hooks,scripts,schemas,plans}</code>.</li>
+      <li data-n="01"><strong>AGENTS.md</strong> (luật chung) + <strong>docs/agent-harness.md</strong> (hướng dẫn agent tự dựng runtime).</li>
+      <li data-n="02">Thêm constraint cấp thư mục hoặc local nested entry nếu dự án lớn.</li>
+      <li data-n="03">Dựng khung local như <code>.claude/</code>, <code>.codex/</code>, <code>.cursor/</code> hoặc runtime tương đương.</li>
       <li data-n="04"><strong>settings.json</strong>: permission allow / ask / <strong>deny secret</strong> + model.</li>
       <li data-n="05">Nối <strong>hook</strong>: auto-format, chặn thư mục rác, gate quality trước commit — mỗi hook có công tắc tắt.</li>
       <li data-n="06">Định nghĩa vài <strong>subagent</strong> vai trò hẹp với frontmatter + whitelist tool.</li>

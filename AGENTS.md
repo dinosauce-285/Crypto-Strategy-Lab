@@ -1,7 +1,9 @@
 # AGENTS.md — Crypto Strategy Lab
 
-Universal instructions for any AI coding agent (Claude, Codex, Cursor, Windsurf…).
-This is the canonical source of truth. Tool-specific machinery lives in `.claude/`.
+Universal instructions for any AI coding agent (Claude, Codex, Cursor, Windsurf...).
+This is the canonical source of truth. Tool-specific machinery is local and untracked.
+Fresh clones should ask their agent to read `docs/agent-harness.md` and create the
+right local harness for that tool.
 
 ## What this project is
 
@@ -127,14 +129,32 @@ the architecture document, the README, everything.
 - Shorter is better, but never at the price of the *why*. Cut the scaffolding,
   keep the argument.
 
+## Agent harness
+
+The repo commits project law, not one vendor's runtime config. A Claude, Codex,
+Cursor, Windsurf or other setup must be generated locally from the same source:
+
+1. Read this file first.
+2. Read `docs/agent-harness.md` for the required harness shape.
+3. Read nested constraints before touching their folders:
+   `apps/api/docs/BACKEND_CONSTRAINT.md` and `apps/web/docs/UI_CONSTRAINT.md`.
+4. Create tool-specific local files only in ignored paths, such as `.claude/`,
+   `.codex/`, `.cursor/` or the equivalent for that agent.
+
+The local harness may add hooks, subagents, memories, skills or prompt files, but it
+must not replace these rules or weaken the gates in `.githooks/`.
+Before committing, every contributor must confirm their own agent runtime files are
+ignored and untracked. If a personal harness file appears in `git status`, stop and
+move it under an ignored path or remove it from the index with `git rm --cached`.
+
 ## Development discipline
 
-Detail lives in `.claude/rules/development-rules.md`. The short version:
+Detail lives in `docs/agent-harness.md`. The short version:
 
 - YAGNI / KISS / DRY — three similar lines beat a premature abstraction
 - ~200-line file limit — split into focused modules, don't grow files
 - No narration comments — the commit message is where "why I changed this" belongs
-- No mocks just to make a test pass — fix the real issue
+- No mocks that hide the real failure
 - Naming: kebab-case for files, PascalCase for types and components
 - Every finding or review comment carries a `file:line` citation
 

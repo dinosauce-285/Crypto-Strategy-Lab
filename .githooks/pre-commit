@@ -1,8 +1,7 @@
 #!/bin/sh
 # Fast local gate. Anything slow belongs in pre-push so commits stay cheap.
-#   1. .claude config stays valid (frontmatter + generated index in sync)
+#   1. refuse a commit that ships a secret
 #   2. lint + typecheck the packages that actually changed
-#   3. refuse a commit that ships a secret
 # Skip in an emergency with: SKIP_GATE=1 git commit ...
 set -e
 [ "${SKIP_GATE:-0}" = "1" ] && exit 0
@@ -22,17 +21,7 @@ if echo "$STAGED" | grep -qE "$SECRET"; then
   exit 1
 fi
 
-# --- 2. .claude config --------------------------------------------------------
-if echo "$STAGED" | grep -q '^\.claude/'; then
-  node "$ROOT/.claude/scripts/validate-skill-frontmatter.cjs" || exit 1
-  node "$ROOT/.claude/scripts/validate-agent-frontmatter.cjs" || exit 1
-  node "$ROOT/.claude/scripts/regen-skill-index.cjs" --check || {
-    echo "[pre-commit] .claude/skill-index.md is stale — run: node .claude/scripts/regen-skill-index.cjs" >&2
-    exit 1
-  }
-fi
-
-# --- 3. lint what changed -----------------------------------------------------
+# --- 2. lint what changed -----------------------------------------------------
 [ -d "$ROOT/node_modules" ] || { echo "[pre-commit] no node_modules — skipping lint"; exit 0; }
 
 if echo "$STAGED" | grep -q '^apps/api/src/'; then

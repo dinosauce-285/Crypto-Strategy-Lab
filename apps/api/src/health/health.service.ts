@@ -5,7 +5,7 @@ import { EVENTS, TIMEFRAMES } from '@csl/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * The smoke test for T01: it touches the database, the event bus and the shared
+ * The smoke check for T01: it touches the database, the event bus and the shared
  * contracts package, so if any of the three is misconfigured this endpoint says so
  * instead of the problem surfacing days later.
  */

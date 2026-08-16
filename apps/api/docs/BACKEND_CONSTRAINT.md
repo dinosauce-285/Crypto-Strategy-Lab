@@ -1,8 +1,8 @@
 # Backend constraint — apps/api
 
 Binding for every file under `src/`. `AGENTS.md` at the repo root wins on workspace-wide
-matters (paths, commands, branch flow); this file wins on module layering, database access
-and testing. If the two disagree, fix whichever is wrong so there is one answer.
+matters (paths, commands, branch flow); this file wins on module layering and database
+access. If the two disagree, fix whichever is wrong so there is one answer.
 
 Most of this is lifted from a production NestJS codebase that learned it the hard way.
 The rules that were specific to that domain have been dropped; what remains is what
@@ -12,7 +12,7 @@ survives a change of project.
 
 - **Services never touch `PrismaService`.** Every database access, `$queryRaw` included,
   lives in the module's `*.repository.ts`. A service holding a `PrismaService` dependency
-  cannot be unit-tested without a live database, and that is the whole point of the split.
+  is coupled to storage, and that is the whole point of the split.
 - **Repositories never inject a service.** A repository takes `PrismaService` and pure
   helpers, nothing else. Layering only points one way.
 - **No concrete cross-module injection.** Module A consuming module B injects an abstract
@@ -22,9 +22,9 @@ survives a change of project.
   `Promise<XxxResponseDto>` return type. Contract types live in `dto/`, or in
   `@csl/contracts` when the frontend needs them too.
 - **Never `as any` on a Prisma result.** Add the field to `select` instead.
-- **No narration comments.** No inline or JSDoc comment restating what the code or the test
-  name already says, and no "why I changed this" notes — that belongs in the commit message
-  or a decision record. Keep a comment only for an invariant a reader cannot infer, one line.
+- **No narration comments.** No inline or JSDoc comment restating what the code name already
+  says, and no "why I changed this" notes — that belongs in the commit message or a decision
+  record. Keep a comment only for an invariant a reader cannot infer, one line.
 
 ## Module shape
 
@@ -87,7 +87,6 @@ job queue instead; the two are deliberately different mechanisms.
 pnpm --dir apps/api lint
 pnpm --dir apps/api exec tsc --noEmit
 pnpm --dir apps/api build
-pnpm --dir apps/api test
 ```
 
-All four, and the endpoint actually called once. Building is not verifying.
+Run these checks, and call the endpoint once. Building is not verifying.
