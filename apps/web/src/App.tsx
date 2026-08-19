@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TIMEFRAMES, type Timeframe } from '@csl/contracts';
+import { MarketPanel } from './market/MarketPanel';
+import { clock } from './market/format';
 
 interface Health {
   status: string;
@@ -12,7 +14,7 @@ interface Health {
 type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; health: Health };
+  | { kind: 'ready'; health: Health; at: number };
 
 /**
  * The T01 smoke screen: it proves the browser reaches the API, the API reaches
@@ -29,22 +31,32 @@ export function App() {
   useEffect(() => {
     fetch('/api/health')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((health: Health) => setState({ kind: 'ready', health }))
+      .then((health: Health) => setState({ kind: 'ready', health, at: Date.now() }))
       .catch((e: Error) => setState({ kind: 'error', message: e.message }));
   }, []);
 
   return (
     <main>
       <h1>Crypto Strategy Lab</h1>
-      <p className="sub">Skeleton — T01. Nothing here is a feature yet.</p>
+      <p className="sub">Slice 1 — the server pushes, the screen never asks twice.</p>
 
-      {state.kind === 'loading' && <p>Checking the stack…</p>}
+      <MarketPanel />
+
+      <h2 className="check-head">System check</h2>
+
+      {state.kind === 'ready' && (
+        <p className="source">
+          one-time check at {clock(state.at)} — reload the page to run it again
+        </p>
+      )}
+
+      {state.kind === 'loading' && <p className="state">Checking the stack…</p>}
 
       {state.kind === 'error' && (
-        <div className="bad">
-          <strong>API unreachable.</strong> {state.message}
-          <p>Is it running? <code>pnpm dev:api</code></p>
-        </div>
+        <p className="state bad">
+          <strong>API unreachable.</strong> {state.message} Is it running?{' '}
+          <code>pnpm dev:api</code>
+        </p>
       )}
 
       {state.kind === 'ready' && (

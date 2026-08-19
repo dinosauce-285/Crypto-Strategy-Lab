@@ -1,0 +1,223 @@
+name: spec-driven-adr
+version: 1
+description: proposal → specs → tasks. No design.md — reasoning lives in docs/decisions/ (see 0018)
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Initial proposal document outlining the change
+    template: proposal.md
+    instruction: |
+      Create the proposal document that establishes WHY this change is needed.
+
+      Sections:
+      - **Why**: 1-2 sentences on the problem or opportunity. What problem does this solve? Why now?
+      - **Decisions**: two lines, **Settled** and **To settle**. See below - this is
+        the seam between a change and the one place reasoning is written down.
+      - **What Changes**: Bullet list of changes. Be specific about new capabilities, modifications, or removals. Mark breaking changes with **BREAKING**.
+      - **Capabilities**: Identify which specs will be created or modified:
+        - **New Capabilities**: List capabilities being introduced. Each becomes a new `specs/<capability-path>/spec.md`. Use kebab-case for path segments you introduce (e.g., `user-auth` or `identity/user-auth`) and follow the project's existing spec organization.
+        - **Modified Capabilities**: List existing capabilities whose REQUIREMENTS are changing. Only include if spec-level behavior changes (not just implementation details). Each needs a delta spec file. Use the exact existing path under `openspec/specs/`. Leave empty if no requirement changes.
+      - **Impact**: Affected code, APIs, dependencies, or systems.
+
+      IMPORTANT: The Capabilities section is critical. It creates the contract between
+      proposal and specs phases. Research existing specs before filling this in.
+      Each capability listed here will need a corresponding spec file.
+
+      Every change must either declare at least one capability (new or
+      modified) or explicitly opt out of specs: `openspec validate` rejects a
+      change with zero deltas unless the change's `.openspec.yaml` sets
+      `skip_specs: true`. Use `skip_specs: true` only when no spec-level
+      behavior changes (pure refactor, tooling, docs) - specs describe
+      behavior, so if behavior does not change, no spec should change either.
+      Do not invent a requirement just to satisfy validation.
+
+      Name the task id (T01..T29) this change belongs to and its Trello card.
+
+      The **Decisions** section is the only place a change and a decision record
+      touch, and it links rather than argues:
+
+      - **Settled** - the records under docs/decisions/ this change builds on, as
+        links. State what each already answers here; do not re-derive it, and never
+        copy the reasoning into this file. If a record answers it, this proposal
+        does not get to answer it differently.
+      - **To settle** - a choice this change has to make that belongs in a record: a
+        shared type or event contract, the database schema, how modules communicate,
+        a new dependency or service, a backtest or scoring rule, or one of the open
+        decisions in docs/decisions-to-lock.html. Name the choice and the record that
+        will carry it; `pnpm decision "<the choice>"` creates the file and its index
+        line. Writing it is task 0 in tasks.md. "Nothing to settle" is a valid and
+        common answer - write that, do not leave the line blank.
+
+      Keep it concise (1-2 pages). Focus on the "why" not the "how" - a choice big
+      enough to argue is a record under docs/decisions/, and everything smaller is
+      a task.
+
+      This is the foundation - specs and tasks both build on this.
+    requires: []
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Detailed specifications for the change
+    template: spec.md
+    instruction: |
+      Create specification files that define WHAT the system should do.
+
+      A spec is a behavior contract, not an implementation plan.
+
+      Good spec content:
+      - Observable behavior users or downstream systems rely on
+      - Inputs, outputs, and error conditions
+      - External constraints (security, privacy, reliability, compatibility)
+      - Scenarios that can be tested or explicitly validated
+
+      Avoid in specs:
+      - Internal class/function names
+      - Library or framework choices
+      - Step-by-step implementation details
+      - Detailed execution plans (those belong in tasks.md)
+
+      Quick test: if the implementation can change without changing externally
+      visible behavior, it likely does not belong in the spec.
+
+      Create one spec file per capability listed in the proposal's Capabilities section.
+      `<capability-path>` is the spec directory relative to `specs/` (for example,
+      `user-auth` or `identity/user-auth`). Preserve the full path:
+      - New capabilities: use the exact path from the proposal at `specs/<capability-path>/spec.md`. Any path segment newly introduced in the proposal must be kebab-case. Follow the project's existing organization; do not add a new domain level when the project uses a flat layout.
+      - Modified capabilities: use the exact existing path from `openspec/specs/<capability-path>/` when creating the delta at `specs/<capability-path>/spec.md`. Do not move or rename the capability.
+
+      There must be at least one spec file unless the change's `.openspec.yaml`
+      sets `skip_specs: true` (no spec-level behavior change) - `openspec validate`
+      rejects a zero-delta change without that marker. If the proposal lists no
+      capabilities and `skip_specs` is not set, revisit the proposal first.
+
+      Delta operations (use ## headers):
+      - **ADDED Requirements**: New capabilities
+      - **MODIFIED Requirements**: Changed behavior - MUST include full updated content
+      - **REMOVED Requirements**: Deprecated features - MUST include **Reason** and **Migration**
+      - **RENAMED Requirements**: Name changes only - use FROM:/TO: format
+
+      Format requirements:
+      - Each requirement: `### Requirement: <name>` followed by description
+      - Use SHALL/MUST for normative requirements (avoid should/may)
+      - Each scenario: `#### Scenario: <name>` with WHEN/THEN format
+      - **CRITICAL**: Scenarios MUST use exactly 4 hashtags (`####`). Using 3 hashtags or bullets will fail silently.
+      - Every requirement MUST have at least one scenario.
+
+      New capabilities only: start the delta spec with a `## Purpose` section -
+      one or two sentences (50+ characters, or `openspec validate --strict`
+      reports it as too brief) describing what the capability is for. Archive
+      copies it into the main spec it creates; without it the new main spec is
+      left with a `TBD ... Update Purpose after archive` placeholder to fill in
+      by hand. Do NOT add `## Purpose` to a delta for an existing capability -
+      that spec already has one and the delta's is ignored. To change an
+      existing capability's Purpose - including a leftover `TBD` placeholder -
+      edit `openspec/specs/<capability-path>/spec.md` directly.
+
+      MODIFIED requirements workflow:
+      1. Locate the existing requirement in openspec/specs/<capability-path>/spec.md
+      2. Copy the ENTIRE requirement block (from `### Requirement:` through all scenarios)
+      3. Paste under `## MODIFIED Requirements` and edit to reflect new behavior
+      4. Ensure header text matches exactly (whitespace-insensitive)
+
+      Common pitfall: Using MODIFIED with partial content loses detail at archive time.
+      If adding new concerns without changing existing behavior, use ADDED instead.
+
+      Example (a new capability, so it opens with `## Purpose`):
+      ```
+      ## Purpose
+
+      Lets users take their data out of the product in a portable format.
+
+      ## ADDED Requirements
+
+      ### Requirement: User can export data
+      The system SHALL allow users to export their data in CSV format.
+
+      #### Scenario: Successful export
+      - **WHEN** user clicks "Export" button
+      - **THEN** system downloads a CSV file with all user data
+
+      ## REMOVED Requirements
+
+      ### Requirement: Legacy export
+      **Reason**: Replaced by new export system
+      **Migration**: Use new export endpoint at /api/v2/export
+      ```
+
+      Specs should be testable - each scenario is a potential test case.
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: |
+      Create the task list that breaks down the implementation work.
+
+      This schema has no design.md. How a change is built is decided in one of two
+      places and nowhere else: an architectural decision is a record under
+      docs/decisions/, and everything smaller is a task here, written concretely
+      enough that nobody has to re-derive it.
+
+      **Group 0 is always Decisions**, and it carries the proposal's "To settle"
+      line into the checklist so the record is tracked work rather than something
+      to remember:
+
+      - One `- [ ] 0.N docs/decisions/<nnnn>-<slug>.md - <the choice>` per record
+        the proposal named. Run `pnpm decision "<the choice>"` to create it: the
+        number and the README line come with it, and `pnpm decision --check` -
+        which the pre-commit hook runs - refuses a record with an empty section or
+        one missing from the index.
+      - If the proposal settles nothing, keep a single ticked line saying so and
+        why, e.g. `- [x] 0.1 No record - no contract, schema, module wiring,
+        dependency or scoring rule moves`.
+      - Order matters: 0 comes before the code that assumes it. The pre-push gate
+        refuses a push touching packages/contracts/src, schema.prisma,
+        prisma.config.ts or a *.module.ts with no file under docs/decisions/ in
+        the same push, so a record deferred to the end blocks the push.
+
+      Before writing the rest of the tasks, read the records the proposal cites. If
+      a choice you need is settled in one of them, follow it. If it is not settled
+      and it would change what gets built, resolve it with the user and add it to
+      group 0 - do not bake an unstated assumption into the task list.
+
+      **IMPORTANT: Follow the template below exactly.** The apply phase parses
+      checkbox format to track progress. Tasks not using `- [ ]` won't be tracked.
+
+      Guidelines:
+      - Group related tasks under ## numbered headings
+      - Each task MUST be a checkbox: `- [ ] X.Y Task description`
+      - Tasks should be small enough to complete in one session
+      - Order tasks by dependency (what must be done first?)
+
+      Example:
+      ```
+      ## 0. Decisions
+
+      - [ ] 0.1 docs/decisions/0019-export-runs-off-the-queue.md — where the export job runs
+
+      ## 1. Setup
+
+      - [ ] 1.1 Create new module structure
+      - [ ] 1.2 Add dependencies to package.json
+
+      ## 2. Core Implementation
+
+      - [ ] 2.1 Implement data export function
+      - [ ] 2.2 Add CSV formatting utilities
+      ```
+
+      Reference specs for what needs to be built, and the cited records for the
+      decisions already made. Each task should be verifiable - you know when it is
+      done, and "it builds" is not done: an endpoint is called, a screen is opened
+      and all four of its states produced.
+    requires:
+      - specs
+
+apply:
+  requires: [ tasks ]
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks, mark complete as you go.
+    Pause if you hit blockers or need clarification.

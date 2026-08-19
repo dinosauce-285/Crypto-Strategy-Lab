@@ -24,6 +24,12 @@ A change needs a record when it does any of these:
 Write it as part of the change, not afterwards. The reasoning is only accurate
 while you still hold it.
 
+`pnpm decision "<the decision, written as a choice>"` starts one: it takes the next
+number, writes the three headings and adds the line below. `pnpm decision --check`,
+which runs on commit, refuses a record with an empty section or one missing from the
+list. Inside an OpenSpec change the record is group 0 of `tasks.md`, ticked before the
+code that assumes it.
+
 ## Records
 
 - [0001](0001-typescript-nest-react.md) — TypeScript on both ends: NestJS backend, React + Vite frontend
@@ -42,6 +48,10 @@ while you still hold it.
 - [0014](0014-weighted-merge-only.md) — signals are combined by weighted score only
 - [0015](0015-unknowable-numbers-are-searchable.md) — a number nobody can argue is put in the specification and answered by the leaderboard
 - [0016](0016-database-enforces-what-a-type-cannot.md) — the tables mirror the contracts, and Postgres constrains only what a type cannot
+- [0017](0017-one-push-channel-addressed-by-topic.md) — the browser gets one push channel, addressed by topic, carrying only what changed
+- [0018](0018-features-planned-in-openspec.md) — features are planned in OpenSpec, and the reasoning still lives here
+- [0019](0019-the-push-channel-runs-on-socket-io.md) — the push channel runs on Socket.IO
+- [0020](0020-module-reaches-the-browser-through-ports.md) — a module reaches the browser through the channel's ports, not through the bus
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
@@ -63,11 +73,6 @@ one number, and whether a strategy with three winning trades outranks one with e
 Section 21 requires it to be written out, so it is marked, but it blocks nobody:
 `0011` recomputes the leaderboard, so the formula can change without touching stored
 data.
-
-**The shape of realtime messages** — one channel carries prices, leaderboard changes,
-search progress and run state, and those belong to different people. Built narrowly for
-prices, the other three each grow a channel of their own. The brief expects a record on
-the transport; this is the same decision.
 
 **Who writes which record (T28)** — the Trello board has no card for it, and it is
 marked directly.

@@ -6,3 +6,4 @@ export * from './dataset';
 export * from './experiment';
 export * from './news';
 export * from './events';
+export * from './wire';

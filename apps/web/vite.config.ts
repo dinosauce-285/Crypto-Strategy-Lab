@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => {
       // backend lives, and mirrors how it will sit behind one origin in a demo.
       proxy: {
         '/api': { target: VITE_API_URL, changeOrigin: true },
+        // CHANNEL.path in @csl/contracts. Written out rather than imported because a
+        // Vite config is loaded by Node, which cannot read that package's ESM build.
+        '/channel': { target: VITE_API_URL, changeOrigin: true, ws: true },
       },
     },
   };

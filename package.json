@@ -6,6 +6,7 @@
   "scripts": {
     "prepare": "node scripts/setup-githooks.js",
     "commit": "node scripts/commit.js",
+    "decision": "node scripts/decision.cjs",
     "dev": "npx concurrently -n \"API,WEB\" -c \"blue,green\" \"pnpm --dir apps/api dev\" \"pnpm --dir apps/web dev\"",
     "dev:api": "pnpm --dir apps/api dev",
     "dev:web": "pnpm --dir apps/web dev",
@@ -23,7 +24,10 @@
     "env:decrypt": "node scripts/env-decrypt.cjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@csl/contracts": "workspace:*",
+    "@fission-ai/openspec": "^1.9.0",
+    "concurrently": "^9.1.2",
+    "socket.io-client": "^4.8.3"
   },
   "engines": {
     "node": ">=22"
