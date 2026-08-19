@@ -43,6 +43,7 @@ while you still hold it.
 - [0015](0015-unknowable-numbers-are-searchable.md) — a number nobody can argue is put in the specification and answered by the leaderboard
 - [0016](0016-database-enforces-what-a-type-cannot.md) — the tables mirror the contracts, and Postgres constrains only what a type cannot
 - [0017](0017-one-push-channel-addressed-by-topic.md) — the browser gets one push channel, addressed by topic, carrying only what changed
+- [0018](0018-features-planned-in-openspec.md) — features are planned in OpenSpec, and the reasoning still lives here
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it

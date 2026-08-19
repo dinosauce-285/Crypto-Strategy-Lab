@@ -3,8 +3,10 @@ packages:
   - "packages/*"
 
 # Prisma needs its postinstall to fetch query engines; esbuild needs its binary.
+# OpenSpec's postinstall only prints a shell-completion tip, so it stays off.
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
   prisma: true
   esbuild: true
+  '@fission-ai/openspec': false

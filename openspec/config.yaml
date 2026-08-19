@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  Crypto Strategy Lab — a laboratory for combining crypto trading strategies:
+  plug in analysis methods, combine them automatically, backtest each combination,
+  score it, rank it, repeat.
+
+  What is graded is the architecture, not the returns. The measure is how many
+  places have to change when a new strategy, a new search algorithm or a new
+  exchange is added. One new file = good. Six edits across the system = bad.
+
+  Stack: TypeScript end to end. NestJS API (apps/api), React + Vite web (apps/web),
+  shared types in packages/contracts, PostgreSQL through Prisma 7, an in-process
+  event bus for notification, BullMQ on Redis for work.
+
+  Read AGENTS.md first — it is the canonical law and it wins over anything written
+  here. Before touching apps/api read apps/api/docs/BACKEND_CONSTRAINT.md; before
+  touching apps/web read apps/web/docs/UI_CONSTRAINT.md.
+
+  Work is cut into 29 tasks (T01..T29) across 6 vertical slices, listed in
+  docs/project-breakdown.html and mirrored on Trello. A change id here is the task
+  id and the branch name, e.g. T07-realtime-channel.
+
+rules:
+  proposal:
+    - Name the task id (T01..T29) this change belongs to, and link its Trello card.
+    - Cite the brief section that demands it, the way docs/project-breakdown.html does.
+    - State what is already settled in docs/decisions/ rather than re-deciding it.
+  design:
+    - Architectural decisions do NOT live here. They are ADRs in docs/decisions/ —
+      one file per decision, answering why we chose this, what else we looked at and
+      what it would have cost, and what we give up. Link the record instead of
+      restating it.
+    - A decision is architectural when it introduces or changes a shared type or event
+      contract, changes the database schema, changes how modules communicate, adds a
+      dependency or piece of infrastructure, or changes backtest or scoring rules.
+      The pre-push gate refuses a push that touches packages/contracts/src,
+      schema.prisma, prisma.config.ts or a *.module.ts with no file under
+      docs/decisions/ in the same push — and only docs/decisions/ satisfies it.
+    - What belongs here is design inside one feature: file layout, call order, edge
+      cases, failure handling. If a point outgrows the feature, move it to an ADR.
+  tasks:
+    - Keep strategy logic free of exchange calls, database access, frontend code and
+      notifications. Keep business calculation out of React.
+    - A task is not done when it builds. It is done when it runs — the endpoint is
+      called, or the screen is opened and all four states produced.
+
+operations:
+  apply:
+    guidance:
+      - Run `pnpm lint` and `pnpm build` before calling anything done. Both, not one.
+      - Commit with `pnpm commit`, never `git commit` — the bash guard blocks the latter.
+      - One command per shell call: the guard refuses `&&`, `||`, `;`, `|`, `<`, `>`.
+  archive:
+    guidance:
+      - Before archiving, check that any architectural decision made along the way has
+        its record in docs/decisions/ and is listed in that folder's README.

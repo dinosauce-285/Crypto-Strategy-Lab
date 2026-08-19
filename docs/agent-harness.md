@@ -24,6 +24,9 @@ The shared contract is intentionally small:
 - `apps/api/docs/BACKEND_CONSTRAINT.md` binds API work.
 - `apps/web/docs/UI_CONSTRAINT.md` binds web work.
 - `docs/decisions/` records architectural decisions.
+- `openspec/` holds the feature specs and change folders — see `0018`. Reasoning still
+  goes to `docs/decisions/`; a change's `design.md` covers only what stays inside one
+  feature and links to the record for anything wider.
 - `.githooks/` contains repo-level gates that every contributor gets on install.
 - `package.json` commands are the supported verification surface.
 
@@ -123,3 +126,19 @@ These are adapters, not new project law. If an adapter conflicts with
 3. Generate runtime files with `pnpm db:generate` when the API env is available.
 4. Ask your coding agent to run the bootstrap prompt above.
 5. Keep the created harness local; commit only shared project files.
+
+## OpenSpec, per machine
+
+`openspec/` is in git but the skills it generates are not, because they land under an
+ignored harness path. So each contributor runs this once:
+
+```bash
+pnpm exec openspec init --tools <your-tool>
+pnpm exec openspec config set telemetry.enabled false
+```
+
+Telemetry is on by default and the setting lives in `~/.config/openspec`, outside the
+repo, so turning it off is per-machine rather than once for everyone.
+
+If your harness validates skill frontmatter, expect to widen it: OpenSpec writes a
+nested `metadata:` block, which a parser accepting only flat `key: value` will reject.

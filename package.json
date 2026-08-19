@@ -23,6 +23,7 @@
     "env:decrypt": "node scripts/env-decrypt.cjs"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "^1.9.0",
     "concurrently": "^9.1.2"
   },
   "engines": {
