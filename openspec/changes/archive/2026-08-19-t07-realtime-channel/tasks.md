@@ -97,6 +97,6 @@
 - [x] 5.1 `pnpm lint` and `pnpm build` both pass; `pnpm decision --check` passes.
 - [x] 5.2 `docs/decisions/README.md` — drop "The shape of realtime messages" from *Still
       open*. `0017` settled it and the section was never updated.
-- [ ] 5.3 `pnpm commit`, then push — the gate wants the records from group 0 in the same
+- [x] 5.3 `pnpm commit`, then push — the gate wants the records from group 0 in the same
       push as the contracts and module changes.
-- [ ] 5.4 Move the T07 Trello card to Done.
+- [x] 5.4 Move the T07 Trello card to Done.
