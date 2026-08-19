@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-19T00:00:00.000Z",
+  "title": "Design System: Crypto Strategy Lab",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal Blue",
+        "canonical": "#0b4f9c",
+        "tonalRamp": [
+          "#04182f",
+          "#062a52",
+          "#083a72",
+          "#0b4f9c",
+          "#2f6fb5",
+          "#6193c9",
+          "#9db9dd",
+          "#d6e2f0"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Etched Ink",
+        "canonical": "#2a251f",
+        "tonalRamp": [
+          "#14110e",
+          "#2a251f",
+          "#453d33",
+          "#6f6658",
+          "#988e7d",
+          "#c0b7a7",
+          "#e2dbce",
+          "#faf9f6"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Scale Grey",
+        "canonical": "#6f6658"
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Enamel",
+        "canonical": "#faf9f6"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Recessed Enamel",
+        "canonical": "#f4f1ea"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e2dbce"
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Confirmed Green",
+        "canonical": "#197e3a"
+      },
+      "bad": {
+        "role": "tertiary",
+        "displayName": "Refused Red",
+        "canonical": "#b3271e"
+      }
+    },
+    "typographyMeta": {
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "The live measurement. The largest type in the system, and always a number."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Table cells. Tabular numerals, figures right-aligned."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column headers and captions. Never uppercase-tracked."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out-quart",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "The only easing. State changes settle rather than bounce."
+      },
+      {
+        "name": "duration-state",
+        "value": "180ms",
+        "purpose": "A live figure holding Signal Blue on arrival, then returning to ink."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Segmented control",
+      "kind": "chip",
+      "refersTo": "segmented-item",
+      "description": "Timeframe selection. Silent at rest, background on hover, border plus background when selected.",
+      "html": "<div class=\"ds-seg\" role=\"group\" aria-label=\"Timeframe\"><button type=\"button\" class=\"ds-seg-item\" aria-pressed=\"false\">1m</button><button type=\"button\" class=\"ds-seg-item\" aria-pressed=\"true\">5m</button><button type=\"button\" class=\"ds-seg-item\" aria-pressed=\"false\">15m</button></div>",
+      "css": ".ds-seg { display: flex; gap: 0.25rem; font-family: ui-monospace, Menlo, Consolas, monospace; } .ds-seg-item { height: 2rem; min-width: 2.75rem; font: inherit; color: #6f6658; background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; } .ds-seg-item:hover { color: #2a251f; background: #f4f1ea; } .ds-seg-item[aria-pressed=\"true\"] { color: #2a251f; background: #f4f1ea; border-color: #e2dbce; } .ds-seg-item:focus-visible { outline: 2px solid #0b4f9c; outline-offset: 1px; }"
+    },
+    {
+      "name": "Pair select",
+      "kind": "input",
+      "refersTo": "select",
+      "description": "Standard select, the same 2rem height as every control beside it.",
+      "html": "<select class=\"ds-select\" aria-label=\"Trading pair\"><option>BTCUSDT</option><option>ETHUSDT</option></select>",
+      "css": ".ds-select { height: 2rem; font-family: ui-monospace, Menlo, Consolas, monospace; color: #2a251f; background: #f4f1ea; border: 1px solid #e2dbce; border-radius: 6px; padding: 0 0.5rem; } .ds-select:focus-visible { outline: 2px solid #0b4f9c; outline-offset: 1px; }"
+    },
+    {
+      "name": "Live reading",
+      "kind": "custom",
+      "refersTo": "reading",
+      "description": "The watched figure with its caption. Takes Signal Blue for 180ms as a value arrives, and says nothing about direction.",
+      "html": "<div class=\"ds-reading\"><span class=\"ds-reading-n\">64231.10</span><span class=\"ds-reading-at\">last trade 16:32:07</span></div>",
+      "css": ".ds-reading { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; font-family: ui-monospace, Menlo, Consolas, monospace; } .ds-reading-n { font-size: 2rem; color: #2a251f; font-variant-numeric: tabular-nums; transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-reading-n[data-fresh=\"true\"] { color: #0b4f9c; } .ds-reading-n[data-stale=\"true\"] { color: #6f6658; } .ds-reading-at { color: #6f6658; font-size: 0.76rem; font-variant-numeric: tabular-nums; } @media (prefers-reduced-motion: reduce) { .ds-reading-n { transition: none; } }"
+    },
+    {
+      "name": "Provenance line",
+      "kind": "custom",
+      "refersTo": "state-line",
+      "description": "The panel's receipt: the topics it is subscribed to, verbatim, at the foot of the panel.",
+      "html": "<p class=\"ds-source\">market:BTCUSDT:price · market:BTCUSDT:1m</p>",
+      "css": ".ds-source { font-family: ui-monospace, Menlo, Consolas, monospace; color: #6f6658; font-size: 0.76rem; margin: 0; }"
+    },
+    {
+      "name": "Data table",
+      "kind": "custom",
+      "refersTo": "data-table",
+      "description": "Hairline rows, no outer border, no striping, figures right-aligned on tabular numerals.",
+      "html": "<div class=\"ds-table-wrap\"><table class=\"ds-table\"><thead><tr><th>closed 1m</th><th>open</th><th>close</th></tr></thead><tbody><tr><td>16:31</td><td>64180</td><td>64229</td></tr><tr><td>16:30</td><td>64150</td><td>64180</td></tr></tbody></table></div>",
+      "css": ".ds-table-wrap { overflow-x: auto; } .ds-table { border-collapse: collapse; width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.84rem; color: #2a251f; } .ds-table th, .ds-table td { text-align: right; padding: 0.35rem 0.6rem; border-bottom: 1px solid #e2dbce; font-variant-numeric: tabular-nums; } .ds-table th:first-child, .ds-table td:first-child { text-align: left; } .ds-table thead th { color: #6f6658; font-weight: 400; font-size: 0.76rem; } .ds-table tbody tr:last-child td { border-bottom: 0; }"
+    },
+    {
+      "name": "State line",
+      "kind": "custom",
+      "refersTo": "state-line",
+      "description": "How loading, empty and error speak: a sentence naming what is happening and what to do next.",
+      "html": "<p class=\"ds-state\">Subscribed to <strong>BTCUSDT</strong> on <strong>1m</strong>. Waiting for the market to move.</p><p class=\"ds-state ds-state-bad\"><strong>The channel is unreachable.</strong> Start the API with <code>pnpm dev:api</code>; this page reconnects on its own.</p>",
+      "css": ".ds-state { font-family: ui-monospace, Menlo, Consolas, monospace; color: #6f6658; margin: 0 0 0.5rem; max-width: 70ch; } .ds-state strong { color: #2a251f; font-weight: 600; } .ds-state-bad { color: #b3271e; } .ds-state code { background: #f4f1ea; padding: 0.05em 0.3em; border-radius: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Face",
+    "overview": "This is the dial of a measuring device, not a trading floor. Figures are etched onto a pale ground; the scale marks are thin and few; nothing on the surface is there to be admired. Density serves reading at a distance before it serves cramming, because the screen is judged in a fifteen-minute demo over a projector. It explicitly rejects the neon exchange and the beginner investing app, the two shapes closest to this subject.",
+    "keyCharacteristics": [
+      "One monospace family for everything; the numbers align because they are meant to be compared.",
+      "Warm off-white ground, ink-brown text, one blue accent used only for state.",
+      "No shadows anywhere; depth is a change of ground plus a hairline.",
+      "Controls are silent until touched.",
+      "Four states on every surface, and none of them may be mistaken for another."
+    ],
+    "rules": [
+      {
+        "name": "The Meaning-Only Rule",
+        "body": "Colour appears when it carries information and at no other time. If a colour cannot be explained by what it tells the reader, it is removed.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Alone Rule",
+        "body": "Green and red never carry meaning by themselves. A colour-blind reader and a black-and-white printout must reach the same conclusion.",
+        "section": "colors"
+      },
+      {
+        "name": "The Biggest-Thing-Is-A-Number Rule",
+        "body": "The largest type on any screen is a measurement. If a heading out-sizes the figure it introduces, the screen is advertising itself.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Kicker Rule",
+        "body": "No small uppercase tracked eyebrow above a section. A panel is named by its heading and nothing else.",
+        "section": "typography"
+      },
+      {
+        "name": "The Column Rule",
+        "body": "One column, one reading order. Two columns arrive only when two things are genuinely being compared side by side.",
+        "section": "layout"
+      },
+      {
+        "name": "The Two-Plane Rule",
+        "body": "Ground and held. Anything that appears to need a third plane is a layout problem wearing a costume.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Operable-Corner Rule",
+        "body": "A rounded corner means the thing can be operated. If it cannot be clicked, typed into or selected, it is square.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do put the largest type on the measurement, and keep headings at 1rem-1.4rem.",
+      "Do convey depth with Recessed Enamel plus a 1px Hairline, never a shadow.",
+      "Do give every focusable element the same 2px Signal Blue outline at 1px offset.",
+      "Do set font-variant-numeric: tabular-nums wherever digits stack.",
+      "Do write all four states as sentences that name what is happening and what to do next.",
+      "Do pair every green or red with a word or a shape.",
+      "Do keep one control height per row (2rem) and one radius family (3px / 6px)."
+    ],
+    "donts": [
+      "Don't build a neon crypto exchange: no purple-to-cyan gradients, no blinking figures, no badges, no glow.",
+      "Don't build a beginner investing app: no oversized green and red, no arrows, no magnified percentages, nothing that nudges.",
+      "Don't add a box-shadow.",
+      "Don't wrap content in cards, and never nest one inside another.",
+      "Don't add a second font family, and never a display face.",
+      "Don't put a small uppercase tracked eyebrow above a section.",
+      "Don't use border-left thicker than 1px as a coloured accent stripe.",
+      "Don't compute a percentage, a direction or a profit in a component to colour something."
+    ]
+  }
+}

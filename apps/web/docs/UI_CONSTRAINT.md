@@ -7,6 +7,11 @@ agent harness. In the author's local Claude setup that helper is `impeccable`; a
 agent may name or implement it differently. This file holds the rules that survive
 whatever the design turns into — the ones a reviewer can check without opinion.
 
+Two files, two jobs: this one is the law a reviewer checks, and
+[`DESIGN.md`](DESIGN.md) is the visual system that law produced — palette, type scale,
+component states, the named rules. Strategy behind both lives in [`PRODUCT.md`](PRODUCT.md).
+A rule belongs in exactly one of the three.
+
 ## Two rules that outrank the rest
 
 **Reuse.** Never hand-roll what the repo already has. Before adding a component, look in

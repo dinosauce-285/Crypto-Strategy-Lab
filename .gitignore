@@ -37,3 +37,6 @@ CLAUDE.md
 .claude/plans/*
 !.claude/plans/.gitkeep
 .claude/journals/
+
+# impeccable: DESIGN.md and its sidecar are shared, live-mode session state is not
+**/.impeccable/live/sessions/
