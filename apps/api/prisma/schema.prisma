@@ -1,14 +1,13 @@
-// Data model for Crypto Strategy Lab.
+// Data model for Crypto Strategy Lab — task T03.
 //
-// Postgres and Prisma are ADR 0002. The tables themselves are task T03, and
-// several of them wait on decisions that are still open — what identifies a
-// dataset, how a strategy version is stamped, and whether the leaderboard is
-// stored or recomputed. So this file deliberately declares no models yet.
+// Six models, not the six data groups of section 35: `Leaderboard` is not a table
+// because `0011` computes it from `Experiment` on every read, and `Dataset` is one
+// because `0010` gave it an id of its own.
 //
-// The connection is still proven end to end: the health endpoint runs a raw
-// `SELECT 1`, which fails loudly if the database is unreachable. That is the
-// "one path from the database to the screen" T01 asks for, without inventing a
-// schema ahead of the decisions that shape it.
+// Choices this file makes, with the reasoning in
+// docs/decisions/0016-schema-follows-the-contracts.md: timestamps are timestamptz
+// and become epoch milliseconds at the repository boundary, the closed lists of
+// @csl/contracts stay text columns, and money stays decimal.
 
 generator client {
   provider = "prisma-client"
@@ -20,4 +19,134 @@ generator client {
 // adapter at runtime (see src/prisma/prisma.service.ts).
 datasource db {
   provider = "postgresql"
+}
+
+/// Only closed candles are stored; the one still forming lives on the socket.
+model Candle {
+  pair      String
+  timeframe String
+  openTime  DateTime @db.Timestamptz(3)
+  open      Decimal  @db.Decimal(38, 18)
+  high      Decimal  @db.Decimal(38, 18)
+  low       Decimal  @db.Decimal(38, 18)
+  close     Decimal  @db.Decimal(38, 18)
+  volume    Decimal  @db.Decimal(38, 18)
+
+  @@id([pair, timeframe, openTime])
+}
+
+/// Append-only on (strategyId, version) — `0009`. The registry inserts a row at
+/// startup when that pair is new; an existing row is never updated, or an old
+/// experiment stops naming the code that produced it.
+model Strategy {
+  strategyId String
+  version    Int
+  name       String
+  group      String
+  warmup     Int
+  /// ParamSpec[] — the shape belongs to the strategy, not to the database.
+  params     Json
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@id([strategyId, version])
+}
+
+/// What a run was measured against, and the rules it was judged by — `0010`.
+/// Changing a rule produces a new row rather than editing one, so old results stay
+/// valid inside the dataset they were made in.
+model Dataset {
+  id        String   @id @default(cuid())
+  pair      String
+  timeframe String
+  /// Inclusive.
+  from      DateTime @db.Timestamptz(3)
+  /// Exclusive.
+  to        DateTime @db.Timestamptz(3)
+
+  entryPrice    String
+  /// Fraction of notional per side. `0` for no fees.
+  feeRate       Decimal @db.Decimal(18, 8)
+  warmupCandles Int
+  profitMode    String
+  drawdownMode  String
+
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  experiments Experiment[]
+
+  /// Two rows describing the same window judged the same way would split one
+  /// leaderboard into two that each look complete.
+  @@unique([pair, timeframe, from, to, entryPrice, feeRate, warmupCandles, profitMode, drawdownMode])
+}
+
+/// One run. Carries the whole recipe rather than a strategy name, so it can be
+/// rebuilt months later — `0007`, section 36.
+///
+/// The metrics are columns rather than a json blob because the leaderboard orders
+/// by them, and they are nullable because a failed run has none. No score and no
+/// rank: those are computed on read — `0011`.
+model Experiment {
+  id        String  @id @default(cuid())
+  datasetId String
+  dataset   Dataset @relation(fields: [datasetId], references: [id])
+
+  /// CandidateSpec, including each member's version and paramsHash by value.
+  spec     Json
+  specHash String
+  status   String
+
+  totalReturn  Float?
+  profitLoss   Decimal? @db.Decimal(38, 18)
+  winRate      Float?
+  tradeCount   Int?
+  maxDrawdown  Float?
+  profitFactor Float?
+  sharpeRatio  Float?
+
+  /// Why a run failed, for the failed-job count of section 32.7.
+  error     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  trades    Trade[]
+
+  /// The same candidate on the same dataset is one experiment; without this the
+  /// hash of `0007` catches duplicates only as long as every caller remembers to ask.
+  @@unique([datasetId, specHash])
+  @@index([datasetId, status])
+}
+
+model Trade {
+  id           String     @id @default(cuid())
+  experimentId String
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  /// 1-based position within the run — section 26 clicks "Trade #3".
+  seq        Int
+  side       String
+  entryTime  DateTime @db.Timestamptz(3)
+  entryPrice Decimal  @db.Decimal(38, 18)
+  exitTime   DateTime @db.Timestamptz(3)
+  exitPrice  Decimal  @db.Decimal(38, 18)
+  profit     Decimal  @db.Decimal(38, 18)
+
+  @@unique([experimentId, seq])
+}
+
+/// The eight normalised fields of section 27, plus the classification of section 29.
+///
+/// The sentiment pair is nullable rather than defaulted: an article the provider
+/// could not classify is unscored and retried, never stored as neutral — `0005`.
+model News {
+  id           String   @id @default(cuid())
+  title        String
+  content      String
+  source       String
+  url          String   @unique
+  publishedAt  DateTime @db.Timestamptz(3)
+  crawledAt    DateTime @default(now()) @db.Timestamptz(3)
+  relatedCoins String[]
+
+  sentimentLabel String?
+  sentimentScore Float?
+
+  @@index([publishedAt])
+  @@index([relatedCoins], type: Gin)
 }
