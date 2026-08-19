@@ -173,7 +173,7 @@
       <dl class="meta">
         <dt>Companion to</dt><dd><code>docs/project-breakdown.html</code> (29 tasks / 6 vertical slices)</dd>
         <dt>Scope</dt><dd>only the <strong>blocking</strong> decisions - the ones that must be settled before the first line of code</dd>
-        <dt>Progress</dt><dd>3 locked (D01, D02, D03) &#183; 8 still open</dd>
+        <dt>Progress</dt><dd>all 11 locked &#183; each one has a record in <code>decisions/</code></dd>
         <dt>How to use</dt><dd>read one, research it, then fill in the <em>Locked as</em> line at the bottom of each entry</dd>
         <dt>Feeds into</dt><dd>each settled decision becomes a record in <code>decisions/</code></dd>
         <dt>Written</dt><dd>2026-08-11</dd>
@@ -191,8 +191,8 @@
             <p><strong>Write down the reason:</strong> most of the marks sit in explaining why you chose something, not in choosing correctly. Record it while deciding and T28 is a copy-and-paste job; leave it until the end of term and you get a vague paragraph.</p>
           </section>
           <div class="stats">
-            <div class="stat"><div class="n">3</div><div class="l">locked</div></div>
-            <div class="stat"><div class="n">8</div><div class="l">still open</div></div>
+            <div class="stat"><div class="n">11</div><div class="l">locked</div></div>
+            <div class="stat"><div class="n">0</div><div class="l">still open</div></div>
             <div class="stat"><div class="n">5</div><div class="l">tasks held up: T01 T02 T03 T11 T17</div></div>
             <div class="stat"><div class="n">4</div><div class="l">ADRs that grow out of this</div></div>
           </div>
@@ -266,7 +266,7 @@
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D04 // Does a Signal carry strength</span><span class="hint">T02 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D04 // Does a Signal carry strength</span><span class="hint">T02 - locked</span></summary>
           <div class="kids">
             <p class="qz">What does a strategy return: three discrete values, or a value with a confidence?</p>
             <div class="opts">
@@ -277,11 +277,15 @@
             <p><em>Affects:</em> T11, T16, T25</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - a direction and a strength</span></div><p>A makes the weighted combination in T16 thin: all it can do is add ±1 times a weight. And in T25 the sentiment score of 0.82 gets flattened into BUY - throwing away the very number that gives that strategy its meaning. C is tidier but loses the distinction between <em>no opinion</em> and <em>both sides balanced</em>, and those two differ when votes are tallied.</p></div>
             <p><em>Worth researching:</em> section 14 (how the weighted score is computed); work one example by hand under A and under B and see whether the outcome differs.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">A direction plus a strength between 0 and 1</span></div>
+              <p>Section 14 asks for a weighted combination, and with three discrete values the only thing a weight can multiply is plus or minus one - vote counting with fixed coefficients, not the weighted combination the report would claim. Section 30 is worse: sentiment is stored with a score of 0.82 alongside the article, and a discrete signal flattens that into BUY at the interface boundary. Strength is a superset - a strategy with nothing to add returns 1 and behaves exactly like the discrete version. Strength is a strategy's confidence in itself and is never used to rank one strategy against another.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0006-signal-carries-strength.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D05 // What shape is a <code>CandidateStrategy</code></span><span class="hint">T02 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D05 // What shape is a <code>CandidateStrategy</code></span><span class="hint">T02 - locked</span></summary>
           <div class="kids">
             <p class="qz">In what form does a candidate travel around the system?</p>
             <div class="opts">
@@ -291,11 +295,16 @@
             <p><em>Affects:</em> T13, T17, T19</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - data spec, not an object</span></div><p>A locks you into one process: T19 needs several workers, which means pushing candidates through a queue, and an object will not serialise. B gives you one shape for all three jobs - generating candidates in T17, pushing them through the queue in T19, and storing them in Experiment in T13 - which also answers section 36 on traceability.</p></div>
             <p><em>Worth researching:</em> sketch the spec shape, for example <code>{type:"composite", rule:"weighted", members:[{id:"ma", params:{fast:20,slow:50}, weight:0.2}]}</code>; check whether that spec alone is enough to reproduce an old run exactly.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">A specification travels; the runnable object is built inside the worker and thrown away</span></div>
+              <p>An object's methods live on its prototype, so serialising one keeps the numbers and drops the behaviour - the worker would receive a shell. Three jobs need the same shape anyway: generating candidates in T17, crossing the queue in T19, and storing an experiment in T13, which is what answers section 36. The worker already contains the code for every strategy, so the only thing it lacks is which ones to assemble and with what numbers. The dataset is deliberately <em>not</em> part of the specification - it is sent alongside and stored in its own column, so one candidate on two timeframes stays one candidate.</p>
+              <p>Three details settled with it: a validator runs at both ends of the queue; a malformed specification is permanent failure and must not be retried like a dropped connection; and field order, member order and float precision are normalised before hashing, or the leaderboard fills with duplicates.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0007-candidate-as-spec.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D06 // How strategy versions are stamped</span><span class="hint">T02 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D06 // How strategy versions are stamped</span><span class="hint">T02 - locked</span></summary>
           <div class="kids">
             <p class="qz">How does an old Experiment know exactly which version of a strategy it ran?</p>
             <div class="opts">
@@ -306,11 +315,17 @@
             <p><em>Affects:</em> T03, T13 - and question 8 of section 40</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">C - two layers</span></div><p>A alone means that changing a parameter and forgetting to bump the version loses the trail, and it will be forgotten. B alone means editing the <em>code</em> inside a strategy while the parameters stay put produces the same hash - two different results wearing the same identity. C closes both directions.</p></div>
             <p><em>Worth researching:</em> section 36 verbatim; think through the case where you change the formula inside RSIStrategy but no parameter changes - what distinguishes the two runs?</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">C - a hand-set <code>version</code> for the code, a hash for the parameter set</span></div>
+              <p>Two things change by two different hands. Parameters are picked by the search engine thousands of times a night with nobody involved, so a machine hashes them. Code is edited by a teammate, so a person bumps an integer sitting a few lines from the edit, in the same commit. Neither half alone works: a parameter hash cannot see a formula change that leaves the numbers alone - two runs seven percent apart wearing one identity - and a hand-set number alone puts the parameter half back where it is forgotten first. Splitting it leaves a person responsible for exactly the half a machine cannot see.</p>
+              <p><strong>Settled with it:</strong> the <code>Strategy</code> table is append-only on <code>(id, version)</code> and the registry inserts on startup, so <code>rsi v1</code> stays put when <code>rsi v2</code> appears; an experiment stores version and hash <em>by value</em> per member, not as a foreign key, because <code>0007</code> needs a specification to be self-contained; member order, key order and float precision are normalised before hashing. A golden test per strategy makes the human half safe - change the output without bumping and the pre-push gate goes red.</p>
+              <p><strong>What it does not give:</strong> a version tells old runs apart and points at a commit; it does not let the app re-run <code>v1</code>, because that code no longer exists in the tree.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0009-strategy-versioning.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D07 // How <code>StrategyContext</code> carries data in</span><span class="hint">T02 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D07 // How <code>StrategyContext</code> carries data in</span><span class="hint">T02 - locked, against the suggestion</span></summary>
           <div class="kids">
             <p class="qz">Where does a strategy get indicators, sentiment and other sources from?</p>
             <div class="opts">
@@ -321,11 +336,18 @@
             <p><em>Affects:</em> T11, T12, T16, T25</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - a gateway you query, not a struct</span></div><p>A is the trap described earlier: adding a new data source changes the struct, and every existing strategy changes with it - exactly the section 41 scenario being marked. B keeps the <code>analyze()</code> signature still forever. C is cleaner than B but costs more to build; if the team is comfortable with dependency injection go with C, otherwise B.</p></div>
             <p><em>Worth researching:</em> section 6 (the list of context fields); section 30 (what the sentiment strategy actually needs); the <em>strategy reaches into the database</em> anti-pattern in section 44 - B and C exist precisely to avoid it.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">C - a strategy declares the data it needs, the engine prepares it and hands it over</span></div>
+              <p>Chosen over the suggested B. A strategy answers <code>requires(params)</code> before anything runs, the engine reads every member's answer, prepares exactly that much once per dataset, and <code>analyze()</code> reads what was prepared. The engine knowing ahead is what buys the difference: a name that does not exist fails at registration rather than mid-run, and a source that has to be fetched rather than computed from candles - stored sentiment scores, section 30 - is fetched for the whole range in one go instead of per candle. It also sits on the mechanism D10 is building anyway, and on the warm-up length <code>0006</code> already has a strategy declare about itself.</p>
+              <p><strong>The trade-off we accept:</strong> the need is written twice - once in <code>requires()</code> and again where it is used - and the two must be kept in step. The engine runs strict: asking for anything that was not declared throws, so a drift is caught rather than silently serving a stale value. A gateway you query (B) has no such duplication and, with a cache, computes each indicator exactly once too; it was the closer call than this page's original text suggests.</p>
+              <p><strong>Correction to a claim made elsewhere:</strong> Nest's DI does <em>not</em> implement this. DI resolves static dependencies by type at startup, while a need here depends on parameters the generator picks at run time. Reading the declaration, preparing, and handing over is hand-written. Nest still supplies the registry as a provider and a single shared indicator service that both the worker and the chart endpoint are given.</p>
+              <p>A was never in play: a new source changes the struct and every place that builds one - including every strategy's test, which would then need news data to construct a context for an MA strategy. Whatever the shape, a strategy never reaches into the database itself (section 44).</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0008-strategy-declares-its-data.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D08 // What a dataset is</span><span class="hint">T02 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D08 // What a dataset is</span><span class="hint">T02 - locked</span></summary>
           <div class="kids">
             <p class="qz">What data is a backtest run tied to, and how is that recorded?</p>
             <div class="opts">
@@ -335,11 +357,16 @@
             <p><em>Affects:</em> T03, T13, T14, T18, T20</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - a dataset with its own identity</span></div><p>The leaderboard can only compare candidates that ran on the same data; with B that filter is one id comparison, with A it is three fields compared every time and eventually one gets missed. <strong>Also worth considering:</strong> fold the backtest rules into the Dataset definition - entry price, fees, warm-up, how profit is summed, how drawdown is measured (those get decided later by whoever takes T12/T13). Then changing the entry rule or the drawdown calculation produces a <em>new</em> dataset, and every old result stays valid within the old one instead of turning into rubbish. Without that, T12/T13 must freeze their rules before the search starts running, or the leaderboard will mix two different calculations.</p></div>
             <p><em>Worth researching:</em> section 33 (the pair + range + timeframe triple); section 35, the <code>Dataset</code> column of the Experiment table; decide now whether a dataset includes fees and the entry rule - this is the easiest thing to regret skipping.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">B, and the backtest rules are part of the dataset</span></div>
+              <p>A leaderboard is meaningful only if its rows were produced the same way, and two things decide that: the data a run used and the rules it was judged by. Three loose fields make every filter a three-way comparison that will one day be a two-way one, silently. An id cannot be half-matched.</p>
+              <p>The rules go inside - entry price, fees, warm-up, whether profit is summed or compounded, how drawdown is measured. The consequence <em>is</em> the reason: changing a rule produces a new dataset with an empty board, and every old result stays valid inside the dataset it was made in, instead of sitting on the board looking normal while meaning something else. This is cheap because a dataset does not hold candles - it names a window into them, so a fee change writes one row.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0010-dataset-carries-the-backtest-rules.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D09 // Leaderboard: stored or recomputed</span><span class="hint">T03 - the brief asks this directly in section 35</span></summary>
+          <summary class="row"><span class="lbl">D09 // Leaderboard: stored or recomputed</span><span class="hint">T03 - locked</span></summary>
           <div class="kids">
             <p class="qz">Are scores and ranks stored in their own table, or computed from Experiment on every read?</p>
             <div class="opts">
@@ -350,11 +377,16 @@
             <p><em>Affects:</em> T18</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">C, starting from B</span></div><p>Section 21 requires the Overall Score formula to be spelled out, which means you will adjust it several times before hand-in. Under A, every adjustment re-runs every backtest; under B it recomputes one column. This is the one the brief asks about explicitly and demands a justification for, so the reasoning matters more than the choice.</p></div>
             <p><em>Worth researching:</em> the closing part of section 35; estimate how long recomputing a Top-K over a few thousand Experiments takes - usually negligible.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">B - recomputed on every read, with no cache yet</span></div>
+              <p>Section 21 forces the score formula to be written down and defended, which means it will be adjusted several times before hand-in. Storing the score makes each adjustment a re-scoring pass over the whole store, during which the board is wrong; recomputing makes it a change to one query. A top-K over a few thousand rows of one dataset is an <code>ORDER BY</code> with a <code>LIMIT</code>. A stored rank is also a second source of truth that can quietly disagree with the experiments it came from.</p>
+              <p>The cache in option C is deliberately deferred rather than rejected: it adds a copy that can go stale, and a stale ranking still looks like a ranking. It gets added against a measurement, and gets its own record when it does.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0011-leaderboard-is-recomputed.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D10 // Do strategies describe themselves</span><span class="hint">T11 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D10 // Do strategies describe themselves</span><span class="hint">T11 - locked</span></summary>
           <div class="kids">
             <p class="qz">How do the UI and the search engine learn which parameters a strategy has?</p>
             <div class="opts">
@@ -364,11 +396,16 @@
             <p><em>Affects:</em> T14, T17, T20</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - there is barely a choice here</span></div><p>Without metadata, the parameter form in T14, the candidate space in T17 and the selection list in T20 all have to hard-code strategy names - straight into the <em>hard-coded strategy</em> anti-pattern of section 44, and the section 41 scenario will expose it within thirty seconds. <strong>Include the group field</strong> (Trend / Momentum / Volatility / Structure / Information), because Domain-guided Search in T17 needs exactly that field to express its composition rule.</p></div>
             <p><em>Worth researching:</em> section 17 (the 5 functional groups); section 15 (the parameter sets that need generating); decide up front how a parameter is described: type, min, max, step.</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">B - <code>id, name, group, params[]</code>, declared on the strategy itself</span></div>
+              <p>A parameter is <code>{ name, type, min, max, step, default }</code>. The form needs <code>type</code> and <code>default</code> to render a control; the search engine needs <code>min</code>, <code>max</code> and <code>step</code> to enumerate a space at all - section 15's MA at 10/20, 20/50, 50/200 is a range walked by a step. <code>group</code> is one of Trend / Momentum / Volatility / Structure / Information, because the domain-guided search of T17 is defined in terms of it and inferring it from a name is guessing.</p>
+              <p>It goes on the class rather than in a config file so it travels with the code it describes. Four records now ride on this one declaration: warm-up from <code>0006</code>, data needs from <code>0008</code>, version from <code>0009</code>, and this.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0012-strategy-metadata.md</code></p>
+            </div>
           </div>
         </details>
         <details class="node dec">
-          <summary class="row"><span class="lbl">D11 // The <code>generate()</code> signature</span><span class="hint">T17 - blocking</span></summary>
+          <summary class="row"><span class="lbl">D11 // The <code>generate()</code> signature</span><span class="hint">T17 - locked</span></summary>
           <div class="kids">
             <p class="qz">Is the candidate generator allowed to see the results of previous rounds?</p>
             <div class="opts">
@@ -378,7 +415,12 @@
             <p><em>Affects:</em> T17, T19</p>
             <div class="call note"><div class="k"><span class="chip info">RECOMMENDED</span><span class="t">B - take the history from day one</span></div><p>Random Search needs no history, so A looks sufficient. But every algorithm that learns from results - Genetic, Bayesian, Evolutionary - needs the previous population with its scores. Choosing A means changing the interface when that day comes, which breaks precisely the section 42 scenario the lecturer may set live. One unused argument is far cheaper.</p></div>
             <p><em>Worth researching:</em> section 42; look at what one round of a genetic algorithm takes as input (population + fitness + generation count).</p>
-            <p class="slot">Locked as: <span class="fill"></span> &nbsp; Date: <span class="fill" style="min-width:6rem"></span><br>Reason (1-2 sentences, goes straight into the ADR): <span class="fill" style="min-width:24rem"></span></p>
+            <div class="call tip">
+              <div class="k"><span class="chip ok">LOCKED</span><span class="t">B - <code>generate(history)</code>, and the random generator ignores it</span></div>
+              <p>Deferring the argument does not reduce its cost, it moves it: the change lands later, on a shared interface, at the exact seam section 42 inspects. That the random generator is unaffected by the argument being there is also the demonstration that adding it early is safe.</p>
+              <p><code>history</code> is kept as narrow as it can be and still be useful: <strong>the candidates already tested, with their scores</strong>. No generation counter, no elapsed budget, no population structure - those are bets on an algorithm nobody has written, and a wrong bet ships in the contracts package. At ten thousand candidates it has to be a bounded view rather than the full list; which bound is a T17 detail.</p>
+              <p><em>Full reasoning, alternatives and trade-offs:</em> <code>decisions/0013-generator-receives-history.md</code></p>
+            </div>
           </div>
         </details>
         </div>
@@ -393,14 +435,14 @@
             <li class="done"><span class="box">[x]</span><span class="txt">D01 &#183; Language &amp; framework <span class="chip">T01</span></span></li>
             <li class="done"><span class="box">[x]</span><span class="txt">D02 &#183; Database <span class="chip">T01</span></span></li>
             <li class="done"><span class="box">[x]</span><span class="txt">D03 &#183; How modules talk <span class="chip">T01</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D04 &#183; Does a Signal carry strength <span class="chip">T02</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D05 &#183; Shape of CandidateStrategy <span class="chip">T02</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D06 &#183; Strategy versioning <span class="chip">T02</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D07 &#183; StrategyContext <span class="chip">T02</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D08 &#183; Dataset <span class="chip">T02</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D09 &#183; Leaderboard stored or recomputed <span class="chip">T03</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D10 &#183; Strategy metadata <span class="chip">T11</span></span></li>
-            <li><span class="box">[ ]</span><span class="txt">D11 &#183; generate() signature <span class="chip">T17</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D04 &#183; Does a Signal carry strength <span class="chip">T02</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D05 &#183; Shape of CandidateStrategy <span class="chip">T02</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D06 &#183; Strategy versioning <span class="chip">T02</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D07 &#183; StrategyContext <span class="chip">T02</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D08 &#183; Dataset <span class="chip">T02</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D09 &#183; Leaderboard stored or recomputed <span class="chip">T03</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D10 &#183; Strategy metadata <span class="chip">T11</span></span></li>
+            <li class="done"><span class="box">[x]</span><span class="txt">D11 &#183; generate() signature <span class="chip">T17</span></span></li>
           </ul>
         </div>
       </details>

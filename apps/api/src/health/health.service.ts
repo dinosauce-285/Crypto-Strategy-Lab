@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { OnEvent } from '@nestjs/event-emitter';
-import { EVENTS, TIMEFRAMES } from '@csl/contracts';
+import { EVENTS, TIMEFRAMES, type EventPayload } from '@csl/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class HealthService {
   private readonly logger = new Logger(HealthService.name);
-  private lastEventAt: string | null = null;
+  private lastEventAt: number | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -29,7 +29,12 @@ export class HealthService {
     }
 
     // Publish and observe our own event, proving the bus is wired both ways.
-    this.events.emit(EVENTS.MarketPriceUpdated, { at: new Date().toISOString() });
+    const probe: EventPayload<typeof EVENTS.MarketPriceUpdated> = {
+      pair: 'BTCUSDT',
+      price: '0',
+      at: Date.now(),
+    };
+    this.events.emit(EVENTS.MarketPriceUpdated, probe);
 
     return {
       status: database === 'up' ? 'ok' : 'degraded',
@@ -41,7 +46,9 @@ export class HealthService {
   }
 
   @OnEvent(EVENTS.MarketPriceUpdated)
-  handlePriceUpdated(payload: { at: string }): void {
+  handlePriceUpdated(
+    payload: EventPayload<typeof EVENTS.MarketPriceUpdated>,
+  ): void {
     this.lastEventAt = payload.at;
   }
 }
