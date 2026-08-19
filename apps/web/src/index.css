@@ -1,18 +1,28 @@
 :root {
   --bg: #faf9f6;
+  --surface: #f4f1ea;
+  --line: #e2dbce;
   --ink: #2a251f;
   --muted: #6f6658;
   --ok: #197e3a;
   --bad: #b3271e;
+  --accent: #0b4f9c;
+  --control-h: 2rem;
+  --radius-sm: 3px;
+  --radius: 6px;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color: var(--ink);
   background: var(--bg);
+  color-scheme: light;
 }
+
+::selection { background: var(--line); color: var(--ink); }
 
 body { margin: 0; }
 main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.5rem; }
-h1 { font-size: 1.4rem; margin: 0; }
-.sub { color: var(--muted); margin-top: 0.25rem; }
+h1 { font-size: 1.4rem; margin: 0; text-wrap: balance; }
+h2 { font-size: 1rem; margin: 0; font-weight: 600; text-wrap: balance; }
+.sub { color: var(--muted); margin-top: 0.25rem; max-width: 70ch; }
 
 dl { display: grid; grid-template-columns: 11rem 1fr; gap: 0.5rem 1rem; margin-top: 2rem; }
 dt { color: var(--muted); }
@@ -20,4 +30,94 @@ dd { margin: 0; }
 
 .ok { color: var(--ok); }
 .bad { color: var(--bad); }
-code { background: #efe9dd; padding: 0.05em 0.3em; border-radius: 3px; }
+code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--radius-sm); }
+
+/* --- live market panel (T07) --- */
+
+.panel { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.check-head { margin-top: 2.5rem; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem; }
+.check-head + dl { margin-top: 1rem; }
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.75rem;
+}
+.panel-head h2 { margin-right: auto; }
+
+.pair-select {
+  height: var(--control-h);
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 0.5rem;
+}
+
+.seg { display: flex; gap: 0.25rem; }
+.seg button {
+  height: var(--control-h);
+  min-width: 2.75rem;
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.seg button:hover { color: var(--ink); background: var(--surface); }
+.seg button[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--surface);
+}
+.pair-select:focus-visible,
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.state { color: var(--muted); margin: 0; max-width: 70ch; }
+.state strong { color: var(--ink); }
+.state.bad, .state.bad strong { color: var(--bad); }
+
+.price { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.price .n {
+  font-size: 2rem;
+  font-variant-numeric: tabular-nums;
+  transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.price .n[data-fresh="true"] { color: var(--accent); }
+.price .n[data-stale="true"] { color: var(--muted); }
+.price .at { color: var(--muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+
+.source { color: var(--muted); font-size: 0.76rem; margin: 0; }
+
+/* The scrollbar is part of the design too — the default belongs to no system. */
+.candles {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.candles::-webkit-scrollbar { height: 8px; }
+.candles::-webkit-scrollbar-track { background: transparent; }
+.candles::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: var(--radius-sm);
+}
+.candles::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
+th, td {
+  text-align: right;
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+th:first-child, td:first-child { text-align: left; }
+thead th { color: var(--muted); font-weight: 400; font-size: 0.76rem; }
+tbody tr:last-child td { border-bottom: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .price .n { transition: none; }
+}

@@ -3,13 +3,17 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { ChannelIoAdapter } from './realtime/channel-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
+  const webOrigin = config.get('WEB_ORIGIN', 'http://localhost:5173');
+
   app.setGlobalPrefix('api');
-  app.enableCors({ origin: config.get('WEB_ORIGIN', 'http://localhost:5173') });
+  app.enableCors({ origin: webOrigin });
+  app.useWebSocketAdapter(new ChannelIoAdapter(app, webOrigin));
 
   const port = config.get<number>('API_PORT', 3001);
   await app.listen(port);

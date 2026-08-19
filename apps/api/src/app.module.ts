@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { MarketModule } from './market/market.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -18,6 +20,8 @@ import { HealthModule } from './health/health.module';
     EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' }),
     PrismaModule,
     HealthModule,
+    RealtimeModule,
+    MarketModule,
   ],
 })
 export class AppModule {}
