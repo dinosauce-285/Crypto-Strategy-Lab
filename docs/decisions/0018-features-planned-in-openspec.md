@@ -24,26 +24,32 @@ reconstructed in the last week.
 
 **The half that matters more than the tool: there is still one home for reasoning.**
 
-OpenSpec generates a `design.md` per change, and this repo already has
+OpenSpec's stock workflow generates a `design.md` per change, and this repo already has
 `docs/decisions/`. Both answer "why did we choose this". Two homes for one job is the
 second pattern that `development-rules.md` refuses, and here it would split the very
 artefact section 45 marks — half the argument in an ADR, half in a change folder,
 neither complete.
 
-So the line is drawn and written into `openspec/config.yaml`, where the agent reads it
-on every change rather than when someone remembers:
+So the change folder does not get one. The project schema is `proposal → specs →
+tasks`, and the three answer different questions: a spec says what the system does, a
+record says why that was chosen, a task says what to do next. What would have gone into
+`design.md` splits along the same line — a choice big enough to argue is a record, and
+everything smaller is a task, written concretely enough that nobody re-derives it.
 
-- **An ADR** for anything architectural — a shared type or event contract, the database
-  schema, how modules communicate, a new dependency or piece of infrastructure, backtest
-  or scoring rules.
-- **`design.md`** for design that does not leave the feature — file layout, call order,
-  edge cases, failure handling. It links to the ADR instead of restating it.
-- When a point outgrows the feature, it moves to `docs/decisions/`.
+The seam between a change and a record is mechanical rather than remembered, because
+remembering is what fails in week nine:
 
-The pre-push gate settles borderline cases without anyone arguing: it refuses a push
-touching `packages/contracts/src`, `schema.prisma`, `prisma.config.ts` or a
-`*.module.ts` unless the same push carries a file under `docs/decisions/`. A `design.md`
-does not turn it green, which is the right answer expressed as a mechanism.
+- The proposal has a **Decisions** section of two lines. *Settled* links the records the
+  change builds on; *To settle* names the choice it owes one, or says there is none. It
+  links and never restates, so the argument exists once.
+- Group 0 of every task list is writing that record, ordered before the code that
+  assumes it. `pnpm decision "<the choice>"` takes the next number, writes the three
+  headings and adds the index line, so the clerical half stops being a reason to skip it.
+- `pnpm decision --check` runs on commit and refuses a record with an empty section or
+  one missing from the index. The pre-push gate still refuses a push touching
+  `packages/contracts/src`, `schema.prisma`, `prisma.config.ts` or a `*.module.ts` with
+  no record beside it — but group 0 has normally caught it a day earlier, which is the
+  point. A gate is a bad place to learn that a decision needed writing down.
 
 `openspec/` is committed; the generated skills under `.claude/` are not, exactly like
 every other harness file — `AGENTS.md` already permits a local harness to add skills,
@@ -75,10 +81,14 @@ Every feature now carries up to three artefacts — a card, a change folder, som
 ADR. For a small task that is more ceremony than the task, and the temptation will be to
 skip the change folder for exactly the tasks where the record would have been cheapest.
 
-The line between `design.md` and an ADR is a judgement made per point, and getting it
-wrong is invisible: a design note that should have been an ADR simply never gets marked.
-The pre-push gate catches the cases that touch contracts, schema or module wiring, and
+The line between a record and a task is a judgement made per point, and getting it wrong
+is invisible: a task that should have been a record simply never gets marked. The
+pre-push gate catches the cases that touch contracts, schema or module wiring, and
 nothing catches the rest.
+
+`pnpm decision` takes the next number by reading the folder, so two branches writing a
+record in the same week both take it. Nothing notices until they meet on `dev`, and then
+somebody renames a file other records already link to.
 
 `openspec/` widens the shared contract that `docs/agent-harness.md` deliberately keeps
 small. A second tool now has a say in how work is described, and if it is abandoned

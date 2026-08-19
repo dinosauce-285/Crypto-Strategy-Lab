@@ -24,9 +24,9 @@ The shared contract is intentionally small:
 - `apps/api/docs/BACKEND_CONSTRAINT.md` binds API work.
 - `apps/web/docs/UI_CONSTRAINT.md` binds web work.
 - `docs/decisions/` records architectural decisions.
-- `openspec/` holds the feature specs and change folders — see `0018`. Reasoning still
-  goes to `docs/decisions/`; a change's `design.md` covers only what stays inside one
-  feature and links to the record for anything wider.
+- `openspec/` holds the feature specs and change folders — see `0018`. It has no
+  `design.md`: a proposal links the records it builds on, and writing the record a
+  change owes is group 0 of its task list.
 - `.githooks/` contains repo-level gates that every contributor gets on install.
 - `package.json` commands are the supported verification surface.
 

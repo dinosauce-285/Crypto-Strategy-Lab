@@ -1,4 +1,4 @@
-schema: spec-driven
+schema: spec-driven-adr
 
 context: |
   Crypto Strategy Lab — a laboratory for combining crypto trading strategies:
@@ -13,33 +13,34 @@ context: |
   shared types in packages/contracts, PostgreSQL through Prisma 7, an in-process
   event bus for notification, BullMQ on Redis for work.
 
+  Reasoning has one home: docs/decisions/. There is no design.md in this schema, and
+  a change never argues a choice it could link to — the proposal's Decisions section
+  lists what is settled and what this change must settle, and group 0 of tasks.md is
+  writing that record with `pnpm decision "<the choice>"`. A spec says what the system
+  does, a record says why it was chosen, a task says what to do next. Nothing belongs
+  in two of them.
+
   Read AGENTS.md first — it is the canonical law and it wins over anything written
   here. Before touching apps/api read apps/api/docs/BACKEND_CONSTRAINT.md; before
   touching apps/web read apps/web/docs/UI_CONSTRAINT.md.
 
   Work is cut into 29 tasks (T01..T29) across 6 vertical slices, listed in
-  docs/project-breakdown.html and mirrored on Trello. A change id here is the task
-  id and the branch name, e.g. T07-realtime-channel.
+  docs/project-breakdown.html and mirrored on Trello. A change id is the branch name
+  lowercased — branch T07-realtime-channel, change t07-realtime-channel — because
+  OpenSpec requires kebab-case. One id ties the change, the branch, the Trello card
+  and the commit scope together.
 
 rules:
   proposal:
     - Name the task id (T01..T29) this change belongs to, and link its Trello card.
     - Cite the brief section that demands it, the way docs/project-breakdown.html does.
-    - State what is already settled in docs/decisions/ rather than re-deciding it.
-  design:
-    - Architectural decisions do NOT live here. They are ADRs in docs/decisions/ —
-      one file per decision, answering why we chose this, what else we looked at and
-      what it would have cost, and what we give up. Link the record instead of
-      restating it.
-    - A decision is architectural when it introduces or changes a shared type or event
-      contract, changes the database schema, changes how modules communicate, adds a
-      dependency or piece of infrastructure, or changes backtest or scoring rules.
-      The pre-push gate refuses a push that touches packages/contracts/src,
-      schema.prisma, prisma.config.ts or a *.module.ts with no file under
-      docs/decisions/ in the same push — and only docs/decisions/ satisfies it.
-    - What belongs here is design inside one feature: file layout, call order, edge
-      cases, failure handling. If a point outgrows the feature, move it to an ADR.
+    - Fill both Decisions lines. Settled links the records this change builds on;
+      To settle names the choice this change owes a record, or says there is none.
+      Link, never restate — the argument lives in the record.
   tasks:
+    - Group 0 is Decisions. One checkbox per record named under To settle, created
+      with `pnpm decision "<the choice>"`, ordered before the code that assumes it.
+      Nothing to settle is one ticked line saying so.
     - Keep strategy logic free of exchange calls, database access, frontend code and
       notifications. Keep business calculation out of React.
     - A task is not done when it builds. It is done when it runs — the endpoint is
@@ -50,8 +51,12 @@ operations:
     guidance:
       - Run `pnpm lint` and `pnpm build` before calling anything done. Both, not one.
       - Commit with `pnpm commit`, never `git commit` — the bash guard blocks the latter.
-      - One command per shell call: the guard refuses `&&`, `||`, `;`, `|`, `<`, `>`.
+      - "One command per shell call — the guard refuses `&&`, `||`, `;`, `|`, `<`, `>`."
+      - A choice that only appears while implementing still belongs in docs/decisions/.
+        Add it to group 0, run `pnpm decision "<the choice>"`, and write it before the
+        code that assumes it rather than after the gate refuses the push.
   archive:
     guidance:
-      - Before archiving, check that any architectural decision made along the way has
-        its record in docs/decisions/ and is listed in that folder's README.
+      - Before archiving, every box in group 0 is ticked and `pnpm decision --check`
+        passes. A change that reached the end with an unwritten record is the one case
+        where the reasoning is already gone.
