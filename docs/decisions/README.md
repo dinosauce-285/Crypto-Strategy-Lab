@@ -41,6 +41,7 @@ while you still hold it.
 - [0013](0013-generator-receives-history.md) — the generator is handed the history of previous rounds
 - [0014](0014-weighted-merge-only.md) — signals are combined by weighted score only
 - [0015](0015-unknowable-numbers-are-searchable.md) — a number nobody can argue is put in the specification and answered by the leaderboard
+- [0016](0016-database-enforces-what-a-type-cannot.md) — the tables mirror the contracts, and Postgres constrains only what a type cannot
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
