@@ -14,7 +14,7 @@ import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { TopicAudience } from '../realtime/ports/topic-audience.port';
 import { ExchangeStreamPort, type ExchangeStream, type PriceTick } from './ports/exchange-stream.port';
 import { ExchangeHistoryPort } from './ports/exchange-history.port';
-import { CandleRepository } from './candle.repository';
+import { CandleRepository, type CandleRangeOptions } from './candle.repository';
 
 interface Watch {
   stream: ExchangeStream;
@@ -45,8 +45,8 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     private readonly candles: CandleRepository,
   ) {}
 
-  async getHistory(pair: string, timeframe: Timeframe, limit: number): Promise<Candle[]> {
-    return this.candles.range(pair, timeframe, limit);
+  async getHistory(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {
+    return this.candles.range(pair, timeframe, options);
   }
 
   onModuleInit(): void {

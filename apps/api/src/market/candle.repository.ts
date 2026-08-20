@@ -49,7 +49,20 @@ export class CandleRepository {
     return row !== null;
   }
 
-  async range(pair: string, timeframe: Timeframe, limit: number): Promise<Candle[]> {
+  async range(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {
+    const { limit, from, to } = options;
+
+    if (from !== undefined && to !== undefined) {
+      const rows = await this.prisma.candle.findMany({
+        where: { pair, timeframe, openTime: { gte: new Date(from), lte: new Date(to) } },
+        orderBy: { openTime: 'asc' },
+        take: limit,
+      });
+      return rows.map(toCandle);
+    }
+
+    // No range given: today's "most recent N" — the shape CandleChart/RecentTicks
+    // already depend on, unchanged.
     const rows = await this.prisma.candle.findMany({
       where: { pair, timeframe },
       orderBy: { openTime: 'desc' },
@@ -57,6 +70,16 @@ export class CandleRepository {
     });
     return rows.reverse().map(toCandle);
   }
+}
+
+/**
+ * Either bound given → a date-range read (ADR 0026), `limit` an optional safety cap.
+ * Neither → the existing "most recent `limit`" read, unchanged.
+ */
+export interface CandleRangeOptions {
+  limit?: number;
+  from?: number;
+  to?: number;
 }
 
 function toRow(candle: Candle) {
