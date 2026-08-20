@@ -171,8 +171,9 @@ pnpm db:generate  regenerate the Prisma client after a schema change
 
 Postgres runs in the local `ai_erp_db` container on 5432, in its own database
 `crypto_strategy_lab`. Nothing is shared but the server process. Redis runs in the local
-`redis` container on 6379 and carries the backtest queue; without it the API starts and a
-search run cannot.
+`redis` container on 6379 and carries the backtest queue. Without it the API still starts
+and every other screen works; starting a search run answers 503 rather than hanging, which
+is the difference between a missing service and a broken one.
 
 ## Environment
 

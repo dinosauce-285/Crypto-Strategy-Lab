@@ -76,7 +76,15 @@ export class SearchService implements OnModuleDestroy {
   private async tick(): Promise<void> {
     const run = this.run;
     if (!run || run.state === 'ended') return;
+    try {
+      await this.advance(run);
+    } catch (error) {
+      this.logger.error(`run ${run.runId} could not advance: ${String(error)}`);
+    }
+  }
 
+  /** A tick that throws must not take the interval's promise with it. */
+  private async advance(run: ActiveRun): Promise<void> {
     run.queued = await this.queue.waiting();
     if (run.state === 'running') await this.fill(run);
 

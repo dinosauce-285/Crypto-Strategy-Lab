@@ -24,7 +24,7 @@ export class BacktestWorker implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     const concurrency = Number(this.config.get('BACKTEST_CONCURRENCY', 4));
     this.worker = new Worker(BACKTEST_QUEUE, (job) => this.processor.process(job), {
-      connection: createRedis(this.config),
+      connection: createRedis(this.config, true),
       concurrency,
     });
     this.logger.log(`consuming "${BACKTEST_QUEUE}" with concurrency ${concurrency}`);

@@ -1,5 +1,15 @@
-import { BadRequestException, Body, ConflictException, Controller, Get, NotFoundException, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  ConflictException,
+  Controller,
+  Get,
+  NotFoundException,
+  Post,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import type { RunStatus } from '@csl/contracts';
+import { QueueUnavailableError } from './backtest-queue';
 import { parseStartRun } from './dto/start-run.dto';
 import { isBounded } from './run-bounds';
 import { NoActiveRunError, RunAlreadyActiveError, SearchService } from './search.service';
@@ -20,6 +30,7 @@ export class SearchController {
       return await this.search.start(request.datasetId, request.bound);
     } catch (error) {
       if (error instanceof RunAlreadyActiveError) throw new ConflictException(error.message);
+      if (error instanceof QueueUnavailableError) throw new ServiceUnavailableException(error.message);
       throw error;
     }
   }
