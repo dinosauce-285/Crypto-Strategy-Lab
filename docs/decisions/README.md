@@ -52,6 +52,8 @@ code that assumes it.
 - [0018](0018-features-planned-in-openspec.md) — features are planned in OpenSpec, and the reasoning still lives here
 - [0019](0019-the-push-channel-runs-on-socket-io.md) — the push channel runs on Socket.IO
 - [0020](0020-module-reaches-the-browser-through-ports.md) — a module reaches the browser through the channel's ports, not through the bus
+- [0021](0021-historical-candles-are-drawn-with-lightweight-charts.md) — candlestick chart library
+- [0022](0022-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md) — historical backfill depth and scope
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
