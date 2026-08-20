@@ -11,7 +11,7 @@ import {
 import { useChannelStatus, useTopic } from '../channel/use-topic';
 import { clock, decimal } from './format';
 
-const PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+export const PAIRS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
 const KEEP = 8;
 
 interface Tick {
@@ -19,9 +19,14 @@ interface Tick {
   at: number;
 }
 
-export function MarketPanel() {
-  const [pair, setPair] = useState(PAIRS[0]);
-  const [timeframe, setTimeframe] = useState<Timeframe>('1m');
+interface MarketPanelProps {
+  pair: string;
+  timeframe: Timeframe;
+  onPairChange: (pair: string) => void;
+  onTimeframeChange: (timeframe: Timeframe) => void;
+}
+
+export function MarketPanel({ pair, timeframe, onPairChange, onTimeframeChange }: MarketPanelProps) {
   const [tick, setTick] = useState<Tick | null>(null);
   const [candles, setCandles] = useState<Candle[]>([]);
   const [fresh, setFresh] = useState(false);
@@ -72,7 +77,7 @@ export function MarketPanel() {
         <select
           className="pair-select"
           value={pair}
-          onChange={(e) => setPair(e.target.value)}
+          onChange={(e) => onPairChange(e.target.value)}
           aria-label="Trading pair"
         >
           {PAIRS.map((p) => (
@@ -87,7 +92,7 @@ export function MarketPanel() {
               key={t}
               type="button"
               aria-pressed={t === timeframe}
-              onClick={() => setTimeframe(t)}
+              onClick={() => onTimeframeChange(t)}
             >
               {t}
             </button>

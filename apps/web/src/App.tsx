@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TIMEFRAMES, type Timeframe } from '@csl/contracts';
-import { MarketPanel } from './market/MarketPanel';
+import { MarketPanel, PAIRS } from './market/MarketPanel';
+import { CandleChart } from './market/CandleChart';
 import { clock } from './market/format';
 
 interface Health {
@@ -27,6 +28,8 @@ type State =
  */
 export function App() {
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [pair, setPair] = useState(PAIRS[0]);
+  const [timeframe, setTimeframe] = useState<Timeframe>('1m');
 
   useEffect(() => {
     fetch('/api/health')
@@ -40,7 +43,13 @@ export function App() {
       <h1>Crypto Strategy Lab</h1>
       <p className="sub">Slice 1 — the server pushes, the screen never asks twice.</p>
 
-      <MarketPanel />
+      <MarketPanel
+        pair={pair}
+        timeframe={timeframe}
+        onPairChange={setPair}
+        onTimeframeChange={setTimeframe}
+      />
+      <CandleChart pair={pair} timeframe={timeframe} />
 
       <h2 className="check-head">System check</h2>
 

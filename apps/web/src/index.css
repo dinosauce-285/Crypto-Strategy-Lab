@@ -94,6 +94,12 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 
 .source { color: var(--muted); font-size: 0.76rem; margin: 0; }
 
+.chart {
+  height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
 /* The scrollbar is part of the design too — the default belongs to no system. */
 .candles {
   overflow-x: auto;
