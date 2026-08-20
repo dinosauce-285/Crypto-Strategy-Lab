@@ -34,6 +34,21 @@ without depending on a table that can still change. Member order, key order and 
 precision are normalised before hashing, or the same candidate appears under two
 identities and gets tested twice.
 
+That normalisation is now spelled out, because the search loop is the first code that
+depends on it. Object keys are sorted; members are sorted by id, then version, then
+parameter hash; an absent optional field is left out rather than written as null; and
+every number is rounded to **six decimal places** before it is written. Six is chosen
+against the parameters that exist rather than against floating point in general — weights
+and the decision threshold sit on a grid of 0.1 by `0007`, and no strategy declares a
+parameter finer than a thousandth — so it is far enough past what anyone types to never
+truncate a real value, and near enough to swallow the difference between a number computed
+two ways.
+
+The canonical form is a string, and turning it into a hash is a separate step. It is
+written that way so the normalisation can live beside the specification it belongs to, in
+the shared contracts package, without dragging a cryptographic library into the browser
+bundle that imports it for the types alone.
+
 What makes the human half safe enough to rely on is a golden test per strategy: a
 fixed slice of candles, the expected output stored beside it. Change the formula
 without bumping the version and the test goes red at the pre-push gate, naming the
@@ -81,6 +96,12 @@ selection list offers only the current version and re-running an old experiment 
 today's code and returns a different number. Rebuilding the old behaviour means checking
 out the commit that bumped the version. That is the honest scope of the guarantee: old
 results can be told apart and traced, not re-executed.
+
+Rounding to six places is a rule that can be wrong later. A strategy whose parameter is
+genuinely finer than a millionth would have two distinct settings collapse into one
+identity, and the symptom is a duplicate that is skipped rather than an error. Changing the
+number afterwards re-identifies every candidate ever hashed, so the stored experiments stay
+valid only as long as the rule holds.
 
 A skewed deployment — the API on new code, a worker still on old — records the version
 the worker actually ran, which differs from the one the generator assumed. The stamp

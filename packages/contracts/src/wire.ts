@@ -1,5 +1,6 @@
 import type { Candle, Timeframe } from './market';
 import { TIMEFRAMES } from './market';
+import type { RunStatus } from './search';
 
 /**
  * The push channel to the browser (ADR 0017, 0019). Not the event bus of `events.ts`:
@@ -15,6 +16,7 @@ export type ServerMessage = {
 export const MESSAGES = {
   MarketPrice: 'market.price',
   MarketCandle: 'market.candle',
+  SearchProgress: 'search.progress',
 } as const;
 
 export type MessageType = (typeof MESSAGES)[keyof typeof MESSAGES];
@@ -22,6 +24,7 @@ export type MessageType = (typeof MESSAGES)[keyof typeof MESSAGES];
 export type MessagePayloads = {
   [MESSAGES.MarketPrice]: { pair: string; price: string; at: number };
   [MESSAGES.MarketCandle]: { candle: Candle };
+  [MESSAGES.SearchProgress]: { status: RunStatus };
 };
 
 /**
@@ -47,6 +50,9 @@ export const marketPriceTopic = (pair: string): string => `market:${pair}:price`
 
 export const marketCandleTopic = (pair: string, timeframe: Timeframe): string =>
   `market:${pair}:${timeframe}`;
+
+/** A run publishes under a topic of its own, so watching one run is not watching all of them. */
+export const searchRunTopic = (runId: string): string => `search:${runId}`;
 
 export type MarketTopic =
   | { pair: string; kind: 'price' }

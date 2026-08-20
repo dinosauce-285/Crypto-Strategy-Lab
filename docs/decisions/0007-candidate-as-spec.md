@@ -23,6 +23,20 @@ name, it records the full recipe, so it can be rebuilt exactly months later. The
 worker already contains the code for every strategy — it runs the same program — so
 the only thing it lacks is which ones to assemble and with what numbers.
 
+Two details left open here are settled now that a queue exists to settle them against. The
+validator runs at the **receiving** end, inside the worker, immediately before the
+specification is built. The sending end cannot be the place, because there is no single
+sending end: a generator enqueues candidates today, a person retries one by hand tomorrow,
+and a validator on the sender protects only against the sender that remembered to call it.
+The worker is where the untyped value becomes an object, so it is where the check is worth
+anything.
+
+And a specification the validator rejects is **written as a failed experiment**, not
+dropped. Section 32.7 asks how many jobs failed, and an answer assembled from log lines is
+not an answer. The row costs one insert on a path that is already writing rows, it carries
+the reason in the column T03 gave it, and it means the failure count and the results come
+from the same table rather than from two accounts that can disagree.
+
 The dataset is deliberately not part of the specification. A specification answers
 what the strategy is; a dataset answers what it ran on. They are sent together as a
 pair and stored as separate columns. Folding the dataset in would make one strategy
@@ -54,6 +68,18 @@ The compiler stops helping at the boundary. Data arriving from the queue is unty
 at runtime, and asserting a type on it checks nothing. A validator has to be written
 and kept in step with the shared type by hand, and a malformed specification is
 discovered when it is built rather than when it is written.
+
+Validating at the receiving end means a bad specification is caught after it has been
+queued, waited and been picked up, rather than at the moment it was written. The generator
+that produced it is long gone by then, and the only thing pointing back at it is the reason
+stored on the failed row.
+
+Recording a rejected specification also depends on it carrying a dataset that exists,
+because an experiment is a row against a dataset. A job malformed enough to lose that has
+nowhere to be written and can only be counted in the run that queued it — so the failure
+count is one table plus one number held in memory, and the number does not survive a
+restart. The alternative was a table for runs, which is a schema change bought to make a
+rare failure tidy.
 
 Failures now come in two kinds that must not be treated alike. A specification naming
 a strategy that does not exist is permanently broken and must not be retried; a
