@@ -22,7 +22,13 @@ export const MESSAGES = {
 export type MessageType = (typeof MESSAGES)[keyof typeof MESSAGES];
 
 export type MessagePayloads = {
-  [MESSAGES.MarketPrice]: { pair: string; price: string; at: number };
+  [MESSAGES.MarketPrice]: {
+    pair: string;
+    price: string;
+    at: number;
+    volume: string;
+    side: 'buy' | 'sell';
+  };
   [MESSAGES.MarketCandle]: { candle: Candle };
   [MESSAGES.SearchProgress]: { status: RunStatus };
 };
