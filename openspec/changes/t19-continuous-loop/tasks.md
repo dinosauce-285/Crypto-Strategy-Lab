@@ -118,7 +118,9 @@
       Postgres already is. The README's install and run sections belong to T26.
 - [x] 6.3 `docs/decisions/README.md` — drop the two details 0.2 settles and the rounding
       detail 0.3 settles from *Still open*.
-- [ ] 6.4 `pnpm commit`, then push — the gate wants the record and both amendments in the
+- [x] 6.4 `pnpm commit`, then push — the gate wants the record and both amendments in the
       same push as the contracts and module changes.
-- [ ] 6.5 Move the T19 card to Done with a comment naming the three provider lines T12, T13
-      and T17 each add, so nobody reads the ports as unfinished work of this task.
+- [x] 6.5 Move the T19 card and comment on it, naming the provider line T11, T12, T13 and
+      T17 each add, so nobody reads the ports as unfinished work of this task. It goes to
+      *In Progress* rather than Done: the branch is pushed and unmerged, and T07 moved to
+      Done only after its PR landed.
