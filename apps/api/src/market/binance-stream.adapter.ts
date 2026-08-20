@@ -11,7 +11,9 @@ interface BinanceTrade {
   e: 'trade';
   s: string;
   p: string;
+  q: string;
   T: number;
+  m: boolean;
 }
 
 interface BinanceKline {
@@ -67,7 +69,15 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
       const frame = parse(String(event.data));
       if (!frame) return;
       if (frame.e === 'trade') {
-        handlers.price({ pair: frame.s, price: frame.p, at: frame.T });
+        // isBuyerMaker: true means the resting order was a buy, so the trade that
+        // matched it was a sell from the taker's side (ADR 0024).
+        handlers.price({
+          pair: frame.s,
+          price: frame.p,
+          at: frame.T,
+          volume: frame.q,
+          side: frame.m ? 'sell' : 'buy',
+        });
         return;
       }
       if (frame.k.x) handlers.candle(toCandle(frame));

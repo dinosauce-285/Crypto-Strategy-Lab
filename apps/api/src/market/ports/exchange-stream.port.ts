@@ -4,6 +4,8 @@ export interface PriceTick {
   pair: string;
   price: string;
   at: number;
+  volume: string;
+  side: 'buy' | 'sell';
 }
 
 export interface ExchangeStreamHandlers {

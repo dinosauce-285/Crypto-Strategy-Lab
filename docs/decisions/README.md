@@ -55,6 +55,8 @@ code that assumes it.
 - [0021](0021-a-search-run-declares-its-bound-before-it-starts.md) — a search run declares its bound before it starts
 - [0022](0022-historical-candles-are-drawn-with-lightweight-charts.md) — candlestick chart library
 - [0023](0023-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md) — historical backfill depth and scope
+- [0024](0024-realtime-ticks-carry-volume-and-buy-sell-side.md) — recent-ticks panel data
+- [0025](0025-tab-navigation-uses-react-router.md) — URL-routed Realtime/Backtest tabs
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it

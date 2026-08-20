@@ -78,7 +78,7 @@
 - [x] 4.2 `pnpm decision --check` passes for both records from group 0.
 - [x] 4.3 `docs/decisions/README.md` — add the two new records to the index (the
       `pnpm decision` command does this automatically; confirm the lines are there).
-- [ ] 4.4 `pnpm commit`, then push — the gate wants the decision records in the same push
-      as the contract, schema or module changes that assume them. **All prior tasks now
-      verified — ready, not yet done pending explicit go-ahead.**
+- [x] 4.4 `pnpm commit`, then push — the gate wants the decision records in the same push
+      as the contract, schema or module changes that assume them. Committed as `ab3ff0d`.
+      **Not yet pushed.**
 - [ ] 4.5 Move the T06 Trello card to Done.
