@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { MarketModule } from './market/market.module';
+import { SearchModule } from './search/search.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -22,6 +23,7 @@ import { MarketModule } from './market/market.module';
     HealthModule,
     RealtimeModule,
     MarketModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

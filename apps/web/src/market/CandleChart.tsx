@@ -47,7 +47,7 @@ function token(name: string): string {
 
 /**
  * The candlestick chart T06's "done means" asks for: history on load, then live
- * candles appended through the same channel MarketPanel already uses (ADR 0021/0022).
+ * candles appended through the same channel MarketPanel already uses (ADR 0022/0023).
  */
 export function CandleChart({ pair, timeframe }: CandleChartProps) {
   const [state, setState] = useState<State>({ kind: 'loading' });

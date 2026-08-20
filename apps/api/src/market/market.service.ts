@@ -22,7 +22,7 @@ interface Watch {
   timeframes: Set<Timeframe>;
 }
 
-/** Binance's REST klines endpoint caps a single request here — ADR 0022. */
+/** Binance's REST klines endpoint caps a single request here — ADR 0023. */
 const BACKFILL_LIMIT = 1000;
 
 /**
@@ -112,7 +112,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Backfill on first watch (ADR 0022). Runs independently of the live subscription —
+   * Backfill on first watch (ADR 0023). Runs independently of the live subscription —
    * a failed fetch is logged and leaves the chart on its empty state until the first
    * candle closes live, it never blocks `hold`.
    */

@@ -1,9 +1,9 @@
 ## 0. Decisions
 
-- [x] 0.1 [0021](../../../docs/decisions/0021-historical-candles-are-drawn-with-lightweight-charts.md)
+- [x] 0.1 [0022](../../../docs/decisions/0022-historical-candles-are-drawn-with-lightweight-charts.md)
       — the chart is drawn with `lightweight-charts`, the only chart library for the
       whole app (`apps/web/docs/UI_CONSTRAINT.md`), so T08's dashboard inherits it.
-- [x] 0.2 [0022](../../../docs/decisions/0022-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md)
+- [x] 0.2 [0023](../../../docs/decisions/0023-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md)
       — backfill is 1000 candles per pair/timeframe, fetched lazily on first watch, not a
       pre-seeded pair list.
 
@@ -26,7 +26,7 @@
       note below — `ai_erp_db`'s usual port 5432 was occupied by an unrelated container on
       this machine, so this project got its own on 5433): subscribed to `market:BTCUSDT:1m`
       via `scripts/ws-probe.mjs`, confirmed exactly 1000 rows landed in `Candle` (matching
-      ADR 0022's ceiling); re-subscribed and confirmed the row count stayed at 1000 (no
+      ADR 0023's ceiling); re-subscribed and confirmed the row count stayed at 1000 (no
       second REST call, `hasHistory` short-circuit works).
 
 ## 2. The history endpoint

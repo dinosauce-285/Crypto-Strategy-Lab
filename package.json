@@ -9,6 +9,7 @@
     "decision": "node scripts/decision.cjs",
     "dev": "npx concurrently -n \"API,WEB\" -c \"blue,green\" \"pnpm --dir apps/api dev\" \"pnpm --dir apps/web dev\"",
     "dev:api": "pnpm --dir apps/api dev",
+    "worker": "pnpm --dir apps/api worker",
     "dev:web": "pnpm --dir apps/web dev",
     "build": "pnpm --dir packages/contracts build && pnpm --dir apps/api build && pnpm --dir apps/web build",
     "build:contracts": "pnpm --dir packages/contracts build",

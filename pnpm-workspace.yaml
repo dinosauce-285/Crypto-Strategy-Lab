@@ -10,3 +10,6 @@ allowBuilds:
   prisma: true
   esbuild: true
   '@fission-ai/openspec': false
+  # BullMQ's msgpackr can use a native accelerator; it falls back to JavaScript without
+  # one, and a native build on every teammate's machine is a worse trade than the speed.
+  msgpackr-extract: false

@@ -19,7 +19,7 @@ itself, not an implementation detail of avoiding it.
 series and line/area series from one package: T06 needs the former, and later screens
 (T14's equity curve, T20's search results) can reuse the same per-panel pattern with the
 latter, without a second dependency. It is canvas-based, so the 1000 candles per pair
-`0022` backfills render and pan without the per-node DOM cost a library built from SVG
+`0023` backfills render and pan without the per-node DOM cost a library built from SVG
 shapes per candle would carry, and that matters once T08 puts four of these on screen
 at once.
 
