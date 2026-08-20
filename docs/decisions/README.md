@@ -52,6 +52,7 @@ code that assumes it.
 - [0018](0018-features-planned-in-openspec.md) — features are planned in OpenSpec, and the reasoning still lives here
 - [0019](0019-the-push-channel-runs-on-socket-io.md) — the push channel runs on Socket.IO
 - [0020](0020-module-reaches-the-browser-through-ports.md) — a module reaches the browser through the channel's ports, not through the bus
+- [0021](0021-a-search-run-declares-its-bound-before-it-starts.md) — a search run declares its bound before it starts
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
@@ -77,11 +78,9 @@ data.
 **Who writes which record (T28)** — the Trello board has no card for it, and it is
 marked directly.
 
-Three details inside settled records are still open, and each belongs in the record it
-affects rather than in a new one: how many decimal places a float is rounded to before
-hashing (`0009`); which end of the queue runs the specification validator (`0007`);
-and whether a malformed specification is written as a failed experiment or dropped —
-section 32.7 asks how many jobs failed, and a silent drop cannot be counted.
+All three details that sat inside settled records are now answered inside them: the
+canonical form and the rounding before hashing in `0009`, and both the validator's end of
+the queue and the fate of a malformed specification in `0007`.
 
 The brief also expects a record covering the strategy plugin mechanism. `0001` names
 the registry as a Nest provider and `0012` gives it what to read, but section 12 asks

@@ -4,6 +4,7 @@ export * from './strategy';
 export * from './candidate';
 export * from './dataset';
 export * from './experiment';
+export * from './search';
 export * from './news';
 export * from './events';
 export * from './wire';

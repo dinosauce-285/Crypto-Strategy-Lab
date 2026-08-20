@@ -162,6 +162,7 @@ Detail lives in `docs/agent-harness.md`. The short version:
 
 ```bash
 pnpm dev          API on :3001, web on :5173
+pnpm worker       a backtest worker — its own process, ADR 0004. Run as many as you like
 pnpm build        contracts, then api, then web
 pnpm lint         both apps plus the UI token check
 pnpm commit       guided conventional commit — use this, not git commit
@@ -169,7 +170,10 @@ pnpm db:generate  regenerate the Prisma client after a schema change
 ```
 
 Postgres runs in the local `ai_erp_db` container on 5432, in its own database
-`crypto_strategy_lab`. Nothing is shared but the server process.
+`crypto_strategy_lab`. Nothing is shared but the server process. Redis runs in the local
+`redis` container on 6379 and carries the backtest queue. Without it the API still starts
+and every other screen works; starting a search run answers 503 rather than hanging, which
+is the difference between a missing service and a broken one.
 
 ## Environment
 
