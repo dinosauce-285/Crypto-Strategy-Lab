@@ -13,7 +13,7 @@ import {
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { TopicAudience } from '../realtime/ports/topic-audience.port';
 import { ExchangeStreamPort, type ExchangeStream, type PriceTick } from './ports/exchange-stream.port';
-import { BinanceRestAdapter } from './binance-rest.adapter';
+import { ExchangeHistoryPort } from './ports/exchange-history.port';
 import { CandleRepository } from './candle.repository';
 
 interface Watch {
@@ -41,7 +41,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     private readonly channel: ChannelPublisher,
     private readonly topics: TopicAudience,
     private readonly events: EventEmitter2,
-    private readonly binanceRest: BinanceRestAdapter,
+    private readonly exchangeHistory: ExchangeHistoryPort,
     private readonly candles: CandleRepository,
   ) {}
 
@@ -119,7 +119,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
   private async backfill(pair: string, timeframe: Timeframe): Promise<void> {
     try {
       if (await this.candles.hasHistory(pair, timeframe)) return;
-      const history = await this.binanceRest.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
+      const history = await this.exchangeHistory.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
       await this.candles.upsertMany(history);
     } catch (error) {
       this.logger.warn(`${pair} ${timeframe} backfill failed: ${(error as Error).message}`);

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Candle, Timeframe } from '@csl/contracts';
+import { ExchangeHistoryPort } from './ports/exchange-history.port';
 
 type BinanceKlineRow = [
   number, // open time
@@ -15,10 +16,12 @@ type BinanceKlineRow = [
 const DEFAULT_URL = 'https://api.binance.com';
 
 @Injectable()
-export class BinanceRestAdapter {
+export class BinanceRestAdapter extends ExchangeHistoryPort {
   private readonly logger = new Logger(BinanceRestAdapter.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    super();
+  }
 
   async fetchKlines(pair: string, timeframe: Timeframe, limit: number): Promise<Candle[]> {
     const base = this.config.get<string>('BINANCE_REST_URL', DEFAULT_URL);
