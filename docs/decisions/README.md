@@ -59,6 +59,9 @@ code that assumes it.
 - [0025](0025-tab-navigation-uses-react-router.md) — URL-routed Realtime/Backtest tabs
 - [0026](0026-historical-candles-are-queryable-by-an-explicit-date-range.md) — date-range read, storage only
 - [0027](0027-the-historical-adapter-sits-behind-exchangehistoryport.md) — mirrors ExchangeStreamPort for the REST side
+- [0028](0028-indicator-series-are-named-by-dotted-source-one-field-per-da.md) — indicator series are named by dotted source, one field per DataRequest
+- [0029](0029-support-resistance-zones-come-from-causally-confirmed-cluste.md) — support/Resistance zones come from causally-confirmed, clustered pivots
+- [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
