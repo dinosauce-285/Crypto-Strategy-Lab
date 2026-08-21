@@ -15,3 +15,5 @@ export abstract class NewsProviderPort {
   abstract readonly name: string;
   abstract fetchNews(options?: FetchNewsOptions): Promise<Omit<NewsItem, 'id'>[]>;
 }
+
+export const NEWS_PROVIDERS = 'NEWS_PROVIDERS';
