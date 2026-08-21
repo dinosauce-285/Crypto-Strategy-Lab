@@ -1,0 +1,128 @@
+import type { NewsItem } from '@csl/contracts';
+import { clock } from '../market/format';
+
+export interface NewsFeedProps {
+  items: NewsItem[];
+  isLoading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onCollectPrompt: () => void;
+}
+
+function formatDate(epochMs: number): string {
+  const date = new Date(epochMs);
+  return `${date.toLocaleDateString()} ${clock(epochMs)}`;
+}
+
+function formatScore(score: number): string {
+  const sign = score > 0 ? '+' : '';
+  return `${sign}${score.toFixed(2)}`;
+}
+
+export function NewsFeed({
+  items,
+  isLoading,
+  error,
+  onRetry,
+  onCollectPrompt,
+}: NewsFeedProps) {
+  if (isLoading && items.length === 0) {
+    return (
+      <div className="panel">
+        <p className="state">Loading crypto news…</p>
+      </div>
+    );
+  }
+
+  if (error && items.length === 0) {
+    return (
+      <div className="panel">
+        <p className="state bad">
+          <strong>Failed to load news.</strong> {error}
+        </p>
+        <button type="button" className="btn-action" onClick={onRetry}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="panel">
+        <div className="panel-head">
+          <h2>Input News Feed</h2>
+        </div>
+        <p className="state">
+          No news articles collected yet. Click <strong>Crawl news</strong> to fetch latest articles from RSS feeds and CryptoCompare.
+        </p>
+        <div>
+          <button
+            type="button"
+            className="btn-action btn-primary"
+            onClick={onCollectPrompt}
+          >
+            Crawl news now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel">
+      <div className="panel-head">
+        <h2>Input News Feed</h2>
+        <span className="source">{items.length} articles</span>
+      </div>
+
+      <div className="panel" style={{ gap: '0.65rem' }}>
+        {items.map((item) => (
+          <article key={item.id} className="news-card">
+            <div className="news-card-head">
+              <div className="news-meta">
+                <span className="source" style={{ fontWeight: 600 }}>
+                  {item.source}
+                </span>
+                <span>•</span>
+                <span>{formatDate(item.publishedAt)}</span>
+                {item.relatedCoins.map((coin) => (
+                  <span key={coin} className="coin-pill">
+                    {coin}
+                  </span>
+                ))}
+              </div>
+
+              {item.sentiment ? (
+                <span
+                  className={
+                    item.sentiment.label === 'POSITIVE'
+                      ? 'badge badge-pos'
+                      : item.sentiment.label === 'NEGATIVE'
+                        ? 'badge badge-neg'
+                        : 'badge badge-neu'
+                  }
+                >
+                  {item.sentiment.label} {formatScore(item.sentiment.score)}
+                </span>
+              ) : (
+                <span className="badge badge-neu">UNSCORED</span>
+              )}
+            </div>
+
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="news-title"
+            >
+              {item.title} ↗
+            </a>
+
+            {item.content && <p className="news-content">{item.content}</p>}
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
