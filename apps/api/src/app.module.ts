@@ -7,6 +7,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { MarketModule } from './market/market.module';
 import { SearchModule } from './search/search.module';
 import { NewsModule } from './news/news.module';
+import { SentimentModule } from './sentiment/sentiment.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -26,6 +27,7 @@ import { NewsModule } from './news/news.module';
     MarketModule,
     SearchModule,
     NewsModule,
+    SentimentModule,
   ],
 })
 export class AppModule {}
