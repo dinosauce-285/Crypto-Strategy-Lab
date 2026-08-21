@@ -38,9 +38,31 @@ function BacktestIcon() {
   );
 }
 
+function NewsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 15V6A1.5 1.5 0 0 1 4 4.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 8h8M6 11h8M6 14h5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const TABS = [
   { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
   { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
+  { to: '/news', label: 'News Crawler', icon: NewsIcon },
 ];
 
 export function Navbar() {
