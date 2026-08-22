@@ -53,7 +53,17 @@ code that assumes it.
 - [0019](0019-the-push-channel-runs-on-socket-io.md) — the push channel runs on Socket.IO
 - [0020](0020-module-reaches-the-browser-through-ports.md) — a module reaches the browser through the channel's ports, not through the bus
 - [0021](0021-a-search-run-declares-its-bound-before-it-starts.md) — a search run declares its bound before it starts
-- [0022](0022-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
+- [0022](0022-historical-candles-are-drawn-with-lightweight-charts.md) — candlestick chart library
+- [0023](0023-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md) — historical backfill depth and scope
+- [0024](0024-realtime-ticks-carry-volume-and-buy-sell-side.md) — recent-ticks panel data
+- [0025](0025-tab-navigation-uses-react-router.md) — URL-routed Realtime/Backtest tabs
+- [0026](0026-historical-candles-are-queryable-by-an-explicit-date-range.md) — date-range read, storage only
+- [0027](0027-the-historical-adapter-sits-behind-exchangehistoryport.md) — mirrors ExchangeStreamPort for the REST side
+- [0028](0028-indicator-series-are-named-by-dotted-source-one-field-per-da.md) — indicator series are named by dotted source, one field per DataRequest
+- [0029](0029-support-resistance-zones-come-from-causally-confirmed-cluste.md) — support/Resistance zones come from causally-confirmed, clustered pivots
+- [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
+- [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
+- [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it

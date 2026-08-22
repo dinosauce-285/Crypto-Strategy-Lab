@@ -18,6 +18,8 @@ import {
   type PriceTick,
   type StreamStatus,
 } from './ports/exchange-stream.port';
+import { ExchangeHistoryPort } from './ports/exchange-history.port';
+import { CandleRepository, type CandleRangeOptions } from './candle.repository';
 
 interface Watch {
   stream: ExchangeStream;
@@ -29,6 +31,14 @@ interface Watch {
   status: StreamStatus;
 }
 
+/** Binance's REST klines endpoint caps a single request here — ADR 0023. */
+const BACKFILL_LIMIT = 1000;
+
+/**
+ * The stream follows the screen: an upstream connection opens on the first watcher of
+ * a pair and closes behind the last one (ADR 0020). The channel reports a topic string
+ * and never learns what a pair is.
+ */
 @Injectable()
 export class MarketService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MarketService.name);
@@ -40,7 +50,13 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     private readonly channel: ChannelPublisher,
     private readonly topics: TopicAudience,
     private readonly events: EventEmitter2,
+    private readonly exchangeHistory: ExchangeHistoryPort,
+    private readonly candles: CandleRepository,
   ) {}
+
+  async getHistory(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {
+    return this.candles.range(pair, timeframe, options);
+  }
 
   onModuleInit(): void {
     this.audience = this.topics.changes().subscribe(({ topic, watched }) => {
@@ -65,6 +81,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
       watch.price = true;
       return;
     }
+    if (!watch.timeframes.has(parsed.timeframe)) void this.backfill(parsed.pair, parsed.timeframe);
     watch.timeframes.add(parsed.timeframe);
     watch.stream.addTimeframe(parsed.timeframe);
   }
@@ -115,6 +132,21 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
       payload: tick,
     });
     this.events.emit(EVENTS.MarketPriceUpdated, tick);
+  }
+
+  /**
+   * Backfill on first watch (ADR 0023). Runs independently of the live subscription —
+   * a failed fetch is logged and leaves the chart on its empty state until the first
+   * candle closes live, it never blocks `hold`.
+   */
+  private async backfill(pair: string, timeframe: Timeframe): Promise<void> {
+    try {
+      if (await this.candles.hasHistory(pair, timeframe)) return;
+      const history = await this.exchangeHistory.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
+      await this.candles.upsertMany(history);
+    } catch (error) {
+      this.logger.warn(`${pair} ${timeframe} backfill failed: ${(error as Error).message}`);
+    }
   }
 
   private onCandle(watch: Watch, candle: Candle): void {

@@ -46,4 +46,8 @@ GEMINI.md
 # impeccable: DESIGN.md and its sidecar are shared, live-mode session state is not
 **/.impeccable/live/sessions/
 
+# superpowers specs and plans
+docs/superpowers/
+.superpowers/
+
 docker-compose.yml

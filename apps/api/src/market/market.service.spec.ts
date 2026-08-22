@@ -10,6 +10,8 @@ import {
   type ExchangeStreamHandlers,
   type HistoricalRangeQuery,
 } from './ports/exchange-stream.port';
+import type { ExchangeHistoryPort } from './ports/exchange-history.port';
+import type { CandleRepository } from './candle.repository';
 import type { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import type { TopicAudience } from '../realtime/ports/topic-audience.port';
 
@@ -85,7 +87,26 @@ describe('MarketService & Connection Recovery (T09)', () => {
       return true;
     };
 
-    const service = new MarketService(exchange, channel, topics, events);
+    const exchangeHistory: ExchangeHistoryPort = {
+      fetchKlines: async () => [],
+    };
+
+    const candles = {
+      range: async () => [],
+      hasHistory: async () => false,
+      upsertMany: async () => {},
+      upsert: async () => {},
+      onCandleClosed: async () => {},
+    } as unknown as CandleRepository;
+
+    const service = new MarketService(
+      exchange,
+      channel,
+      topics,
+      events,
+      exchangeHistory,
+      candles,
+    );
     service.onModuleInit();
 
     return { service, exchange, published, emittedEvents, topicSubject };
