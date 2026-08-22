@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
+import { StrategyModule } from '../strategy/strategy.module';
 import { MarketModule } from '../market/market.module';
 import { IndicatorModule } from '../indicator/indicator.module';
 import { BacktestProcessor } from './backtest.processor';
@@ -19,6 +20,7 @@ import { BacktestRunnerService } from './backtest-runner.service';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    StrategyModule,
     MarketModule,
     IndicatorModule,
   ],

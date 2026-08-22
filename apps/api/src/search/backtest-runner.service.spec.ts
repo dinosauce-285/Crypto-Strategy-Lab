@@ -6,13 +6,14 @@ import type {
   DataRequest,
   Signal,
   StrategyContext,
-  StrategyMeta,
 } from '@csl/contracts';
 import { BacktestRunnerService } from './backtest-runner.service';
 import { UnknownDatasetError } from './ports/backtest-runner.port';
 import type { DatasetRepository } from './dataset.repository';
 import type { CandleRepository } from '../market/candle.repository';
 import type { IndicatorPort } from '../indicator/ports/indicator.port';
+
+import type { RunnableStrategy } from './ports/strategy-factory.port';
 
 function createMockCandle(time: number, open: number, high: number, low: number, close: number): Candle {
   return {
@@ -25,6 +26,18 @@ function createMockCandle(time: number, open: number, high: number, low: number,
     close: close.toString(),
     volume: '100',
     closed: true,
+  };
+}
+
+function createMockRunnableStrategy(
+  analyze: (context: StrategyContext) => Signal,
+  warmup = 0,
+): RunnableStrategy {
+  return {
+    spec: { rule: 'weighted', threshold: 0.5, members: [] },
+    warmup,
+    requires: () => [],
+    analyze,
   };
 }
 
@@ -74,16 +87,14 @@ describe('BacktestRunnerService (T12)', () => {
   it('throws UnknownDatasetError when dataset does not exist', async () => {
     const { service } = setup([]);
     await rejects(
-      () => service.run({ analyze: () => ({ direction: 'HOLD', strength: 0 }) }, 'non-existent-id'),
+      () => service.run(createMockRunnableStrategy(() => ({ direction: 'HOLD', strength: 0 })), 'non-existent-id'),
       (err: Error) => err instanceof UnknownDatasetError,
     );
   });
 
   it('returns empty array when candle series is empty', async () => {
     const { service } = setup([]);
-    const strategy = {
-      analyze: () => ({ direction: 'BUY', strength: 1 } as Signal),
-    };
+    const strategy = createMockRunnableStrategy(() => ({ direction: 'BUY', strength: 1 }));
     const trades = await service.run(strategy, 'dataset-1');
     deepStrictEqual(trades, []);
   });
@@ -100,17 +111,15 @@ describe('BacktestRunnerService (T12)', () => {
     const { service } = setup(candles);
 
     const observedLengths: number[] = [];
-    const strategy = {
-      analyze: (context: StrategyContext): Signal => {
-        // Assert causality: strategy never sees future candles
-        observedLengths.push(context.candles.length);
-        strictEqual(context.candles.length, context.index + 1);
+    const strategy = createMockRunnableStrategy((context: StrategyContext): Signal => {
+      // Assert causality: strategy never sees future candles
+      observedLengths.push(context.candles.length);
+      strictEqual(context.candles.length, context.index + 1);
 
-        if (context.index === 2) return { direction: 'BUY', strength: 0.8 };
-        if (context.index === 3) return { direction: 'SELL', strength: 0.8 };
-        return { direction: 'HOLD', strength: 0 };
-      },
-    };
+      if (context.index === 2) return { direction: 'BUY', strength: 0.8 };
+      if (context.index === 3) return { direction: 'SELL', strength: 0.8 };
+      return { direction: 'HOLD', strength: 0 };
+    });
 
     const run1 = await service.run(strategy, 'dataset-1');
     const run2 = await service.run(strategy, 'dataset-1');
@@ -147,13 +156,11 @@ describe('BacktestRunnerService (T12)', () => {
 
     const { service } = setup(candles, dataset);
 
-    const strategy = {
-      analyze: (context: StrategyContext): Signal => {
-        if (context.index === 2) return { direction: 'BUY', strength: 1 };
-        if (context.index === 3) return { direction: 'SELL', strength: 1 };
-        return { direction: 'HOLD', strength: 0 };
-      },
-    };
+    const strategy = createMockRunnableStrategy((context: StrategyContext): Signal => {
+      if (context.index === 2) return { direction: 'BUY', strength: 1 };
+      if (context.index === 3) return { direction: 'SELL', strength: 1 };
+      return { direction: 'HOLD', strength: 0 };
+    });
 
     const trades = await service.run(strategy, 'dataset-fees');
 
@@ -194,13 +201,11 @@ describe('BacktestRunnerService (T12)', () => {
 
     const { service } = setup(candles, dataset);
 
-    const strategy = {
-      analyze: (context: StrategyContext): Signal => {
-        if (context.index === 1) return { direction: 'BUY', strength: 1 };
-        if (context.index === 2) return { direction: 'SELL', strength: 1 };
-        return { direction: 'HOLD', strength: 0 };
-      },
-    };
+    const strategy = createMockRunnableStrategy((context: StrategyContext): Signal => {
+      if (context.index === 1) return { direction: 'BUY', strength: 1 };
+      if (context.index === 2) return { direction: 'SELL', strength: 1 };
+      return { direction: 'HOLD', strength: 0 };
+    });
 
     const trades = await service.run(strategy, 'dataset-close');
     strictEqual(trades.length, 2);
@@ -238,22 +243,12 @@ describe('BacktestRunnerService (T12)', () => {
 
     const { service } = setup(candles, dataset);
 
-    const strategy = {
-      meta: {
-        id: 'rsi-strat',
-        name: 'RSI Strategy',
-        group: 'Momentum',
-        version: 1,
-        warmup: 3, // strategy declares 3
-        params: [],
-      } as StrategyMeta,
-      analyze: (context: StrategyContext): Signal => {
-        // Signals emitted at index 0, 1, 2 should be skipped due to strategy warmup 3
-        if (context.index < 3) return { direction: 'BUY', strength: 1 };
-        if (context.index === 3) return { direction: 'BUY', strength: 1 };
-        return { direction: 'HOLD', strength: 0 };
-      },
-    };
+    const strategy = createMockRunnableStrategy((context: StrategyContext): Signal => {
+      // Signals emitted at index 0, 1, 2 should be skipped due to strategy warmup 3
+      if (context.index < 3) return { direction: 'BUY', strength: 1 };
+      if (context.index === 3) return { direction: 'BUY', strength: 1 };
+      return { direction: 'HOLD', strength: 0 };
+    }, 3);
 
     const trades = await service.run(strategy, 'dataset-warmup');
     // Only index 3 signal takes effect

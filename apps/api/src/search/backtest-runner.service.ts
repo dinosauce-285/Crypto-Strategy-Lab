@@ -3,18 +3,12 @@ import type {
   StrategyContext,
   Signal,
   Trade,
-  StrategyMeta,
 } from '@csl/contracts';
 import { BacktestRunner, UnknownDatasetError } from './ports/backtest-runner.port';
 import type { RunnableStrategy } from './ports/strategy-factory.port';
 import { DatasetRepository } from './dataset.repository';
 import { CandleRepository } from '../market/candle.repository';
 import { IndicatorPort } from '../indicator/ports/indicator.port';
-
-interface StrategyExecutable {
-  meta?: StrategyMeta;
-  analyze(context: StrategyContext): Signal;
-}
 
 interface ActivePosition {
   side: 'BUY' | 'SELL';
@@ -40,12 +34,11 @@ export class BacktestRunnerService extends BacktestRunner {
       throw new UnknownDatasetError(datasetId);
     }
 
-    const executable = strategy as StrategyExecutable;
-    if (typeof executable.analyze !== 'function') {
+    if (typeof strategy.analyze !== 'function') {
       throw new Error('Provided strategy is not executable: missing analyze method');
     }
 
-    const declaredWarmup = executable.meta?.warmup ?? 0;
+    const declaredWarmup = strategy.warmup ?? 0;
     const effectiveWarmup = Math.max(dataset.rules.warmupCandles, declaredWarmup);
 
     const candleSeries = await this.candles.range(dataset.pair, dataset.timeframe, {
@@ -89,7 +82,7 @@ export class BacktestRunnerService extends BacktestRunner {
         get: (request) => this.indicators.compute(datasetId, candleSeries, request),
       };
 
-      const signal = executable.analyze(context);
+      const signal = strategy.analyze(context);
 
       if (i < effectiveWarmup) {
         continue;
