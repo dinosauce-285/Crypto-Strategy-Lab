@@ -9,6 +9,7 @@ import { SearchModule } from './search/search.module';
 import { StrategyModule } from './strategy/strategy.module';
 import { NewsModule } from './news/news.module';
 import { SentimentModule } from './sentiment/sentiment.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -30,6 +31,7 @@ import { SentimentModule } from './sentiment/sentiment.module';
     SearchModule,
     NewsModule,
     SentimentModule,
+    EvaluationModule,
   ],
 })
 export class AppModule {}
