@@ -59,9 +59,24 @@ function NewsIcon() {
   );
 }
 
+function LeaderboardIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M6 16.5h8M8 16.5v-3h4v3M5 3.5h10v4a5 5 0 0 1-10 0v-4ZM5 5.5H3a1.5 1.5 0 0 0-1.5 1.5v1A2.5 2.5 0 0 0 4 10.5h1M15 5.5h2a1.5 1.5 0 0 1 1.5 1.5v1A2.5 2.5 0 0 1 16 10.5h-1"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const TABS = [
   { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
   { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
+  { to: '/leaderboard', label: 'Leaderboard', icon: LeaderboardIcon },
   { to: '/news', label: 'News Crawler', icon: NewsIcon },
 ];
 

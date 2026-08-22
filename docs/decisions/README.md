@@ -67,6 +67,7 @@ code that assumes it.
 - [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
 - [0034](0034-backtest-execution-rules-for-entry-price-trading-fees-and-wa.md) — backtest execution rules for entry price trading fees and warmup periods
 - [0035](0035-metric-evaluation-formulas-for-profit-calculation-modes-draw.md) — metric evaluation formulas for profit calculation modes, drawdown tracking, and statistical metrics
+- [0036](0036-overall-score-formula-and-trade-count-damping-for-leaderboar.md) — overall score formula and trade count damping for leaderboard
 
 
 

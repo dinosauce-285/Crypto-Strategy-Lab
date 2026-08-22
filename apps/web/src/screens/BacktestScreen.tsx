@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { Dataset, StrategyMeta, StrategyParams, Timeframe } from '@csl/contracts';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import type { CandidateSpec, Dataset, StrategyMeta, StrategyParams, Timeframe } from '@csl/contracts';
 import { Header } from '../layout/Header';
 import { DatasetPicker } from '../backtest/DatasetPicker';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
@@ -52,12 +53,41 @@ type RunState =
   | { kind: 'ready'; result: SingleRunResult };
 
 export function BacktestScreen() {
+  const location = useLocation();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [strategy, setStrategy] = useState<StrategyMeta | null>(null);
   const [params, setParams] = useState<StrategyParams>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [state, setState] = useState<RunState>({ kind: 'idle' });
   const [selectedTrade, setSelectedTrade] = useState<TradeRow | null>(null);
+
+  // Preload if navigated from Leaderboard with state
+  useEffect(() => {
+    const navState = location.state as { datasetId?: string; spec?: CandidateSpec } | null;
+    if (navState?.datasetId) {
+      fetch('/api/datasets')
+        .then((res) => (res.ok ? res.json() : []))
+        .then((datasets: Dataset[]) => {
+          const match = datasets.find((d) => d.id === navState.datasetId);
+          if (match) setDataset(match);
+        })
+        .catch(() => {});
+    }
+
+    if (navState?.spec?.members?.[0]) {
+      const member = navState.spec.members[0];
+      fetch('/api/strategies')
+        .then((res) => (res.ok ? res.json() : []))
+        .then((strategies: StrategyMeta[]) => {
+          const match = strategies.find((s) => s.id === member.id);
+          if (match) {
+            setStrategy(match);
+            setParams(member.params || {});
+          }
+        })
+        .catch(() => {});
+    }
+  }, [location.state]);
 
   const handleStrategySelect = (meta: StrategyMeta, defaultParams: StrategyParams) => {
     setStrategy(meta);
