@@ -8,9 +8,20 @@ export interface PriceTick {
   side: 'buy' | 'sell';
 }
 
+export type StreamStatus = 'connected' | 'reconnecting' | 'failed';
+
 export interface ExchangeStreamHandlers {
   price: (tick: PriceTick) => void;
   candle: (candle: Candle) => void;
+  status?: (status: StreamStatus) => void;
+}
+
+export interface HistoricalRangeQuery {
+  pair: string;
+  timeframe: Timeframe;
+  startTime: number;
+  endTime?: number;
+  limit?: number;
 }
 
 /**
@@ -26,4 +37,5 @@ export interface ExchangeStream {
 /** Behind this, nothing knows which exchange the data came from. */
 export abstract class ExchangeStreamPort {
   abstract open(pair: string, handlers: ExchangeStreamHandlers): ExchangeStream;
+  abstract fetchCandles(query: HistoricalRangeQuery): Promise<Candle[]>;
 }

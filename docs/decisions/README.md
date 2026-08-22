@@ -63,7 +63,10 @@ code that assumes it.
 - [0029](0029-support-resistance-zones-come-from-causally-confirmed-cluste.md) — support/Resistance zones come from causally-confirmed, clustered pivots
 - [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
 - [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
-- [0032](0032-strategies-are-registered-explicitly.md) — strategies are registered explicitly
+- [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
+- [0033](0032-strategies-are-registered-explicitly.md) — strategies are registered explicitly
+
+
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
