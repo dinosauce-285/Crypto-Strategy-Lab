@@ -3,6 +3,7 @@ dist/
 build/
 coverage/
 .turbo/
+*.tsbuildinfo
 
 # env & secrets. Plaintext never lands in git; the age-encrypted copy under envs/ does.
 **/.env
@@ -32,11 +33,17 @@ apps/api/src/generated/
 .codex/
 .cursor/
 .windsurf/
+.agents/
+.gemini/
 CLAUDE.md
 **/CLAUDE.md
+GEMINI.md
+**/GEMINI.md
 .claude/plans/*
 !.claude/plans/.gitkeep
 .claude/journals/
 
 # impeccable: DESIGN.md and its sidecar are shared, live-mode session state is not
 **/.impeccable/live/sessions/
+
+docker-compose.yml

@@ -23,7 +23,7 @@ function walk(dir) {
 
 const violations = [];
 for (const file of walk(SRC)) {
-  const rel = path.relative(process.cwd(), file);
+  const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
   if (TOKEN_FILES.has(rel)) continue;
   readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
     if (line.includes('ui-tokens-allow')) return;
