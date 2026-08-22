@@ -34,8 +34,8 @@ interface BinanceKline {
 
 const DEFAULT_WS_URL = 'wss://stream.binance.com:9443/ws';
 const DEFAULT_REST_URL = 'https://api.binance.com';
-const DEFAULT_MAX_RETRIES = 5;
-const DEFAULT_INITIAL_BACKOFF_MS = 500;
+const DEFAULT_MAX_RETRIES = 10;
+const DEFAULT_INITIAL_BACKOFF_MS = 1000;
 const DEFAULT_MAX_BACKOFF_MS = 10000;
 
 @Injectable()
@@ -76,6 +76,26 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
       if (explicitClose) return;
 
       socket = new WebSocket(wsUrl);
+      let isDropHandled = false;
+
+      const handleDrop = () => {
+        if (isDropHandled || explicitClose) return;
+        isDropHandled = true;
+
+        if (retries < maxRetries) {
+          retries++;
+          handlers.status?.('reconnecting');
+          const baseDelay = Math.min(maxBackoff, initialBackoff * 2 ** (retries - 1));
+          const jitter = baseDelay * (0.8 + 0.4 * Math.random());
+          this.logger.warn(
+            `${pair} dropped, reconnecting attempt ${retries}/${maxRetries} in ${Math.round(jitter)}ms`,
+          );
+          reconnectTimer = setTimeout(connect, jitter);
+        } else {
+          handlers.status?.('failed');
+          this.logger.error(`${pair} upstream recovery failed after ${maxRetries} retries`);
+        }
+      };
 
       socket.addEventListener('open', () => {
         const wasReconnecting = retries > 0;
@@ -108,6 +128,7 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
 
       socket.addEventListener('error', () => {
         this.logger.warn(`${pair} upstream error`);
+        handleDrop();
       });
 
       socket.addEventListener('close', () => {
@@ -115,20 +136,7 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
           this.logger.log(`${pair} upstream closed explicitly`);
           return;
         }
-
-        if (retries < maxRetries) {
-          retries++;
-          handlers.status?.('reconnecting');
-          const baseDelay = Math.min(maxBackoff, initialBackoff * 2 ** (retries - 1));
-          const jitter = baseDelay * (0.8 + 0.4 * Math.random());
-          this.logger.warn(
-            `${pair} dropped, reconnecting attempt ${retries}/${maxRetries} in ${Math.round(jitter)}ms`,
-          );
-          reconnectTimer = setTimeout(connect, jitter);
-        } else {
-          handlers.status?.('failed');
-          this.logger.error(`${pair} upstream recovery failed after ${maxRetries} retries`);
-        }
+        handleDrop();
       });
     };
 
@@ -173,17 +181,20 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
     }
 
     const raw = (await response.json()) as (string | number)[][];
-    return raw.map((kline) => ({
-      pair: query.pair.toUpperCase(),
-      timeframe: query.timeframe,
-      openTime: Number(kline[0]),
-      open: String(kline[1]),
-      high: String(kline[2]),
-      low: String(kline[3]),
-      close: String(kline[4]),
-      volume: String(kline[5]),
-      closed: true,
-    }));
+    const now = Date.now();
+    return raw
+      .filter((kline) => (kline[6] !== undefined ? Number(kline[6]) <= now : true))
+      .map((kline) => ({
+        pair: query.pair.toUpperCase(),
+        timeframe: query.timeframe,
+        openTime: Number(kline[0]),
+        open: String(kline[1]),
+        high: String(kline[2]),
+        low: String(kline[3]),
+        close: String(kline[4]),
+        volume: String(kline[5]),
+        closed: true,
+      }));
   }
 }
 
