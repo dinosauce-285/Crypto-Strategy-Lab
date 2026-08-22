@@ -21,5 +21,6 @@ import { ExchangeHistoryPort } from './ports/exchange-history.port';
     { provide: ExchangeStreamPort, useClass: BinanceStreamAdapter },
     { provide: ExchangeHistoryPort, useClass: BinanceRestAdapter },
   ],
+  exports: [CandleRepository],
 })
 export class MarketModule {}

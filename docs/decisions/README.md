@@ -65,6 +65,7 @@ code that assumes it.
 - [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
 - [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
 - [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
+- [0034](0034-backtest-execution-rules-for-entry-price-trading-fees-and-wa.md) — backtest execution rules for entry price trading fees and warmup periods
 
 
 
