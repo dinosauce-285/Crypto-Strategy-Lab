@@ -67,6 +67,8 @@ code that assumes it.
 - [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
 - [0034](0034-backtest-execution-rules-for-entry-price-trading-fees-and-wa.md) — backtest execution rules for entry price trading fees and warmup periods
 
+
+
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
 looks like the thinking happened.
