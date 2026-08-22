@@ -66,6 +66,7 @@ code that assumes it.
 - [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
 - [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
 - [0034](0034-backtest-execution-rules-for-entry-price-trading-fees-and-wa.md) — backtest execution rules for entry price trading fees and warmup periods
+- [0035](0035-metric-evaluation-formulas-for-profit-calculation-modes-draw.md) — metric evaluation formulas for profit calculation modes, drawdown tracking, and statistical metrics
 
 
 
