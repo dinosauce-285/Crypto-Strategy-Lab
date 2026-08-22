@@ -5,6 +5,7 @@ import {
   ExchangeStreamPort,
   type ExchangeStream,
   type ExchangeStreamHandlers,
+  type HistoricalRangeQuery,
 } from './ports/exchange-stream.port';
 
 interface BinanceTrade {
@@ -31,7 +32,11 @@ interface BinanceKline {
   };
 }
 
-const DEFAULT_URL = 'wss://stream.binance.com:9443/ws';
+const DEFAULT_WS_URL = 'wss://stream.binance.com:9443/ws';
+const DEFAULT_REST_URL = 'https://api.binance.com';
+const DEFAULT_MAX_RETRIES = 5;
+const DEFAULT_INITIAL_BACKOFF_MS = 500;
+const DEFAULT_MAX_BACKOFF_MS = 10000;
 
 @Injectable()
 export class BinanceStreamAdapter extends ExchangeStreamPort {
@@ -42,61 +47,143 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
   }
 
   open(pair: string, handlers: ExchangeStreamHandlers): ExchangeStream {
-    const url = this.config.get<string>('BINANCE_WS_URL', DEFAULT_URL);
-    const symbol = pair.toLowerCase();
-    const socket = new WebSocket(url);
+    const wsUrl = this.config.get<string>('BINANCE_WS_URL', DEFAULT_WS_URL);
+    const maxRetries = this.config.get<number>('BINANCE_MAX_RETRIES', DEFAULT_MAX_RETRIES);
+    const initialBackoff = this.config.get<number>(
+      'BINANCE_INITIAL_BACKOFF_MS',
+      DEFAULT_INITIAL_BACKOFF_MS,
+    );
+    const maxBackoff = this.config.get<number>(
+      'BINANCE_MAX_BACKOFF_MS',
+      DEFAULT_MAX_BACKOFF_MS,
+    );
 
-    let ready = false;
+    const symbol = pair.toLowerCase();
+    const activeStreams = new Set<string>([`${symbol}@trade`]);
+
+    let socket: WebSocket | null = null;
     let nextId = 1;
-    const pending: string[] = [];
+    let retries = 0;
+    let explicitClose = false;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+
     const send = (method: 'SUBSCRIBE' | 'UNSUBSCRIBE', streams: string[]) => {
-      if (streams.length === 0) return;
-      if (!ready) {
-        if (method === 'SUBSCRIBE') pending.push(...streams);
-        return;
-      }
+      if (!socket || socket.readyState !== WebSocket.OPEN || streams.length === 0) return;
       socket.send(JSON.stringify({ method, params: streams, id: nextId++ }));
     };
 
-    socket.addEventListener('open', () => {
-      ready = true;
-      const streams = [`${symbol}@trade`, ...pending.splice(0)];
-      socket.send(JSON.stringify({ method: 'SUBSCRIBE', params: streams, id: nextId++ }));
-      this.logger.log(`${pair} upstream open`);
-    });
+    const connect = () => {
+      if (explicitClose) return;
 
-    socket.addEventListener('message', (event) => {
-      const frame = parse(String(event.data));
-      if (!frame) return;
-      if (frame.e === 'trade') {
-        // isBuyerMaker: true means the resting order was a buy, so the trade that
-        // matched it was a sell from the taker's side (ADR 0024).
-        handlers.price({
-          pair: frame.s,
-          price: frame.p,
-          at: frame.T,
-          volume: frame.q,
-          side: frame.m ? 'sell' : 'buy',
-        });
-        return;
-      }
-      if (frame.k.x) handlers.candle(toCandle(frame));
-    });
+      socket = new WebSocket(wsUrl);
 
-    // A dropped connection is left as it falls — reconnecting and backfilling the
-    // candles it missed is T09.
-    socket.addEventListener('error', () => this.logger.warn(`${pair} upstream error`));
-    socket.addEventListener('close', () => {
-      ready = false;
-      this.logger.log(`${pair} upstream closed`);
-    });
+      socket.addEventListener('open', () => {
+        const wasReconnecting = retries > 0;
+        retries = 0;
+        const streams = Array.from(activeStreams);
+        if (streams.length > 0) {
+          socket?.send(JSON.stringify({ method: 'SUBSCRIBE', params: streams, id: nextId++ }));
+        }
+        this.logger.log(`${pair} upstream open`);
+        if (wasReconnecting) {
+          handlers.status?.('connected');
+        }
+      });
+
+      socket.addEventListener('message', (event) => {
+        const frame = parse(String(event.data));
+        if (!frame) return;
+        if (frame.e === 'trade') {
+          handlers.price({
+            pair: frame.s,
+            price: frame.p,
+            at: frame.T,
+            volume: frame.q,
+            side: frame.m ? 'sell' : 'buy',
+          });
+          return;
+        }
+        if (frame.k.x) handlers.candle(toCandle(frame));
+      });
+
+      socket.addEventListener('error', () => {
+        this.logger.warn(`${pair} upstream error`);
+      });
+
+      socket.addEventListener('close', () => {
+        if (explicitClose) {
+          this.logger.log(`${pair} upstream closed explicitly`);
+          return;
+        }
+
+        if (retries < maxRetries) {
+          retries++;
+          handlers.status?.('reconnecting');
+          const baseDelay = Math.min(maxBackoff, initialBackoff * 2 ** (retries - 1));
+          const jitter = baseDelay * (0.8 + 0.4 * Math.random());
+          this.logger.warn(
+            `${pair} dropped, reconnecting attempt ${retries}/${maxRetries} in ${Math.round(jitter)}ms`,
+          );
+          reconnectTimer = setTimeout(connect, jitter);
+        } else {
+          handlers.status?.('failed');
+          this.logger.error(`${pair} upstream recovery failed after ${maxRetries} retries`);
+        }
+      });
+    };
+
+    connect();
 
     return {
-      addTimeframe: (timeframe) => send('SUBSCRIBE', [`${symbol}@kline_${timeframe}`]),
-      removeTimeframe: (timeframe) =>
-        send('UNSUBSCRIBE', [`${symbol}@kline_${timeframe}`]),
-      close: () => socket.close(),
+      addTimeframe: (timeframe) => {
+        const stream = `${symbol}@kline_${timeframe}`;
+        activeStreams.add(stream);
+        send('SUBSCRIBE', [stream]);
+      },
+      removeTimeframe: (timeframe) => {
+        const stream = `${symbol}@kline_${timeframe}`;
+        activeStreams.delete(stream);
+        send('UNSUBSCRIBE', [stream]);
+      },
+      close: () => {
+        explicitClose = true;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        socket?.close();
+      },
     };
+  }
+
+  async fetchCandles(query: HistoricalRangeQuery): Promise<Candle[]> {
+    const restUrl = this.config.get<string>('BINANCE_REST_URL', DEFAULT_REST_URL);
+    const limit = query.limit ?? 1000;
+    const url = new URL('/api/v3/klines', restUrl);
+    url.searchParams.set('symbol', query.pair.toUpperCase());
+    url.searchParams.set('interval', query.timeframe);
+    url.searchParams.set('startTime', String(query.startTime));
+    if (query.endTime) {
+      url.searchParams.set('endTime', String(query.endTime));
+    }
+    url.searchParams.set('limit', String(limit));
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch candles from Binance REST: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const raw = (await response.json()) as (string | number)[][];
+    return raw.map((kline) => ({
+      pair: query.pair.toUpperCase(),
+      timeframe: query.timeframe,
+      openTime: Number(kline[0]),
+      open: String(kline[1]),
+      high: String(kline[2]),
+      low: String(kline[3]),
+      close: String(kline[4]),
+      volume: String(kline[5]),
+      closed: true,
+    }));
   }
 }
 

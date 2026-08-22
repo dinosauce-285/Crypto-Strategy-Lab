@@ -3,6 +3,7 @@ dist/
 build/
 coverage/
 .turbo/
+*.tsbuildinfo
 
 # env & secrets. Plaintext never lands in git; the age-encrypted copy under envs/ does.
 **/.env
@@ -32,8 +33,12 @@ apps/api/src/generated/
 .codex/
 .cursor/
 .windsurf/
+.agents/
+.gemini/
 CLAUDE.md
 **/CLAUDE.md
+GEMINI.md
+**/GEMINI.md
 .claude/plans/*
 !.claude/plans/.gitkeep
 .claude/journals/
@@ -44,3 +49,5 @@ CLAUDE.md
 # superpowers specs and plans
 docs/superpowers/
 .superpowers/
+
+docker-compose.yml
