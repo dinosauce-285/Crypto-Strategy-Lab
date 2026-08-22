@@ -1,5 +1,3 @@
-import { describe, it } from 'node:test';
-import { strictEqual, deepStrictEqual } from 'node:assert';
 import { ConfigService } from '@nestjs/config';
 import { BinanceStreamAdapter } from './binance-stream.adapter';
 
@@ -19,8 +17,8 @@ describe('BinanceStreamAdapter', () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (input: Parameters<typeof fetch>[0]) => {
       const urlStr = input.toString();
-      strictEqual(urlStr.includes('symbol=BTCUSDT'), true);
-      strictEqual(urlStr.includes('interval=1m'), true);
+      expect(urlStr.includes('symbol=BTCUSDT')).toBe(true);
+      expect(urlStr.includes('interval=1m')).toBe(true);
       return {
         ok: true,
         json: async () => mockKlines,
@@ -35,8 +33,8 @@ describe('BinanceStreamAdapter', () => {
         endTime: 1600000120000,
       });
 
-      strictEqual(candles.length, 2);
-      deepStrictEqual(candles[0], {
+      expect(candles.length).toBe(2);
+      expect(candles[0]).toEqual({
         pair: 'BTCUSDT',
         timeframe: '1m',
         openTime: 1600000000000,
