@@ -181,17 +181,20 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
     }
 
     const raw = (await response.json()) as (string | number)[][];
-    return raw.map((kline) => ({
-      pair: query.pair.toUpperCase(),
-      timeframe: query.timeframe,
-      openTime: Number(kline[0]),
-      open: String(kline[1]),
-      high: String(kline[2]),
-      low: String(kline[3]),
-      close: String(kline[4]),
-      volume: String(kline[5]),
-      closed: true,
-    }));
+    const now = Date.now();
+    return raw
+      .filter((kline) => (kline[6] !== undefined ? Number(kline[6]) <= now : true))
+      .map((kline) => ({
+        pair: query.pair.toUpperCase(),
+        timeframe: query.timeframe,
+        openTime: Number(kline[0]),
+        open: String(kline[1]),
+        high: String(kline[2]),
+        low: String(kline[3]),
+        close: String(kline[4]),
+        volume: String(kline[5]),
+        closed: true,
+      }));
   }
 }
 

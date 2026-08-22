@@ -81,7 +81,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
       watch.price = true;
       return;
     }
-    if (!watch.timeframes.has(parsed.timeframe)) void this.backfill(parsed.pair, parsed.timeframe);
+    void this.ensureHistoryAndCursor(parsed.pair, parsed.timeframe, watch);
     watch.timeframes.add(parsed.timeframe);
     watch.stream.addTimeframe(parsed.timeframe);
   }
@@ -139,13 +139,24 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
    * a failed fetch is logged and leaves the chart on its empty state until the first
    * candle closes live, it never blocks `hold`.
    */
-  private async backfill(pair: string, timeframe: Timeframe): Promise<void> {
+  private async ensureHistoryAndCursor(pair: string, timeframe: Timeframe, watch: Watch): Promise<void> {
     try {
-      if (await this.candles.hasHistory(pair, timeframe)) return;
-      const history = await this.exchangeHistory.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
-      await this.candles.upsertMany(history);
+      const hasHistory = await this.candles.hasHistory(pair, timeframe);
+      if (!hasHistory) {
+        const history = await this.exchangeHistory.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
+        await this.candles.upsertMany(history);
+        const latest = history[history.length - 1];
+        if (latest && !watch.cursors.has(timeframe)) {
+          watch.cursors.set(timeframe, latest.openTime);
+        }
+      } else {
+        const latestRows = await this.candles.range(pair, timeframe, { limit: 1 });
+        if (latestRows.length > 0 && !watch.cursors.has(timeframe)) {
+          watch.cursors.set(timeframe, latestRows[0].openTime);
+        }
+      }
     } catch (error) {
-      this.logger.warn(`${pair} ${timeframe} backfill failed: ${(error as Error).message}`);
+      this.logger.warn(`${pair} ${timeframe} history init failed: ${(error as Error).message}`);
     }
   }
 
@@ -180,7 +191,15 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
 
   private async recoverGaps(pair: string, watch: Watch): Promise<void> {
     for (const timeframe of watch.timeframes) {
-      const lastCursor = watch.cursors.get(timeframe);
+      let lastCursor = watch.cursors.get(timeframe);
+      if (!lastCursor) {
+        const recent = await this.candles.range(pair, timeframe, { limit: 1 });
+        if (recent.length > 0) {
+          lastCursor = recent[0].openTime;
+          watch.cursors.set(timeframe, lastCursor);
+        }
+      }
+
       if (!lastCursor) continue;
 
       watch.isBackfilling.set(timeframe, true);
@@ -190,6 +209,10 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
         const fetchedCandles: Candle[] = [];
         let currentStart = lastCursor + 1;
         const now = Date.now();
+
+        this.logger.log(
+          `Recovering gap for ${pair} ${timeframe} from cursor ${new Date(lastCursor).toISOString()}`,
+        );
 
         while (currentStart < now) {
           const chunk = await this.exchange.fetchCandles({
@@ -211,12 +234,19 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
         for (const c of buffered) merged.set(c.openTime, c);
 
         const sorted = Array.from(merged.values()).sort((a, b) => a.openTime - b.openTime);
+        let emittedCount = 0;
         for (const candle of sorted) {
           const currentCursor = watch.cursors.get(timeframe) ?? 0;
           if (candle.openTime > currentCursor) {
             watch.cursors.set(timeframe, candle.openTime);
             this.emitCandle(candle);
+            emittedCount++;
           }
+        }
+        if (emittedCount > 0) {
+          this.logger.log(
+            `Successfully recovered and emitted ${emittedCount} missed candle(s) for ${pair} ${timeframe}`,
+          );
         }
       } catch (error) {
         this.logger.warn(`Gap recovery failed for ${pair} ${timeframe}: ${String(error)}`);
