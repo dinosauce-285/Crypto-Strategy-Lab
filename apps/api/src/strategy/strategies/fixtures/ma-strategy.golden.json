@@ -1,0 +1,17 @@
+[
+  {
+    "index": 4,
+    "direction": "BUY",
+    "strength": 1
+  },
+  {
+    "index": 5,
+    "direction": "HOLD",
+    "strength": 1
+  },
+  {
+    "index": 8,
+    "direction": "SELL",
+    "strength": 1
+  }
+]

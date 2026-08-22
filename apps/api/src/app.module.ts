@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { MarketModule } from './market/market.module';
 import { SearchModule } from './search/search.module';
+import { StrategyModule } from './strategy/strategy.module';
 import { NewsModule } from './news/news.module';
 import { SentimentModule } from './sentiment/sentiment.module';
 
@@ -25,6 +26,7 @@ import { SentimentModule } from './sentiment/sentiment.module';
     HealthModule,
     RealtimeModule,
     MarketModule,
+    StrategyModule,
     SearchModule,
     NewsModule,
     SentimentModule,
