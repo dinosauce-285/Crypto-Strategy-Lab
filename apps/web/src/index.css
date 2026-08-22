@@ -374,3 +374,82 @@ tbody tr:last-child td { border-bottom: 0; }
 .stat-tile-label { font-size: 0.72rem; color: var(--muted); }
 .stat-tile-val { font-size: 1rem; font-weight: 600; color: var(--ink); }
 
+/* --- modal & backtest controls (T14) --- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 37, 31, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(42, 37, 31, 0.08);
+}
+
+.dataset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.rules-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dynamic-params-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.param-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dataset-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+

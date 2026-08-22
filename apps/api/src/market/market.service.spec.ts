@@ -1,3 +1,4 @@
+import { strictEqual, deepStrictEqual, ok } from 'node:assert';
 import { Subject } from 'rxjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Candle, Timeframe } from '@csl/contracts';
