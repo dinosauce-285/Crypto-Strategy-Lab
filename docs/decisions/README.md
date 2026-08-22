@@ -63,6 +63,7 @@ code that assumes it.
 - [0029](0029-support-resistance-zones-come-from-causally-confirmed-cluste.md) — support/Resistance zones come from causally-confirmed, clustered pivots
 - [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
 - [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
+- [0032](0032-strategies-are-registered-explicitly.md) — strategies are registered explicitly
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
@@ -91,7 +92,3 @@ marked directly.
 All three details that sat inside settled records are now answered inside them: the
 canonical form and the rounding before hashing in `0009`, and both the validator's end of
 the queue and the fate of a malformed specification in `0007`.
-
-The brief also expects a record covering the strategy plugin mechanism. `0001` names
-the registry as a Nest provider and `0012` gives it what to read, but section 12 asks
-the question directly and deserves its own answer.
