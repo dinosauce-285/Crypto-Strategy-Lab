@@ -10,6 +10,7 @@ import { StrategyModule } from './strategy/strategy.module';
 import { NewsModule } from './news/news.module';
 import { SentimentModule } from './sentiment/sentiment.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
+import { RankingModule } from './ranking/ranking.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -32,6 +33,7 @@ import { EvaluationModule } from './evaluation/evaluation.module';
     NewsModule,
     SentimentModule,
     EvaluationModule,
+    RankingModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { canonicalSpec, type Dataset } from '@csl/contracts';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { canonicalSpec, EVENTS, type Dataset } from '@csl/contracts';
 import { CandleRepository } from '../market/candle.repository';
 import { IndicatorPort } from '../indicator/ports/indicator.port';
 import { EvaluatorPort } from '../evaluation/ports/evaluator.port';
@@ -21,6 +22,7 @@ export class BacktestService {
     private readonly evaluator: EvaluatorPort,
     private readonly factory: StrategyFactory,
     private readonly runner: BacktestRunner,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   async listDatasets(): Promise<Dataset[]> {
@@ -68,6 +70,15 @@ export class BacktestService {
       rules: dataset.rules,
       trades: rawTrades,
       candles: candleSeries,
+    });
+
+    // Notify listeners (Leaderboard & WebSocket push channel)
+    this.emitter.emit('experiment.completed', {
+      datasetId: dataset.id,
+      experimentId: evaluationResult.experimentId,
+    });
+    this.emitter.emit(EVENTS.LeaderboardUpdated, {
+      datasetId: dataset.id,
     });
 
     // 5. Compute indicators for chart overlays (MA, Bollinger Bands, RSI)

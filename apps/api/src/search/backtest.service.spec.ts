@@ -1,3 +1,4 @@
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { CandidateSpec, Dataset } from '@csl/contracts';
 import { BacktestService } from './backtest.service';
 import type { DatasetRepository } from './dataset.repository';
@@ -97,6 +98,10 @@ describe('BacktestService', () => {
       ]),
     } as unknown as jest.Mocked<BacktestRunner>;
 
+    const mockEmitter = {
+      emit: jest.fn(),
+    } as unknown as jest.Mocked<EventEmitter2>;
+
     service = new BacktestService(
       mockDatasets,
       mockCandles,
@@ -104,6 +109,7 @@ describe('BacktestService', () => {
       mockEvaluator,
       mockFactory,
       mockRunner,
+      mockEmitter,
     );
   });
 

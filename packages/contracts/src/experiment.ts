@@ -53,3 +53,36 @@ export interface Experiment {
   error?: string;
   createdAt: number;
 }
+
+export const LEADERBOARD_SORT_FIELDS = [
+  'score',
+  'totalReturn',
+  'winRate',
+  'maxDrawdown',
+  'sharpeRatio',
+  'tradeCount',
+] as const;
+export type LeaderboardSortField = (typeof LEADERBOARD_SORT_FIELDS)[number];
+
+export const SORT_DIRECTIONS = ['asc', 'desc'] as const;
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+export interface LeaderboardEntry {
+  rank: number;
+  experimentId: string;
+  datasetId: string;
+  spec: CandidateSpec;
+  specHash: string;
+  metrics: Metrics;
+  score: number;
+  scoreFormulaVersion: string;
+  createdAt: number;
+}
+
+export interface LeaderboardQuery {
+  datasetId: string;
+  sortBy?: LeaderboardSortField;
+  direction?: SortDirection;
+  limit?: number;
+}
+

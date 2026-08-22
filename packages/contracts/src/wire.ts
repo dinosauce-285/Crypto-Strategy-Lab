@@ -17,6 +17,7 @@ export const MESSAGES = {
   MarketPrice: 'market.price',
   MarketCandle: 'market.candle',
   SearchProgress: 'search.progress',
+  LeaderboardUpdate: 'leaderboard.update',
 } as const;
 
 export type MessageType = (typeof MESSAGES)[keyof typeof MESSAGES];
@@ -31,6 +32,7 @@ export type MessagePayloads = {
   };
   [MESSAGES.MarketCandle]: { candle: Candle };
   [MESSAGES.SearchProgress]: { status: RunStatus };
+  [MESSAGES.LeaderboardUpdate]: { datasetId: string; at: number };
 };
 
 /**
@@ -59,6 +61,9 @@ export const marketCandleTopic = (pair: string, timeframe: Timeframe): string =>
 
 /** A run publishes under a topic of its own, so watching one run is not watching all of them. */
 export const searchRunTopic = (runId: string): string => `search:${runId}`;
+
+/** Leaderboard publishes under a topic scoped to the dataset. */
+export const leaderboardTopic = (datasetId: string): string => `leaderboard:${datasetId}`;
 
 export type MarketTopic =
   | { pair: string; kind: 'price' }
