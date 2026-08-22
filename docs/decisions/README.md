@@ -64,7 +64,7 @@ code that assumes it.
 - [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
 - [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
 - [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
-- [0033](0032-strategies-are-registered-explicitly.md) — strategies are registered explicitly
+- [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
 
 
 
