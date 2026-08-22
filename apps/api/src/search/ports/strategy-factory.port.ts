@@ -1,4 +1,4 @@
-import type { CandidateSpec } from '@csl/contracts';
+import type { CandidateSpec, DataRequest, Signal, StrategyContext } from '@csl/contracts';
 
 /**
  * Turns a specification back into something runnable — T11's registry. A specification
@@ -9,8 +9,12 @@ export abstract class StrategyFactory {
   abstract build(spec: CandidateSpec): Promise<RunnableStrategy>;
 }
 
-/** Opaque here on purpose: the loop carries it from the factory to the runner and never calls it. */
-export type RunnableStrategy = object;
+export interface RunnableStrategy {
+  readonly spec: CandidateSpec;
+  readonly warmup: number;
+  requires(): DataRequest[];
+  analyze(context: StrategyContext): Signal;
+}
 
 export class UnknownStrategyError extends Error {
   constructor(readonly strategyId: string) {
