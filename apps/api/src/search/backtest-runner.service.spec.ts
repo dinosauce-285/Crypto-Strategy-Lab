@@ -1,4 +1,3 @@
-import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual, rejects } from 'node:assert';
 import type {
   Candle,
