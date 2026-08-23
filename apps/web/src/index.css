@@ -544,3 +544,98 @@ tbody tr:last-child td { border-bottom: 0; }
   font-weight: 600;
 }
 
+/* --- search control screen (T20) --- */
+
+.search-control-panel,
+.search-space-panel,
+.search-progress-panel,
+.search-state-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+}
+
+.search-state-panel {
+  min-height: 16rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem;
+}
+
+.strategy-choice {
+  min-height: 4rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  cursor: pointer;
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+.strategy-choice[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.strategy-choice input {
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+}
+
+.strategy-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.strategy-choice-title {
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.running-dataset,
+.search-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.running-dataset strong,
+.search-recipe strong {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.progress-meter {
+  height: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.empty-progress {
+  min-height: 13rem;
+  justify-content: center;
+}
+
+.start-search-btn {
+  width: 100%;
+  justify-content: center;
+}
