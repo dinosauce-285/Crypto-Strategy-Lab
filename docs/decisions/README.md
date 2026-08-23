@@ -70,6 +70,7 @@ code that assumes it.
 - [0036](0036-overall-score-formula-and-trade-count-damping-for-leaderboar.md) — overall score formula and trade count damping for leaderboard
 - [0037](0037-domain-guided-search-uses-group-composition-and-top-history.md) — domain-guided search uses group composition and a top-result history
 - [0038](0038-search-runs-carry-strategy-universe.md) — search runs carry selected strategy versions
+- [0039](0039-news-sentiment-strategy-and-causal-aggregation.md) — news sentiment strategy plugs into the strategy registry with causal aggregation
 
 
 
