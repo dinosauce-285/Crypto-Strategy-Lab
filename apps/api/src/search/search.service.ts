@@ -8,6 +8,7 @@ import {
   type RunEndReason,
   type RunStatus,
   type SearchMode,
+  type StrategyRef,
 } from '@csl/contracts';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { ActiveRun } from './active-run';
@@ -41,11 +42,16 @@ export class SearchService implements OnModuleDestroy {
     this.stopTicking();
   }
 
-  async start(datasetId: string, bound: RunBound, mode: SearchMode): Promise<RunStatus> {
+  async start(
+    datasetId: string,
+    strategyRefs: readonly StrategyRef[],
+    bound: RunBound,
+    mode: SearchMode,
+  ): Promise<RunStatus> {
     if (this.run && this.run.state !== 'ended') throw new RunAlreadyActiveError();
     await this.queue.clearOrphans();
-    this.source?.reset(mode);
-    const run = new ActiveRun(datasetId, bound, mode);
+    this.source?.reset(mode, strategyRefs);
+    const run = new ActiveRun(datasetId, strategyRefs, bound, mode);
     this.run = run;
     if (!this.source) this.logger.warn('no CandidateSource is registered — T17 supplies it');
     this.ticker = setInterval(() => void this.tick(), TICK_MS);

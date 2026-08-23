@@ -11,6 +11,7 @@ import {
 import type { RunStatus } from '@csl/contracts';
 import { QueueUnavailableError } from './backtest-queue';
 import { parseStartRun } from './dto/start-run.dto';
+import { InvalidSearchSpaceError } from './ports/candidate-source.port';
 import { isBounded } from './run-bounds';
 import { NoActiveRunError, RunAlreadyActiveError, SearchService } from './search.service';
 
@@ -27,10 +28,16 @@ export class SearchController {
       );
     }
     try {
-      return await this.search.start(request.datasetId, request.bound, request.mode);
+      return await this.search.start(
+        request.datasetId,
+        request.strategyRefs,
+        request.bound,
+        request.mode,
+      );
     } catch (error) {
       if (error instanceof RunAlreadyActiveError) throw new ConflictException(error.message);
       if (error instanceof QueueUnavailableError) throw new ServiceUnavailableException(error.message);
+      if (error instanceof InvalidSearchSpaceError) throw new BadRequestException(error.message);
       throw error;
     }
   }

@@ -17,6 +17,17 @@ export interface RunBound {
   noImprovementLimit?: number;
 }
 
+/** One registered strategy version that is allowed to enter one search run. */
+export interface StrategyRef {
+  id: string;
+  version: number;
+}
+
+/** The registry entries that are allowed to enter one search run. */
+export interface SearchSpace {
+  strategyRefs: StrategyRef[];
+}
+
 export const RUN_STATES = ['running', 'paused', 'ended'] as const;
 export type RunState = (typeof RUN_STATES)[number];
 
@@ -65,6 +76,7 @@ export interface RunCounters {
 export interface RunStatus {
   runId: string;
   datasetId: string;
+  strategyRefs: StrategyRef[];
   mode: SearchMode;
   state: RunState;
   bound: RunBound;
