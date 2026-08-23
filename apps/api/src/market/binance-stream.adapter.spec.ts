@@ -1,4 +1,3 @@
-import { strictEqual, deepStrictEqual } from 'node:assert';
 import { ConfigService } from '@nestjs/config';
 import { BinanceStreamAdapter } from './binance-stream.adapter';
 

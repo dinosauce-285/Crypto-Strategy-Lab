@@ -27,7 +27,7 @@ export class SearchController {
       );
     }
     try {
-      return await this.search.start(request.datasetId, request.bound);
+      return await this.search.start(request.datasetId, request.bound, request.mode);
     } catch (error) {
       if (error instanceof RunAlreadyActiveError) throw new ConflictException(error.message);
       if (error instanceof QueueUnavailableError) throw new ServiceUnavailableException(error.message);

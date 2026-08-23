@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { UnrecoverableError, type Job } from 'bullmq';
-import { canonicalJson, canonicalSpec, type BacktestJob } from '@csl/contracts';
+import { canonicalJson, type BacktestJob } from '@csl/contracts';
 import { ExperimentRepository } from './experiment.repository';
 import type { JobOutcome } from './job-outcome';
 import { BacktestRunner, UnknownDatasetError } from './ports/backtest-runner.port';
 import { RunEvaluator } from './ports/run-evaluator.port';
 import { StrategyFactory, UnknownStrategyError } from './ports/strategy-factory.port';
 import { InvalidSpecError, validateSpec } from './spec-validator';
+import { specHash as hashSpec } from './spec-hash';
 
 export class MissingPortError extends Error {
   constructor(port: string, task: string) {
@@ -15,7 +16,7 @@ export class MissingPortError extends Error {
   }
 }
 
-const hash = (canonical: string): string => createHash('sha256').update(canonical).digest('hex');
+const hashValue = (value: string): string => createHash('sha256').update(value).digest('hex');
 
 /**
  * Nothing improves on a second attempt for these, so they end the job on the first one.
@@ -44,7 +45,7 @@ export class BacktestProcessor {
     let specHash: string | undefined;
     try {
       const spec = validateSpec(raw);
-      specHash = hash(canonicalSpec(spec));
+      specHash = hashSpec(spec);
       const identity = specHash;
       const done = (status: JobOutcome['status'], rest: Partial<JobOutcome> = {}): JobOutcome => ({
         status,
@@ -93,7 +94,7 @@ export class BacktestProcessor {
       datasetId: candidate.datasetId,
       spec: candidate.raw,
       /** A specification that never validated is identified by what arrived instead. */
-      specHash: candidate.specHash ?? hash(canonicalJson(candidate.raw)),
+      specHash: candidate.specHash ?? hashValue(canonicalJson(candidate.raw)),
       error: reason,
     });
     if (!recorded) this.logger.warn(`failure not attributable to a dataset: ${reason}`);
