@@ -73,9 +73,25 @@ function LeaderboardIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M4 5.5h8M4 10h12M4 14.5h6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="14.5" cy="5.5" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="8.5" cy="14.5" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 const TABS = [
   { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
   { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
+  { to: '/search', label: 'Search', icon: SearchIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: LeaderboardIcon },
   { to: '/news', label: 'News Crawler', icon: NewsIcon },
 ];

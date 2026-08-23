@@ -5,12 +5,14 @@ interface DatasetPickerProps {
   selectedDataset: Dataset | null;
   onSelectDataset: (dataset: Dataset) => void;
   onOpenCreateModal: () => void;
+  disabled?: boolean;
 }
 
 export function DatasetPicker({
   selectedDataset,
   onSelectDataset,
   onOpenCreateModal,
+  disabled = false,
 }: DatasetPickerProps) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,7 @@ export function DatasetPicker({
         <button
           type="button"
           className="btn-action"
+          disabled={disabled}
           onClick={onOpenCreateModal}
           style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
         >
@@ -75,7 +78,7 @@ export function DatasetPicker({
         <button
           type="button"
           className="custom-dropdown-trigger"
-          disabled={loading || datasets.length === 0}
+          disabled={disabled || loading || datasets.length === 0}
           onClick={() => setIsOpen((prev) => !prev)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -99,6 +102,7 @@ export function DatasetPicker({
                   role="option"
                   aria-selected={isSelected}
                   className="custom-dropdown-item"
+                  disabled={disabled}
                   onClick={() => {
                     onSelectDataset(d);
                     setIsOpen(false);

@@ -25,7 +25,7 @@ const spec = (period: number): CandidateSpec => ({
 
 describe('ActiveRun history', () => {
   it('keeps a bounded top-scoring view for generators', () => {
-    const run = new ActiveRun('dataset-1', { maxCandidates: 30 }, 'random');
+    const run = new ActiveRun('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 30 }, 'random');
 
     for (let index = 0; index < 30; index += 1) {
       run.recordFinished(

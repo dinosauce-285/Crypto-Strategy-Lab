@@ -9,6 +9,7 @@ import type {
   RunStatus,
   SearchHistoryEntry,
   SearchMode,
+  StrategyRef,
 } from '@csl/contracts';
 import type { JobOutcome } from './job-outcome';
 
@@ -47,6 +48,7 @@ export class ActiveRun {
 
   constructor(
     readonly datasetId: string,
+    readonly strategyRefs: readonly StrategyRef[],
     readonly bound: RunBound,
     readonly mode: SearchMode,
   ) {}
@@ -104,6 +106,7 @@ export class ActiveRun {
     return {
       runId: this.runId,
       datasetId: this.datasetId,
+      strategyRefs: this.strategyRefs.map((ref) => ({ ...ref })),
       mode: this.mode,
       state: this.state,
       bound: this.bound,

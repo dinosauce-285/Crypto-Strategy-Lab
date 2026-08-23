@@ -1,5 +1,11 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { BacktestJob, CandidateSpec, RunHistory, SearchMode } from '@csl/contracts';
+import type {
+  BacktestJob,
+  CandidateSpec,
+  RunHistory,
+  SearchMode,
+  StrategyRef,
+} from '@csl/contracts';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { BacktestQueue } from './backtest-queue';
 import type { JobOutcome } from './job-outcome';
@@ -53,7 +59,7 @@ class FakeChannel extends ChannelPublisher {
 class OneCandidateSource extends CandidateSource {
   private emitted = false;
 
-  reset(_mode: SearchMode): void {
+  reset(_mode: SearchMode, _strategyRefs: readonly StrategyRef[]): void {
     this.emitted = false;
   }
 
@@ -89,7 +95,7 @@ describe('SearchService queue events', () => {
       new OneCandidateSource(),
     );
 
-    await service.start('dataset-new', { maxCandidates: 10 }, 'random');
+    await service.start('dataset-new', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
     queue.finished?.('old-job', outcome('dataset-old'));
     queue.failed?.('older-job', 'old failure');
 
@@ -97,6 +103,7 @@ describe('SearchService queue events', () => {
     expect(status?.counters.tried).toBe(0);
     expect(status?.counters.failed).toBe(0);
     expect(status?.counters.best).toBeUndefined();
+    expect(status?.strategyRefs).toEqual([{ id: 'ma', version: 1 }]);
     await service.stop();
     service.onModuleDestroy();
   });

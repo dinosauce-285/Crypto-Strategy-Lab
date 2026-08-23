@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from '../prisma/prisma.module';
 import { StrategyModule } from '../strategy/strategy.module';
 import { MarketModule } from '../market/market.module';
@@ -13,12 +14,12 @@ import { BacktestRunnerService } from './backtest-runner.service';
 
 /**
  * What a worker process boots: the queue consumer, the pipeline it runs, and the database.
- * No HTTP server, no gateway, no event bus — a worker notifies nobody, it returns a value
- * through the queue and the API turns that into the events of section 34.
+ * No HTTP server and no gateway: the API turns queue outcomes into browser events.
  */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' }),
     PrismaModule,
     StrategyModule,
     MarketModule,
