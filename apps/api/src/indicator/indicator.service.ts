@@ -6,6 +6,7 @@ import { movingAverageCalculator } from './calculators/moving-average.calculator
 import { rsiCalculator } from './calculators/rsi.calculator';
 import { bollingerBandsCalculator } from './calculators/bollinger-bands.calculator';
 import { supportResistanceCalculator } from './calculators/support-resistance.calculator';
+import { sentimentCalculator } from './calculators/sentiment.calculator';
 
 const DEFAULT_FIELD = 'value';
 
@@ -24,6 +25,7 @@ export class IndicatorService extends IndicatorPort {
     rsiCalculator,
     bollingerBandsCalculator,
     supportResistanceCalculator,
+    sentimentCalculator,
   ]);
 
   private readonly cache = new Map<string, Record<string, number[]>>();
