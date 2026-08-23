@@ -1,7 +1,6 @@
-import { createHash } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { canonicalSpec, EVENTS, type Dataset } from '@csl/contracts';
+import { EVENTS, type Dataset } from '@csl/contracts';
 import { CandleRepository } from '../market/candle.repository';
 import { IndicatorPort } from '../indicator/ports/indicator.port';
 import { EvaluatorPort } from '../evaluation/ports/evaluator.port';
@@ -10,8 +9,7 @@ import { BacktestRunner } from './ports/backtest-runner.port';
 import { DatasetRepository } from './dataset.repository';
 import { validateSpec } from './spec-validator';
 import type { SingleRunRequestDto, SingleRunResponseDto } from './dto/single-run.dto';
-
-const hash = (canonical: string): string => createHash('sha256').update(canonical).digest('hex');
+import { specHash } from './spec-hash';
 
 @Injectable()
 export class BacktestService {
@@ -48,7 +46,7 @@ export class BacktestService {
     }
 
     const validatedSpec = validateSpec(request.spec);
-    const specHash = hash(canonicalSpec(validatedSpec));
+    const hash = specHash(validatedSpec);
 
     // 1. Build strategy instance
     const strategy = await this.factory.build(validatedSpec);
@@ -66,7 +64,7 @@ export class BacktestService {
     const evaluationResult = await this.evaluator.evaluateAndRecord({
       datasetId: dataset.id,
       spec: validatedSpec,
-      specHash,
+      specHash: hash,
       rules: dataset.rules,
       trades: rawTrades,
       candles: candleSeries,

@@ -1,8 +1,9 @@
-import type { RunBound } from '@csl/contracts';
+import { SEARCH_MODES, type RunBound, type SearchMode } from '@csl/contracts';
 
 export interface StartRunDto {
   datasetId: string;
   bound: RunBound;
+  mode: SearchMode;
 }
 
 const optionalPositive = (value: unknown): number | undefined => {
@@ -12,6 +13,15 @@ const optionalPositive = (value: unknown): number | undefined => {
   }
   return value;
 };
+
+const parseMode = (value: unknown): SearchMode => {
+  if (value === undefined || value === null) return 'random';
+  if (typeof value === 'string' && isSearchMode(value)) return value;
+  throw new TypeError('mode must be random or domain-guided');
+};
+
+const isSearchMode = (value: string): value is SearchMode =>
+  SEARCH_MODES.some((mode: SearchMode) => mode === value);
 
 /** The queue is never reached by a request that failed here — ADR 0021. */
 export function parseStartRun(body: unknown): StartRunDto {
@@ -23,6 +33,7 @@ export function parseStartRun(body: unknown): StartRunDto {
   const bound = (source.bound ?? {}) as Record<string, unknown>;
   return {
     datasetId,
+    mode: parseMode(source.mode),
     bound: {
       maxCandidates: optionalPositive(bound.maxCandidates),
       maxDurationMs: optionalPositive(bound.maxDurationMs),

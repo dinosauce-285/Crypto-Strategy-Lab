@@ -13,6 +13,8 @@ import { BacktestService } from './backtest.service';
 import { DatasetRepository } from './dataset.repository';
 import { BacktestRunner } from './ports/backtest-runner.port';
 import { BacktestRunnerService } from './backtest-runner.service';
+import { CandidateSource } from './ports/candidate-source.port';
+import { GeneratedCandidateSource } from './generated-candidate-source';
 
 /**
  * The API half of the loop: it queues candidates, runs single backtests on demand,
@@ -34,6 +36,7 @@ import { BacktestRunnerService } from './backtest-runner.service';
     DatasetRepository,
     BacktestService,
     { provide: BacktestRunner, useClass: BacktestRunnerService },
+    { provide: CandidateSource, useClass: GeneratedCandidateSource },
   ],
   exports: [DatasetRepository],
 })
