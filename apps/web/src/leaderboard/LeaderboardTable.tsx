@@ -29,8 +29,8 @@ export function LeaderboardTable({
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Strategy Rankings (Top {entries.length})</h2>
-        <span className="source">Click any row to inspect in Single-Run Backtest</span>
+        <h2>Xếp hạng Strategy (Top {entries.length})</h2>
+        <span className="source">Nhấn vào một dòng để xem chi tiết ở Single-Run Backtest</span>
       </div>
 
       <div className="candles" style={{ overflowX: 'auto' }}>
@@ -38,26 +38,26 @@ export function LeaderboardTable({
           <thead>
             <tr>
               <th style={{ width: '4rem', cursor: 'pointer' }} onClick={() => onSortChange('score')}>
-                Rank
+                Hạng
               </th>
-              <th>Candidate Recipe / Strategy</th>
+              <th>Tổ hợp Candidate / Strategy</th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('score')}>
-                Score{renderSortIndicator('score')}
+                Điểm{renderSortIndicator('score')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('totalReturn')}>
-                Return{renderSortIndicator('totalReturn')}
+                Lợi nhuận{renderSortIndicator('totalReturn')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('winRate')}>
-                Win Rate{renderSortIndicator('winRate')}
+                Tỷ lệ thắng{renderSortIndicator('winRate')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('maxDrawdown')}>
-                Max DD{renderSortIndicator('maxDrawdown')}
+                DD tối đa{renderSortIndicator('maxDrawdown')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('sharpeRatio')}>
                 Sharpe{renderSortIndicator('sharpeRatio')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('tradeCount')}>
-                Trades{renderSortIndicator('tradeCount')}
+                Số lệnh{renderSortIndicator('tradeCount')}
               </th>
             </tr>
           </thead>
@@ -84,7 +84,7 @@ export function LeaderboardTable({
                   </td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                      <strong style={{ fontSize: '0.82rem' }}>{recipeSummary || 'Single Strategy'}</strong>
+                      <strong style={{ fontSize: '0.82rem' }}>{recipeSummary || 'Một Strategy'}</strong>
                       <span className="source" style={{ fontSize: '0.7rem' }}>
                         hash: <code>{entry.specHash.slice(0, 8)}</code> · {entry.spec.rule} ({entry.spec.threshold})
                       </span>
