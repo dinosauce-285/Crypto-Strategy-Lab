@@ -56,7 +56,7 @@ export function SentimentDistribution({
   return (
     <section className="panel panel-compact">
       <div className="panel-head">
-        <h2>Sentiment Analytics ({coin})</h2>
+        <h2>Phân tích Sentiment ({coin})</h2>
       </div>
 
       {total === 0 ? (
