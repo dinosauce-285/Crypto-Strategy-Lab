@@ -72,7 +72,7 @@
 
 ## 6. Close the change
 
-- [ ] 6.1 `pnpm decision --check`.
-- [ ] 6.2 `openspec validate t10-indicator-service --strict`.
-- [ ] 6.3 `pnpm commit`, push, open a PR.
-- [ ] 6.4 Move the Trello card to Done.
+- [x] 6.1 `pnpm decision --check`.
+- [x] 6.2 `openspec validate t10-indicator-service --strict`.
+- [x] 6.3 `pnpm commit`, push, open a PR.
+- [x] 6.4 Move the Trello card to Done.
