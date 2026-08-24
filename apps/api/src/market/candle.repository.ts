@@ -1,31 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
-import { EVENTS, type Candle, type Timeframe, type EventPayload } from '@csl/contracts';
+import type { Candle, Timeframe } from '@csl/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma/client';
 
 /**
  * The only place that touches PrismaService for candles (BACKEND_CONSTRAINT.md). A row
  * here is always closed — a forming candle is never stored, so `closed` on the way out
- * is always true.
+ * is always true. Only a Dataset's own fetch writes here now (ADR 0040/0041) — a
+ * realtime watch never does.
  */
 @Injectable()
 export class CandleRepository {
   constructor(private readonly prisma: PrismaService) {}
-
-  @OnEvent(EVENTS.CandleClosed)
-  async onCandleClosed(payload: EventPayload<typeof EVENTS.CandleClosed>): Promise<void> {
-    await this.upsert(payload.candle);
-  }
-
-  async upsert(candle: Candle): Promise<void> {
-    const row = toRow(candle);
-    await this.prisma.candle.upsert({
-      where: { pair_timeframe_openTime: pick(row) },
-      create: row,
-      update: row,
-    });
-  }
 
   async upsertMany(candles: Candle[]): Promise<void> {
     if (candles.length === 0) return;
@@ -39,14 +25,6 @@ export class CandleRepository {
         });
       }),
     );
-  }
-
-  async hasHistory(pair: string, timeframe: Timeframe): Promise<boolean> {
-    const row = await this.prisma.candle.findFirst({
-      where: { pair, timeframe },
-      select: { pair: true },
-    });
-    return row !== null;
   }
 
   async range(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {
