@@ -1,4 +1,12 @@
-import type { Dataset, RunStatus, StrategyMeta, StrategyRef } from '@csl/contracts';
+import type { Dataset, RunEndReason, RunStatus, StrategyMeta, StrategyRef } from '@csl/contracts';
+
+const END_REASON_LABELS: Record<RunEndReason, string> = {
+  candidates: 'Reached the max candidates limit',
+  duration: 'Reached the time limit',
+  plateau: 'No improvement for a while',
+  exhausted: 'No more candidates left to generate',
+  stopped: 'Stopped manually',
+};
 
 interface SearchProgressPanelProps {
   status: RunStatus | null;
@@ -85,7 +93,7 @@ export function SearchProgressPanel({
         </div>
       )}
 
-      {status.endReason && <p className="state">Ended because: {status.endReason}</p>}
+      {status.endReason && <p className="state">Ended because: {END_REASON_LABELS[status.endReason]}</p>}
       {requestError && <p className="state bad">{requestError}</p>}
 
       <div className="controls-row">
