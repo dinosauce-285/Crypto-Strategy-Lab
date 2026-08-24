@@ -6,6 +6,7 @@ import {
   type RunBound,
   type RunStatus,
   type SearchMode,
+  type StrategyGroup,
   type StrategyMeta,
   type StrategyRef,
 } from '@csl/contracts';
@@ -22,6 +23,15 @@ type StrategyState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; strategies: StrategyMeta[] };
 
+/**
+ * Mirrors DomainGuidedCandidateGenerator's CORE_GROUPS/CONTEXT_GROUPS
+ * (apps/api/src/search/domain-guided-candidate.generator.ts) — a selection missing
+ * either produces zero candidates server-side and the run ends "exhausted" at tried: 0
+ * with no explanation (BUG-03). Checked here so START SEARCH can block it up front.
+ */
+const CORE_GROUPS: readonly StrategyGroup[] = ['Trend', 'Momentum'];
+const CONTEXT_GROUPS: readonly StrategyGroup[] = ['Structure', 'Volatility', 'Information'];
+
 export function SearchScreen() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,7 +43,10 @@ export function SearchScreen() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const strategies = strategyState.kind === 'ready' ? strategyState.strategies : [];
+  const strategies = useMemo(
+    () => (strategyState.kind === 'ready' ? strategyState.strategies : []),
+    [strategyState],
+  );
   const runningDatasetId = status?.datasetId ?? null;
   const hasActiveRun = status ? status.state !== 'ended' : false;
 
@@ -89,9 +102,30 @@ export function SearchScreen() {
     }, []),
   );
 
+  const missingGroups = useMemo(() => {
+    if (mode !== 'domain-guided') return [];
+    const selectedGroups = new Set(
+      selectedRefs
+        .map((ref) => strategies.find((s) => s.id === ref.id && s.version === ref.version)?.group)
+        .filter((group): group is StrategyGroup => Boolean(group)),
+    );
+    const missingCore = CORE_GROUPS.filter((group) => !selectedGroups.has(group));
+    const missingContext = CONTEXT_GROUPS.some((group) => selectedGroups.has(group))
+      ? []
+      : ['Structure/Volatility/Information'];
+    return [...missingCore, ...missingContext];
+  }, [mode, selectedRefs, strategies]);
+
+  const blockedReason =
+    missingGroups.length > 0
+      ? `Domain guided needs Trend, Momentum, and one of Structure/Volatility/Information. Missing: ${missingGroups.join(', ')}.`
+      : null;
+
   const canStart = useMemo(
-    () => Boolean(dataset && selectedRefs.length > 0 && strategyState.kind === 'ready'),
-    [dataset, selectedRefs.length, strategyState.kind],
+    () =>
+      Boolean(dataset && selectedRefs.length > 0 && strategyState.kind === 'ready') &&
+      missingGroups.length === 0,
+    [dataset, selectedRefs.length, strategyState.kind, missingGroups],
   );
 
   const start = async () => {
@@ -167,6 +201,7 @@ export function SearchScreen() {
             busy={busy}
             isRunning={hasActiveRun}
             canStart={canStart}
+            blockedReason={blockedReason}
             onDatasetChange={setDataset}
             onOpenDatasetModal={() => setIsModalOpen(true)}
             onModeChange={setMode}

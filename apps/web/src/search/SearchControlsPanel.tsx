@@ -8,6 +8,7 @@ interface SearchControlsPanelProps {
   busy: boolean;
   isRunning: boolean;
   canStart: boolean;
+  blockedReason: string | null;
   onDatasetChange: (dataset: Dataset) => void;
   onOpenDatasetModal: () => void;
   onModeChange: (mode: SearchMode) => void;
@@ -22,6 +23,7 @@ export function SearchControlsPanel({
   busy,
   isRunning,
   canStart,
+  blockedReason,
   onDatasetChange,
   onOpenDatasetModal,
   onModeChange,
@@ -74,6 +76,8 @@ export function SearchControlsPanel({
             onChange={(event) => onMaxCandidatesChange(Number(event.target.value))}
           />
         </label>
+
+        {blockedReason && <p className="state bad">{blockedReason}</p>}
 
         <button
           type="button"
