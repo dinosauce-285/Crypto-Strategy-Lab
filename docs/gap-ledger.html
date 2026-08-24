@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gap Ledger</title>
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('gap-ledger-theme');
+    var theme = (saved === 'light' || saved === 'dark')
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#EEF1EE; --surface:#FFFFFF; --surface-2:#E3E9E3;
+    --ink:#182220; --ink-soft:#4B5854; --ink-faint:#7C8A85;
+    --line:#D2DAD2; --line-soft:#E2E7E1;
+    --accent:#2F6F6B; --accent-ink:#1E4B48; --accent-tint:#DEEBEA;
+    --mark:#B5652D; --mark-tint:#F2E3D4;
+    --ok:#2F7D46; --ok-bg:#E1F0E3;
+    --partial:#A9741F; --partial-bg:#F4E9D2;
+    --missing:#A8433A; --missing-bg:#F5E2E0;
+    --clean:#55625E; --clean-bg:#E6EAE6;
+    --shadow: 0 1px 2px rgba(24,34,32,.06), 0 8px 24px -12px rgba(24,34,32,.12);
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+      --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+      --line:#28332F; --line-soft:#202B27;
+      --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+      --mark:#E0954F; --mark-tint:#2A2016;
+      --ok:#7BD08C; --ok-bg:#16261A;
+      --partial:#E3B65E; --partial-bg:#2C2413;
+      --missing:#E88E80; --missing-bg:#2E1B18;
+      --clean:#93A29C; --clean-bg:#1B2321;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+    --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+    --line:#28332F; --line-soft:#202B27;
+    --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+    --mark:#E0954F; --mark-tint:#2A2016;
+    --ok:#7BD08C; --ok-bg:#16261A;
+    --partial:#E3B65E; --partial-bg:#2C2413;
+    --missing:#E88E80; --missing-bg:#2E1B18;
+    --clean:#93A29C; --clean-bg:#1B2321;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-tint); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--accent); text-underline-offset:2px; }
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;
+  }
+  code, .mono{ font-family:var(--mono); }
+
+  /* ---------- header ---------- */
+  header.cover{
+    padding:56px 32px 40px; border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(1100px 260px at 12% -30%, var(--accent-tint), transparent 60%),
+      var(--surface);
+  }
+  .cover-inner{ max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--mark); }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,54px);
+    line-height:1.05; margin:0 0 14px; text-wrap:balance; letter-spacing:-.01em;
+  }
+  .dek{
+    font-size:17.5px; color:var(--ink-soft); max-width:62ch; margin:0 0 26px; text-wrap:pretty;
+  }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px; font-family:var(--mono); font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .meta-row b{ color:var(--ink-soft); font-weight:500; }
+
+  /* ---------- summary strip ---------- */
+  .summary{
+    max-width:1180px; margin:-1px auto 0; padding:28px 32px 8px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;
+  }
+  .stat{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:18px 18px 16px; box-shadow:var(--shadow);
+  }
+  .stat .n{ font-family:var(--serif); font-weight:600; font-size:32px; line-height:1; }
+  .stat .n.ok{ color:var(--ok); } .stat .n.partial{ color:var(--partial); } .stat .n.clean{ color:var(--clean); }
+  .stat .l{ margin-top:8px; font-size:13px; color:var(--ink-soft); }
+  .stat.verdict{ border-color:var(--accent); }
+  .stat.verdict .n{ font-size:20px; font-family:var(--sans); font-weight:700; color:var(--accent-ink); }
+
+  /* ---------- layout ---------- */
+  .shell{
+    max-width:1180px; margin:0 auto; padding:36px 32px 90px;
+    display:grid; grid-template-columns:220px 1fr; gap:44px; align-items:start;
+  }
+  nav.toc{
+    position:sticky; top:24px; display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--line); padding-left:16px;
+  }
+  nav.toc .toc-h{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:10px;
+  }
+  nav.toc a{
+    font-size:13px; color:var(--ink-soft); text-decoration:none; padding:5px 0;
+    border-left:2px solid transparent; margin-left:-17px; padding-left:15px;
+  }
+  nav.toc a:hover{ color:var(--ink); border-left-color:var(--line); }
+  nav.toc a.sep{ margin-top:10px; padding-top:14px; border-top:1px solid var(--line-soft); }
+
+  main{ min-width:0; }
+  section.block{ margin-bottom:56px; }
+  .block-h{
+    font-family:var(--serif); font-weight:600; font-size:23px; margin:0 0 6px; letter-spacing:-.01em;
+  }
+  .block-sub{ color:var(--ink-soft); font-size:14.5px; margin:0 0 22px; max-width:68ch; }
+
+  /* ---------- dossier entries ---------- */
+  .entry{
+    display:grid; grid-template-columns:52px 1fr; gap:18px;
+    padding:20px 0; border-top:1px solid var(--line-soft);
+    scroll-margin-top:20px;
+  }
+  .entry:first-of-type{ border-top:1px solid var(--line); }
+  .entry .num{
+    font-family:var(--mono); font-size:13px; color:var(--mark); padding-top:3px;
+  }
+  .entry-head{ display:flex; align-items:baseline; flex-wrap:wrap; gap:10px 14px; margin-bottom:8px; }
+  .entry-title{ font-family:var(--sans); font-weight:600; font-size:16.5px; }
+  .pill{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px; white-space:nowrap; font-weight:500;
+  }
+  .pill--ok{ background:var(--ok-bg); color:var(--ok); }
+  .pill--partial{ background:var(--partial-bg); color:var(--partial); }
+  .pill--clean{ background:var(--clean-bg); color:var(--clean); }
+  .entry p{ margin:0; color:var(--ink-soft); font-size:14.5px; max-width:74ch; }
+  .entry p + p{ margin-top:10px; }
+  .gapline{
+    margin-top:10px; padding:9px 13px; border-left:2px solid var(--partial);
+    background:var(--partial-bg); border-radius:0 6px 6px 0; font-size:13.5px; color:var(--ink);
+    max-width:74ch;
+  }
+  .gapline b:first-child{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--partial); display:block; margin-bottom:3px; }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border:1px solid var(--line); border-radius:12px; padding:22px 24px; background:var(--surface);
+    box-shadow:var(--shadow); margin-bottom:20px;
+  }
+  .callout.highlight{ border-color:var(--mark); background:var(--mark-tint); }
+  .callout-h{ display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px; margin-bottom:8px; }
+  .callout-h .tag{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    background:var(--mark); color:var(--surface); padding:2px 8px; border-radius:4px;
+  }
+  .callout p{ margin:0 0 8px; color:var(--ink-soft); font-size:14.5px; }
+  .callout p:last-child{ margin-bottom:0; }
+  .callout code{ background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:.92em; color:var(--ink); }
+
+  /* ---------- mvp checklist ---------- */
+  .mvp-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin:18px 0 20px;
+  }
+  .mvp-item{
+    display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface);
+    border:1px solid var(--line); border-radius:8px; font-size:13.5px;
+  }
+  .mvp-item .chk{
+    width:16px; height:16px; border-radius:50%; background:var(--ok-bg); color:var(--ok);
+    display:flex; align-items:center; justify-content:center; font-size:10px; flex:none;
+  }
+
+  /* ---------- table ---------- */
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); box-shadow:var(--shadow); }
+  table{ width:100%; border-collapse:collapse; font-size:13.8px; min-width:760px; }
+  thead th{
+    text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); padding:12px 16px; border-bottom:1px solid var(--line); background:var(--surface-2);
+  }
+  tbody td{ padding:14px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top; color:var(--ink-soft); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td.card-name{ color:var(--ink); font-weight:500; }
+  .covers{ display:inline-flex; align-items:center; gap:6px; color:var(--ok); font-weight:500; font-size:13px; }
+  .covers::before{ content:'✓'; font-family:var(--mono); }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 32px 60px; color:var(--ink-faint); font-size:12.5px;
+    font-family:var(--mono);
+  }
+
+  @media (max-width: 880px){
+    .shell{ grid-template-columns:1fr; }
+    nav.toc{
+      position:static; border-left:none; padding-left:0; flex-direction:row; flex-wrap:wrap;
+      gap:4px 14px; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px;
+    }
+    nav.toc .toc-h{ width:100%; }
+    nav.toc a{ margin-left:0; padding-left:0; border-left:none; }
+    nav.toc a.sep{ margin-top:0; padding-top:0; border-top:none; }
+    .entry{ grid-template-columns:1fr; }
+    .entry .num{ padding-top:0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{ scroll-behavior:auto !important; } }
+  html{ scroll-behavior:smooth; }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle{
+    position:fixed; top:20px; right:24px; z-index:50;
+    width:40px; height:40px; border-radius:50%; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);
+    color:var(--ink-soft); cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+  .theme-toggle:active{ transform:scale(.94); }
+  .theme-toggle svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .theme-toggle .i-moon{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-sun{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-moon{ display:block; }
+  @media (prefers-reduced-motion: reduce){ .theme-toggle{ transition:none; } }
+  @media (max-width: 520px){ .theme-toggle{ top:14px; right:14px; width:36px; height:36px; } }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="cover-inner">
+    <div class="eyebrow"><span class="dot"></span>Architecture audit · Crypto Strategy Lab</div>
+    <h1>Spec vs. build, then build vs. backlog</h1>
+    <p class="dek">Every requirement in the brief, checked directly against what's on <code>dev</code> today — then every open Trello card, checked against what's still missing. No gap without a card; no card without a gap.</p>
+    <div class="meta-row">
+      <span><b>Source</b> docs/crypto-strategy-lab-do-an-cuoi-ky.md</span>
+      <span><b>Branch</b> dev @ d3ae1a3</span>
+      <span><b>Board</b> Software Architecture (Trello)</span>
+      <span><b>Compiled</b> 24 Aug 2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="stat"><div class="n ok">17 / 19</div><div class="l">spec areas fully implemented</div></div>
+  <div class="stat"><div class="n partial">1</div><div class="l">partial — hand-in documentation (§45)</div></div>
+  <div class="stat"><div class="n clean">1</div><div class="l">anti-pattern sweep — clean</div></div>
+  <div class="stat verdict"><div class="n">MVP (§37): fully met</div><div class="l">plus 2 extensions beyond MVP scope</div></div>
+</div>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-h">On this page</div>
+    <a href="#finding">Finding while auditing</a>
+    <a href="#gaps" class="sep">Gap analysis</a>
+    <a href="#s01">01 · Market data</a>
+    <a href="#s02">02 · Multi-timeframe chart</a>
+    <a href="#s03">03 · Strategy engine</a>
+    <a href="#s04">04 · Strategies</a>
+    <a href="#s05">05 · Plugin / registry</a>
+    <a href="#s06">06 · Composite strategy</a>
+    <a href="#s07">07 · Search engine</a>
+    <a href="#s08">08 · Backtesting</a>
+    <a href="#s09">09 · Evaluation</a>
+    <a href="#s10">10 · Leaderboard</a>
+    <a href="#s11">11 · Continuous loop</a>
+    <a href="#s12">12 · Visualization</a>
+    <a href="#s13">13 · News crawler</a>
+    <a href="#s14">14 · Sentiment analysis</a>
+    <a href="#s15">15 · Persistence</a>
+    <a href="#s16">16 · Versioning</a>
+    <a href="#s17">17 · Event-driven arch.</a>
+    <a href="#s18">18 · Hand-in docs</a>
+    <a href="#s19">19 · Anti-patterns</a>
+    <a href="#mvp" class="sep">MVP checklist</a>
+    <a href="#trello">Trello coverage</a>
+    <a href="#threads">Loose threads</a>
+  </nav>
+
+  <main>
+
+    <section class="block" id="finding">
+      <h2 class="block-h">What changed while this was being written</h2>
+      <p class="block-sub">Worth reading before the rest — it explains why the sentiment strategy shows as fully shipped below, even though the first pass over the code found it missing.</p>
+
+      <div class="callout highlight">
+        <div class="callout-h"><span class="tag">Live during audit</span>Sentiment-as-strategy went from missing to merged mid-report</div>
+        <p>The first pass over <code>dev</code> (commit <code>b7f1515</code>) found four registered strategies — MA, RSI, Bollinger, Support/Resistance — and no strategy reading sentiment, contradicting Trello's <code>T25 · NewsSentimentStrategy</code> card, which was already sitting in <b>Done</b>.</p>
+        <p>Checking it directly found the real story: the work was complete on <code>origin/T25-news-sentiment-strategy</code> (strategy class, a causal sentiment calculator, tests, ADR <code>0039</code>, registered) but not yet merged — PR&nbsp;#24 was still landing. It merged into <code>dev</code> at <code>2026-08-23T22:56:49Z</code>, literally while this audit was running. A re-pull confirmed it: <code>dev</code> is now at <code>d3ae1a3</code>, five strategies registered, sentiment included.</p>
+        <p>Every finding below reflects the post-merge state. Sections 4 and 14 read as fully implemented because they now are — but the near-miss is worth knowing about: Trello's "Done" didn't mean "on dev" for about 24 hours.</p>
+      </div>
+    </section>
+
+    <section class="block" id="gaps">
+      <h2 class="block-h">Gap analysis</h2>
+      <p class="block-sub">One entry per requirement area in the brief (§4–§35 map to sections 1–19 below). Status reflects <code>dev</code> as of the merge above. File paths only — no code shown.</p>
+
+      <div class="entry" id="s01">
+        <div class="num">01</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Realtime Market Data</span><span class="pill pill--ok">Implemented</span></div>
+          <p>Frontend never touches Binance's shape directly — <code>market/binance-stream.adapter.ts</code>, <code>market.service.ts</code>, and <code>ports/exchange-stream.port.ts</code> / <code>ports/exchange-history.port.ts</code> form the layering the brief asks for (§4). Reconnect and gap-backfill on disconnect are handled server-side (ADR 0032), answering §32.4 directly.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s02">
+        <div class="num">02</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Multi-Timeframe Chart</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>screens/RealtimeScreen.tsx</code> and <code>market/Dashboard.tsx</code> render up to four chart slots, each with its own timeframe selector — changing one doesn't touch the others. Indicator, support/resistance and signal overlays live in <code>backtest/SingleRunChart.tsx</code>.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s03">
+        <div class="num">03</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Engine</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>strategy/runnable-strategy.ts</code> defines the <code>analyze(context) → {direction, strength}</code> shape over a <code>StrategyContext</code>, matching §6's interface exactly.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s04">
+        <div class="num">04</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategies (MA / RSI / Bollinger / S-R / Sentiment)</span><span class="pill pill--ok">Implemented</span></div>
+          <p>Five strategies registered in <code>strategy/registered-strategies.ts</code>: the four MVP-required ones (§7–§10) plus <code>strategies/sentiment.strategy.ts</code>, the §30 extension — merged as described above. SMC and Wyckoff (§11) are not built, which the brief marks optional.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s05">
+        <div class="num">05</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Plugin / Registry</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>strategy/strategy.registry.ts</code> + <code>registered-strategies.ts</code> — a new strategy is one file plus one array entry; the registry rejects a duplicate id+version. No if/else chain anywhere (ADR 0033), directly answering §12 and the §41 "add MACD" scenario.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s06">
+        <div class="num">06</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Composite Strategy / Combination</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>runnable-strategy.ts</code>'s <code>analyze()</code> combines member signals by weighted score (Σ direction × weight). The brief's other example, majority vote, was considered and deliberately dropped (ADR 0014) — a documented choice, not a missed case.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s07">
+        <div class="num">07</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Search Engine</span><span class="pill pill--ok">Implemented</span></div>
+          <p>Both required methods exist: <code>search/random-candidate.generator.ts</code> and <code>search/domain-guided-candidate.generator.ts</code>, the latter grouping strategies into Trend / Momentum / Volatility / Structure / Information and requiring one core-trend + one core-momentum + one context-group strategy per composite, per §17. Genetic/Bayesian search (§18, explicitly optional) is not built.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s08">
+        <div class="num">08</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Backtesting Engine</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>search/backtest-runner.service.ts</code> simulates trade-by-trade with strict causality (a candle at index <i>i</i> never sees data beyond it), configurable entry price and fee rate sourced from the dataset's own rules (ADR 0034).</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s09">
+        <div class="num">09</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Evaluation</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>evaluation/evaluator.service.ts</code> and its calculators (<code>return</code>, <code>drawdown</code>, <code>risk-metrics</code>, <code>win-rate</code>) compute Return, Win Rate, Trade Count, Max Drawdown, Profit Factor and Sharpe. The evaluator takes trades and rules as plain input (ADR 0035) — it knows nothing about how a strategy produced them, satisfying §20's separation requirement.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s10">
+        <div class="num">10</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Leaderboard</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>ranking/score.calculator.ts</code> computes a weighted overall score (return, win rate, drawdown, Sharpe) with a trade-count confidence damper (ADR 0036) — the §21 requirement to write the formula out is met. The leaderboard recomputes from all experiments on every read rather than the brief's incremental top-K insert (§22); ADR 0011 records that as a deliberate simplicity/consistency trade-off, not an omission.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s11">
+        <div class="num">11</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Continuous Strategy Loop</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>search/active-run.ts</code> tracks tried / failed / duplicate counts, average backtest time and the current best — with an explicit stop condition, never an unbounded loop (§23). BullMQ backs a Generator → Queue → Worker → Evaluator → Ranking pipeline (§24, §32.5), and pause/resume already exists server-side.</p>
+          <div class="gapline"><b>Gap</b>The loop's backend state has no dedicated UI page yet — the observability questions of §32.7 (running? how many tried? top-1?) aren't visualized anywhere. Tracked as <b>T21</b>, and explicitly marked optional on the board.</div>
+        </div>
+      </div>
+
+      <div class="entry" id="s12">
+        <div class="num">12</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Visualization</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>backtest/SingleRunChart.tsx</code> + <code>TradesTable.tsx</code> — selecting a trade row pans and highlights the chart to that trade's entry/exit window, matching §26 directly.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s13">
+        <div class="num">13</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">News Crawler</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>news/ports/news-provider.port.ts</code> abstracts the source; <code>news/providers/cryptocompare-news.provider.ts</code> and <code>rss-news.provider.ts</code> both implement it (ADR 0031) — swapping a source doesn't ripple into anything downstream, exactly what §28 asks for.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s14">
+        <div class="num">14</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Sentiment Analysis</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>sentiment/sentiment.service.ts</code> plus <code>providers/groq-sentiment.provider.ts</code> and <code>heuristic-sentiment.provider.ts</code> classify and persist POSITIVE/NEGATIVE/NEUTRAL with a score, behind a <code>SentimentProvider</code> interface (ADR 0005). Sentiment now also feeds a strategy (§04 above) — the §30 "sentiment becomes a strategy" case is closed.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s15">
+        <div class="num">15</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Database / Persistence</span><span class="pill pill--ok">Implemented</span></div>
+          <p><code>apps/api/prisma/schema.prisma</code> covers all five groups §35 lists — Candle, Strategy (composite id+version key), Dataset, Experiment, Trade, News (with sentiment fields).</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s16">
+        <div class="num">16</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Versioning / Reproducibility</span><span class="pill pill--ok">Implemented</span></div>
+          <p>A strategy is keyed by <code>(strategyId, version)</code> plus a parameter hash (ADR 0009). <code>Experiment.specHash</code> traces any leaderboard row back to the exact strategy version(s) and parameters that produced it — §36's requirement, verbatim.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s17">
+        <div class="num">17</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Event-Driven Architecture</span><span class="pill pill--ok">Implemented</span></div>
+          <p>An in-process event emitter (ADR 0003) connects <code>market</code>, <code>news</code>, <code>sentiment</code>, <code>search</code>, <code>backtest</code>, <code>ranking</code> and the realtime gateway — modules publish and subscribe rather than call each other's services directly, the decoupling §34 describes.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s18">
+        <div class="num">18</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Hand-in Documentation</span><span class="pill pill--partial">Partial</span></div>
+          <p>39 decision records exist in <code>docs/decisions/</code> — well past the "at least 4" §45 asks for — and <code>openspec/</code> tracks most changes in flight. What's not written yet: the README covers Install/Run/Scripts/Layout/Committing but has no Architecture or Demo section; there's no standalone system-architecture document (System Context, Container/Module decomposition, Component responsibilities, Data Flow, Realtime/Strategy/Search-Backtest flows — the seven parts §45 requires); ADR-001 (WebSocket) and ADR-002 (Plugin) aren't written as their own named files, even though the reasoning already exists split across other records; and 2 of the 8 questions in §40 aren't answered in writing yet.</p>
+          <div class="gapline"><b>Gap</b>README, a standalone architecture document, and two short ADR write-ups are the only concrete deliverables not yet produced. All are already tracked (T26, T27, T28 — see Trello coverage below).</div>
+        </div>
+      </div>
+
+      <div class="entry" id="s19">
+        <div class="num">19</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Anti-Patterns (§44)</span><span class="pill pill--clean">Clean</span></div>
+          <p>No God Service — market, news, sentiment, search, evaluation and ranking are separate NestJS modules. No hardcoded if/else combination chain (§06 above). No strategy touches Prisma directly. <code>apps/web</code> renders what the API returns and computes nothing.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="mvp">
+      <h2 class="block-h">MVP checklist — §37</h2>
+      <p class="block-sub">All nine line items are met, and two extensions beyond MVP scope already ship: domain-guided search (§17, optional) and sentiment-as-strategy (§30, optional).</p>
+      <div class="mvp-grid">
+        <div class="mvp-item"><span class="chk">✓</span>Market data</div>
+        <div class="mvp-item"><span class="chk">✓</span>4 strategies</div>
+        <div class="mvp-item"><span class="chk">✓</span>Combination</div>
+        <div class="mvp-item"><span class="chk">✓</span>Backtest</div>
+        <div class="mvp-item"><span class="chk">✓</span>Evaluation</div>
+        <div class="mvp-item"><span class="chk">✓</span>Random search</div>
+        <div class="mvp-item"><span class="chk">✓</span>Leaderboard</div>
+        <div class="mvp-item"><span class="chk">✓</span>Visualization</div>
+        <div class="mvp-item"><span class="chk">✓</span>News pipeline</div>
+      </div>
+    </section>
+
+    <section class="block" id="trello">
+      <h2 class="block-h">Trello coverage</h2>
+      <p class="block-sub">The board's <b>In Progress</b> and <b>Issues</b> lists are both empty — everything open sits in <b>Todo</b>, six cards. Every one of them maps to a real gap found above.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Gap</th><th>Spec ref</th><th>Trello card</th><th>Coverage</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>README has no Architecture or Demo section</td>
+              <td class="mono">§45.2</td>
+              <td class="card-name">T26 · README</td>
+              <td><span class="covers">Covers it</span></td>
+            </tr>
+            <tr>
+              <td>No standalone 7-part system-architecture document</td>
+              <td class="mono">§45.3</td>
+              <td class="card-name">T27 · Architecture Document</td>
+              <td><span class="covers">Covers it</span></td>
+            </tr>
+            <tr>
+              <td>ADR-001/002 not standalone files; 2 of 8 §40 questions unwritten</td>
+              <td class="mono">§45.4 / §40</td>
+              <td class="card-name">T28 · ADRs + the 8 questions <span style="color:var(--ink-faint)">[unassigned]</span></td>
+              <td><span class="covers">Covers it</span> — card text is stale, see below</td>
+            </tr>
+            <tr>
+              <td>Demo flow (10-step walkthrough, live "add MACD") unrehearsed</td>
+              <td class="mono">§41 / §46</td>
+              <td class="card-name">T29 · Demo preparation</td>
+              <td><span class="covers">Covers it</span></td>
+            </tr>
+            <tr>
+              <td>No UI for loop state / pause / resume observability</td>
+              <td class="mono">§32.7</td>
+              <td class="card-name">T21 · Loop monitoring page <span style="color:var(--ink-faint)">[optional]</span></td>
+              <td><span class="covers">Covers it</span></td>
+            </tr>
+            <tr>
+              <td>Backtest date picker can't pull a historical range Binance-side — storage only ever holds what a Realtime-tab watch backfilled (~1000 candles)</td>
+              <td class="mono">§19 / §37</td>
+              <td class="card-name">"Backtest: fetch a specific historical range…" <span style="color:var(--ink-faint)">[unlabeled]</span></td>
+              <td><span class="covers">Covers it</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:18px; font-size:14.5px; color:var(--ink-soft);"><b style="color:var(--ink);">Verdict: yes.</b> No gap surfaced by this audit is missing a card, and no open card is chasing a gap that isn't real. The backlog is accurate — it's just two of its own descriptions that have drifted, below.</p>
+    </section>
+
+    <section class="block" id="threads">
+      <h2 class="block-h">Loose threads</h2>
+      <p class="block-sub">Not gaps in the system — gaps in the paperwork about the system. Worth five minutes before anyone picks up the related card.</p>
+
+      <div class="callout">
+        <div class="callout-h">T28's own description undercounts the work already done</div>
+        <p>The card text says "16 records exist in <code>docs/decisions/</code> (0001–0016)." The repo now has <b>39</b>, through last night's merges — including <code>0034</code>–<code>0036</code>, which settle the backtest rules and the overall-score formula that the card lists as still needing a team decision. Whoever picks up T28 is writing two ADR files and answering two questions, not the larger scope the current text implies. Refresh the card before assigning it.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-h"><code>docs/decisions/README.md</code>'s "Still open" section is stale</div>
+        <p>It lists the five backtest rules and the overall-score formula as unsettled — both are answered in ADRs 0034–0036, already merged. The only genuinely open item left in that section is "who writes T28." A one-line prune keeps it from sending the next reader chasing settled decisions.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-h">Five OpenSpec change folders are unarchived despite merged code</div>
+        <p><code>t06-historical-candles</code>, <code>t08-4-chart-dashboard</code>, <code>t10-indicator-service</code>, <code>historical-candles-date-range</code> and <code>backtest-history-chart</code> under <code>openspec/changes/</code> all have code fully merged into <code>dev</code>, but their own closing checklists (commit / push / PR / move the Trello card / archive) are left unticked. Cosmetic process debt, not a functional gap — but worth a sweep before hand-in so the spec folder matches reality.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Compiled by reading docs/crypto-strategy-lab-do-an-cuoi-ky.md against apps/api, apps/web, packages/contracts, docs/decisions, openspec, and the Software Architecture Trello board. No source code shown, file paths only.
+</footer>
+
+<button id="themeToggle" class="theme-toggle" type="button" title="Switch theme">
+  <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+  <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>
+</button>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function label() {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    btn.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+  }
+  label();
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('gap-ledger-theme', next); } catch (e) {}
+    label();
+  });
+})();
+</script>
+</body>
+</html>
