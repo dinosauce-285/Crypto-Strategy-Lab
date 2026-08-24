@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
+import { date } from '../market/format';
 
 interface DatasetPickerProps {
   selectedDataset: Dataset | null;
@@ -52,7 +53,7 @@ export function DatasetPicker({
   }, []);
 
   const selectedLabel = selectedDataset
-    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${new Date(selectedDataset.from).toLocaleDateString()} - ${new Date(selectedDataset.to).toLocaleDateString()})`
+    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${date(selectedDataset.from)} - ${date(selectedDataset.to)})`
     : loading
       ? 'Đang tải dataset…'
       : '(Chưa có dataset nào)';
@@ -109,7 +110,7 @@ export function DatasetPicker({
                   }}
                 >
                   <span>
-                    {d.pair} · {d.timeframe} ({new Date(d.from).toLocaleDateString()} - {new Date(d.to).toLocaleDateString()})
+                    {d.pair} · {d.timeframe} ({date(d.from)} - {date(d.to)})
                   </span>
                   {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
                 </button>
