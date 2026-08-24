@@ -9,22 +9,29 @@ import { Prisma } from '../generated/prisma/client';
  * is always true. Only a Dataset's own fetch writes here now (ADR 0040/0041) — a
  * realtime watch never does.
  */
+const BATCH_SIZE = 500;
+
 @Injectable()
 export class CandleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Batched so a wide-range Dataset backfill (thousands of candles) never puts enough
+  // upserts in one $transaction to trip Prisma's default 5000ms transaction timeout.
   async upsertMany(candles: Candle[]): Promise<void> {
     if (candles.length === 0) return;
-    await this.prisma.$transaction(
-      candles.map((candle) => {
-        const row = toRow(candle);
-        return this.prisma.candle.upsert({
-          where: { pair_timeframe_openTime: pick(row) },
-          create: row,
-          update: row,
-        });
-      }),
-    );
+    for (let i = 0; i < candles.length; i += BATCH_SIZE) {
+      const batch = candles.slice(i, i + BATCH_SIZE);
+      await this.prisma.$transaction(
+        batch.map((candle) => {
+          const row = toRow(candle);
+          return this.prisma.candle.upsert({
+            where: { pair_timeframe_openTime: pick(row) },
+            create: row,
+            update: row,
+          });
+        }),
+      );
+    }
   }
 
   async range(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {

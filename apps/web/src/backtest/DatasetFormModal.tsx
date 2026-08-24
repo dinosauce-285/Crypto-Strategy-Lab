@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dataset, Timeframe } from '@csl/contracts';
 import { PAIRS } from '../market/PairSelect';
 
@@ -28,6 +28,16 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!submitting) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [submitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,6 +228,12 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
             </div>
           </div>
 
+          {submitting && (
+            <p className="state">
+              Đang tải nến từ Binance — với khoảng ngày dài có thể mất 10-20 giây.
+            </p>
+          )}
+
           {error && <p className="state bad">{error}</p>}
 
           <div className="controls-row" style={{ marginTop: '0.75rem' }}>
@@ -226,7 +242,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               className="btn-action btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Đang tạo…' : 'Tạo & Chọn Dataset'}
+              {submitting ? `Đang tạo… (${elapsedSeconds}s)` : 'Tạo & Chọn Dataset'}
             </button>
             <button
               type="button"
