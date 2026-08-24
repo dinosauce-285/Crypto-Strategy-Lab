@@ -13,6 +13,7 @@ import {
 import { Header } from '../layout/Header';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
 import { useTopic } from '../channel/use-topic';
+import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { SearchControlsPanel } from '../search/SearchControlsPanel';
 import { SearchProgressPanel } from '../search/SearchProgressPanel';
 import { SearchRegistryState } from '../search/SearchRegistryState';
@@ -112,13 +113,13 @@ export function SearchScreen() {
     const missingCore = CORE_GROUPS.filter((group) => !selectedGroups.has(group));
     const missingContext = CONTEXT_GROUPS.some((group) => selectedGroups.has(group))
       ? []
-      : ['Structure/Volatility/Information'];
-    return [...missingCore, ...missingContext];
+      : [CONTEXT_GROUPS.map((group) => STRATEGY_GROUP_LABELS[group]).join('/')];
+    return [...missingCore.map((group) => STRATEGY_GROUP_LABELS[group]), ...missingContext];
   }, [mode, selectedRefs, strategies]);
 
   const blockedReason =
     missingGroups.length > 0
-      ? `Domain guided needs Trend, Momentum, and one of Structure/Volatility/Information. Missing: ${missingGroups.join(', ')}.`
+      ? `Chế độ Có định hướng cần nhóm ${CORE_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join(', ')} và ít nhất một trong số ${CONTEXT_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join('/')}. Còn thiếu: ${missingGroups.join(', ')}.`
       : null;
 
   const canStart = useMemo(
@@ -162,7 +163,7 @@ export function SearchScreen() {
 
   return (
     <main className="screen">
-      <Header title="Search Control" />
+      <Header title="Điều khiển Search" />
 
       {strategyState.kind === 'loading' && <SearchRegistryState kind="loading" />}
 
@@ -223,7 +224,7 @@ export function SearchScreen() {
 
 async function readJson<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>;
-  throw new Error(`HTTP ${response.status}`);
+  throw new Error(`Lỗi HTTP ${response.status}`);
 }
 
 async function postRun(path: string, body?: unknown): Promise<RunStatus> {

@@ -48,7 +48,7 @@ export function SearchControlsPanel({
 
       <div className="panel search-control-panel">
         <div className="panel-head">
-          <h2>Run Bound</h2>
+          <h2>Giới hạn lượt chạy</h2>
         </div>
 
         <label className="form-group">
@@ -59,8 +59,8 @@ export function SearchControlsPanel({
             disabled={disabled}
             onChange={(event) => onModeChange(event.target.value as SearchMode)}
           >
-            <option value="domain-guided">Domain guided</option>
-            <option value="random">Random</option>
+            <option value="domain-guided">Có định hướng (Domain guided)</option>
+            <option value="random">Ngẫu nhiên</option>
           </select>
         </label>
 
@@ -85,7 +85,7 @@ export function SearchControlsPanel({
           disabled={!canStart || busy || isRunning}
           onClick={onStart}
         >
-          {busy ? 'Starting...' : 'START SEARCH'}
+          {busy ? 'Đang bắt đầu...' : 'BẮT ĐẦU SEARCH'}
         </button>
       </div>
     </div>
