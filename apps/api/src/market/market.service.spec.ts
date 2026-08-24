@@ -87,14 +87,12 @@ describe('MarketService & Connection Recovery (T09)', () => {
 
     const exchangeHistory: ExchangeHistoryPort = {
       fetchKlines: async () => [],
+      fetchRange: async () => [],
     };
 
     const candles = {
       range: async () => [],
-      hasHistory: async () => false,
       upsertMany: async () => {},
-      upsert: async () => {},
-      onCandleClosed: async () => {},
     } as unknown as CandleRepository;
 
     const service = new MarketService(

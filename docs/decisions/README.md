@@ -71,6 +71,8 @@ code that assumes it.
 - [0037](0037-domain-guided-search-uses-group-composition-and-top-history.md) — domain-guided search uses group composition and a top-result history
 - [0038](0038-search-runs-carry-strategy-universe.md) — search runs carry selected strategy versions
 - [0039](0039-news-sentiment-strategy-and-causal-aggregation.md) — news sentiment strategy plugs into the strategy registry with causal aggregation
+- [0040](0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md) — realtime-watched candles are read live from the exchange, not persisted
+- [0041](0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md) — dataset creation fetches and stores its own candle range from the exchange, paginated
 
 
 

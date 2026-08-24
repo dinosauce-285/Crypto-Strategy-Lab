@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ Cái Khoảng Trống</title>
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('gap-ledger-theme');
+    var theme = (saved === 'light' || saved === 'dark')
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#EEF1EE; --surface:#FFFFFF; --surface-2:#E3E9E3;
+    --ink:#182220; --ink-soft:#4B5854; --ink-faint:#7C8A85;
+    --line:#D2DAD2; --line-soft:#E2E7E1;
+    --accent:#2F6F6B; --accent-ink:#1E4B48; --accent-tint:#DEEBEA;
+    --mark:#B5652D; --mark-tint:#F2E3D4;
+    --ok:#2F7D46; --ok-bg:#E1F0E3;
+    --partial:#A9741F; --partial-bg:#F4E9D2;
+    --missing:#A8433A; --missing-bg:#F5E2E0;
+    --clean:#55625E; --clean-bg:#E6EAE6;
+    --shadow: 0 1px 2px rgba(24,34,32,.06), 0 8px 24px -12px rgba(24,34,32,.12);
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+      --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+      --line:#28332F; --line-soft:#202B27;
+      --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+      --mark:#E0954F; --mark-tint:#2A2016;
+      --ok:#7BD08C; --ok-bg:#16261A;
+      --partial:#E3B65E; --partial-bg:#2C2413;
+      --missing:#E88E80; --missing-bg:#2E1B18;
+      --clean:#93A29C; --clean-bg:#1B2321;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+    --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+    --line:#28332F; --line-soft:#202B27;
+    --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+    --mark:#E0954F; --mark-tint:#2A2016;
+    --ok:#7BD08C; --ok-bg:#16261A;
+    --partial:#E3B65E; --partial-bg:#2C2413;
+    --missing:#E88E80; --missing-bg:#2E1B18;
+    --clean:#93A29C; --clean-bg:#1B2321;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-tint); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--accent); text-underline-offset:2px; }
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;
+  }
+  code, .mono{ font-family:var(--mono); }
+
+  /* ---------- header ---------- */
+  header.cover{
+    padding:56px 32px 40px; border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(1100px 260px at 12% -30%, var(--accent-tint), transparent 60%),
+      var(--surface);
+  }
+  .cover-inner{ max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--mark); }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,54px);
+    line-height:1.05; margin:0 0 14px; text-wrap:balance; letter-spacing:-.01em;
+  }
+  .dek{
+    font-size:17.5px; color:var(--ink-soft); max-width:62ch; margin:0 0 26px; text-wrap:pretty;
+  }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px; font-family:var(--mono); font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .meta-row b{ color:var(--ink-soft); font-weight:500; }
+
+  /* ---------- summary strip ---------- */
+  .summary{
+    max-width:1180px; margin:-1px auto 0; padding:28px 32px 8px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;
+  }
+  .stat{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:18px 18px 16px; box-shadow:var(--shadow);
+  }
+  .stat .n{ font-family:var(--serif); font-weight:600; font-size:32px; line-height:1; }
+  .stat .n.ok{ color:var(--ok); } .stat .n.partial{ color:var(--partial); } .stat .n.clean{ color:var(--clean); }
+  .stat .l{ margin-top:8px; font-size:13px; color:var(--ink-soft); }
+  .stat.verdict{ border-color:var(--accent); }
+  .stat.verdict .n{ font-size:20px; font-family:var(--sans); font-weight:700; color:var(--accent-ink); }
+
+  /* ---------- layout ---------- */
+  .shell{
+    max-width:1180px; margin:0 auto; padding:36px 32px 90px;
+    display:grid; grid-template-columns:220px 1fr; gap:44px; align-items:start;
+  }
+  nav.toc{
+    position:sticky; top:24px; display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--line); padding-left:16px;
+  }
+  nav.toc .toc-h{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:10px;
+  }
+  nav.toc a{
+    font-size:13px; color:var(--ink-soft); text-decoration:none; padding:5px 0;
+    border-left:2px solid transparent; margin-left:-17px; padding-left:15px;
+  }
+  nav.toc a:hover{ color:var(--ink); border-left-color:var(--line); }
+  nav.toc a.sep{ margin-top:10px; padding-top:14px; border-top:1px solid var(--line-soft); }
+
+  main{ min-width:0; }
+  section.block{ margin-bottom:56px; }
+  .block-h{
+    font-family:var(--serif); font-weight:600; font-size:23px; margin:0 0 6px; letter-spacing:-.01em;
+  }
+  .block-sub{ color:var(--ink-soft); font-size:14.5px; margin:0 0 22px; max-width:68ch; }
+
+  /* ---------- dossier entries ---------- */
+  .entry{
+    display:grid; grid-template-columns:52px 1fr; gap:18px;
+    padding:20px 0; border-top:1px solid var(--line-soft);
+    scroll-margin-top:20px;
+  }
+  .entry:first-of-type{ border-top:1px solid var(--line); }
+  .entry .num{
+    font-family:var(--mono); font-size:13px; color:var(--mark); padding-top:3px;
+  }
+  .entry-head{ display:flex; align-items:baseline; flex-wrap:wrap; gap:10px 14px; margin-bottom:8px; }
+  .entry-title{ font-family:var(--sans); font-weight:600; font-size:16.5px; }
+  .pill{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px; white-space:nowrap; font-weight:500;
+  }
+  .pill--ok{ background:var(--ok-bg); color:var(--ok); }
+  .pill--partial{ background:var(--partial-bg); color:var(--partial); }
+  .pill--clean{ background:var(--clean-bg); color:var(--clean); }
+  .entry p{ margin:0; color:var(--ink-soft); font-size:14.5px; max-width:74ch; }
+  .entry p + p{ margin-top:10px; }
+  .gapline{
+    margin-top:10px; padding:9px 13px; border-left:2px solid var(--partial);
+    background:var(--partial-bg); border-radius:0 6px 6px 0; font-size:13.5px; color:var(--ink);
+    max-width:74ch;
+  }
+  .gapline b:first-child{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--partial); display:block; margin-bottom:3px; }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border:1px solid var(--line); border-radius:12px; padding:22px 24px; background:var(--surface);
+    box-shadow:var(--shadow); margin-bottom:20px;
+  }
+  .callout.highlight{ border-color:var(--mark); background:var(--mark-tint); }
+  .callout-h{ display:flex; align-items:center; gap:10px; font-weight:600; font-size:15px; margin-bottom:8px; }
+  .callout-h .tag{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    background:var(--mark); color:var(--surface); padding:2px 8px; border-radius:4px;
+  }
+  .callout p{ margin:0 0 8px; color:var(--ink-soft); font-size:14.5px; }
+  .callout p:last-child{ margin-bottom:0; }
+  .callout code{ background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:.92em; color:var(--ink); }
+
+  /* ---------- mvp checklist ---------- */
+  .mvp-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin:18px 0 20px;
+  }
+  .mvp-item{
+    display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--surface);
+    border:1px solid var(--line); border-radius:8px; font-size:13.5px;
+  }
+  .mvp-item .chk{
+    width:16px; height:16px; border-radius:50%; background:var(--ok-bg); color:var(--ok);
+    display:flex; align-items:center; justify-content:center; font-size:10px; flex:none;
+  }
+
+  /* ---------- table ---------- */
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); box-shadow:var(--shadow); }
+  table{ width:100%; border-collapse:collapse; font-size:13.8px; min-width:760px; }
+  thead th{
+    text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-faint); padding:12px 16px; border-bottom:1px solid var(--line); background:var(--surface-2);
+  }
+  tbody td{ padding:14px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top; color:var(--ink-soft); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td.card-name{ color:var(--ink); font-weight:500; }
+  .covers{ display:inline-flex; align-items:center; gap:6px; color:var(--ok); font-weight:500; font-size:13px; }
+  .covers::before{ content:'✓'; font-family:var(--mono); }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 32px 60px; color:var(--ink-faint); font-size:12.5px;
+    font-family:var(--mono);
+  }
+
+  @media (max-width: 880px){
+    .shell{ grid-template-columns:1fr; }
+    nav.toc{
+      position:static; border-left:none; padding-left:0; flex-direction:row; flex-wrap:wrap;
+      gap:4px 14px; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px;
+    }
+    nav.toc .toc-h{ width:100%; }
+    nav.toc a{ margin-left:0; padding-left:0; border-left:none; }
+    nav.toc a.sep{ margin-top:0; padding-top:0; border-top:none; }
+    .entry{ grid-template-columns:1fr; }
+    .entry .num{ padding-top:0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{ scroll-behavior:auto !important; } }
+  html{ scroll-behavior:smooth; }
+
+  /* ---------- theme toggle ---------- */
+  .theme-toggle{
+    position:fixed; top:20px; right:24px; z-index:50;
+    width:40px; height:40px; border-radius:50%; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);
+    color:var(--ink-soft); cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+  .theme-toggle:active{ transform:scale(.94); }
+  .theme-toggle svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .theme-toggle .i-moon{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-sun{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-moon{ display:block; }
+  @media (prefers-reduced-motion: reduce){ .theme-toggle{ transition:none; } }
+  @media (max-width: 520px){ .theme-toggle{ top:14px; right:14px; width:36px; height:36px; } }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="cover-inner">
+    <div class="eyebrow"><span class="dot"></span>Audit kiến trúc · Crypto Strategy Lab</div>
+    <h1>Đặc tả so với hiện trạng, rồi hiện trạng so với backlog</h1>
+    <p class="dek">Từng yêu cầu trong đề bài được đối chiếu trực tiếp với những gì đang có trên <code>dev</code> hôm nay — sau đó từng thẻ Trello còn mở được đối chiếu với những gì còn thiếu. Không khoảng trống nào thiếu thẻ theo dõi; không thẻ nào theo dõi một khoảng trống không có thật.</p>
+    <div class="meta-row">
+      <span><b>Nguồn</b> docs/crypto-strategy-lab-do-an-cuoi-ky.md</span>
+      <span><b>Nhánh</b> dev @ d3ae1a3</span>
+      <span><b>Board</b> Software Architecture (Trello)</span>
+      <span><b>Biên soạn</b> 24/08/2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="stat"><div class="n ok">17 / 19</div><div class="l">hạng mục trong đặc tả đã hoàn thiện</div></div>
+  <div class="stat"><div class="n partial">1</div><div class="l">còn dang dở — tài liệu nộp bài (§45)</div></div>
+  <div class="stat"><div class="n clean">1</div><div class="l">rà soát anti-pattern — sạch</div></div>
+  <div class="stat verdict"><div class="n">MVP (§37): đáp ứng đầy đủ</div><div class="l">cộng thêm 2 phần mở rộng ngoài phạm vi MVP</div></div>
+</div>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-h">Trong trang này</div>
+    <a href="#finding">Phát hiện trong lúc audit</a>
+    <a href="#gaps" class="sep">Phân tích khoảng trống</a>
+    <a href="#s01">01 · Dữ liệu thị trường</a>
+    <a href="#s02">02 · Biểu đồ đa khung thời gian</a>
+    <a href="#s03">03 · Strategy Engine</a>
+    <a href="#s04">04 · Các Strategy</a>
+    <a href="#s05">05 · Plugin / Registry</a>
+    <a href="#s06">06 · Composite Strategy</a>
+    <a href="#s07">07 · Search Engine</a>
+    <a href="#s08">08 · Backtesting</a>
+    <a href="#s09">09 · Evaluation</a>
+    <a href="#s10">10 · Leaderboard</a>
+    <a href="#s11">11 · Continuous Loop</a>
+    <a href="#s12">12 · Visualization</a>
+    <a href="#s13">13 · News Crawler</a>
+    <a href="#s14">14 · Sentiment Analysis</a>
+    <a href="#s15">15 · Lưu trữ dữ liệu</a>
+    <a href="#s16">16 · Versioning</a>
+    <a href="#s17">17 · Kiến trúc Event-driven</a>
+    <a href="#s18">18 · Tài liệu nộp bài</a>
+    <a href="#s19">19 · Anti-patterns</a>
+    <a href="#mvp" class="sep">Checklist MVP</a>
+    <a href="#trello">Độ phủ trên Trello</a>
+    <a href="#threads">Việc lặt vặt còn sót</a>
+  </nav>
+
+  <main>
+
+    <section class="block" id="finding">
+      <h2 class="block-h">Điều gì thay đổi trong lúc viết báo cáo này</h2>
+      <p class="block-sub">Nên đọc phần này trước — nó giải thích vì sao Sentiment Strategy bên dưới được ghi nhận là đã hoàn thiện, dù lượt kiểm tra đầu tiên trên code không tìm thấy nó.</p>
+
+      <div class="callout highlight">
+        <div class="callout-h"><span class="tag">Xảy ra ngay trong lúc audit</span>Sentiment-as-strategy chuyển từ thiếu sang đã merge ngay giữa lúc viết báo cáo</div>
+        <p>Lượt kiểm tra đầu tiên trên <code>dev</code> (commit <code>b7f1515</code>) chỉ thấy bốn strategy đã đăng ký — MA, RSI, Bollinger, Support/Resistance — không có strategy nào đọc sentiment, trái ngược với thẻ <code>T25 · NewsSentimentStrategy</code> trên Trello vốn đã nằm ở cột <b>Done</b>.</p>
+        <p>Kiểm tra trực tiếp thì ra câu chuyện thật: phần việc đã hoàn tất trên nhánh <code>origin/T25-news-sentiment-strategy</code> (class strategy, một causal sentiment calculator, test, ADR <code>0039</code>, đã đăng ký) nhưng chưa được merge — PR&nbsp;#24 vẫn đang trong quá trình merge. Nó được merge vào <code>dev</code> lúc <code>2026-08-23T22:56:49Z</code>, đúng ngay trong lúc audit này đang chạy. Pull lại một lần nữa xác nhận điều đó: <code>dev</code> hiện đang ở <code>d3ae1a3</code>, năm strategy đã đăng ký, bao gồm cả sentiment.</p>
+        <p>Mọi phát hiện bên dưới phản ánh trạng thái sau khi merge. Mục 4 và 14 được ghi là đã hoàn thiện vì bây giờ đúng là như vậy — nhưng chuyện suýt lệch pha này đáng để biết: nhãn "Done" trên Trello không có nghĩa là "đã có trên dev" suốt khoảng 24 giờ.</p>
+      </div>
+    </section>
+
+    <section class="block" id="gaps">
+      <h2 class="block-h">Phân tích khoảng trống</h2>
+      <p class="block-sub">Mỗi mục ứng với một hạng mục yêu cầu trong đề bài (§4–§35 tương ứng với các mục 1–19 bên dưới). Trạng thái phản ánh <code>dev</code> tính đến thời điểm merge nêu trên. Chỉ nêu đường dẫn file — không hiển thị code.</p>
+
+      <div class="entry" id="s01">
+        <div class="num">01</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Realtime Market Data</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Frontend không bao giờ chạm trực tiếp vào cấu trúc dữ liệu của Binance — <code>market/binance-stream.adapter.ts</code>, <code>market.service.ts</code>, cùng <code>ports/exchange-stream.port.ts</code> / <code>ports/exchange-history.port.ts</code> tạo thành lớp phân tầng mà đề bài yêu cầu (§4). Việc reconnect và gap-backfill khi mất kết nối được xử lý phía server (ADR 0032), trả lời trực tiếp câu hỏi ở §32.4.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s02">
+        <div class="num">02</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Multi-Timeframe Chart</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>screens/RealtimeScreen.tsx</code> và <code>market/Dashboard.tsx</code> render tối đa bốn ô chart, mỗi ô có bộ chọn timeframe riêng — đổi một ô không ảnh hưởng các ô còn lại. Các lớp overlay cho indicator, support/resistance và signal nằm trong <code>backtest/SingleRunChart.tsx</code>.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s03">
+        <div class="num">03</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Engine</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>strategy/runnable-strategy.ts</code> định nghĩa đúng khuôn dạng <code>analyze(context) → {direction, strength}</code> trên một <code>StrategyContext</code>, khớp chính xác với interface ở §6.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s04">
+        <div class="num">04</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategies (MA / RSI / Bollinger / S-R / Sentiment)</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Năm strategy đã được đăng ký trong <code>strategy/registered-strategies.ts</code>: bốn strategy MVP bắt buộc (§7–§10) cộng thêm <code>strategies/sentiment.strategy.ts</code>, phần mở rộng ở §30 — đã merge như mô tả ở trên. SMC và Wyckoff (§11) chưa được xây dựng, nhưng đề bài đánh dấu đây là phần không bắt buộc.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s05">
+        <div class="num">05</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Plugin / Registry</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>strategy/strategy.registry.ts</code> + <code>registered-strategies.ts</code> — thêm một strategy mới chỉ cần một file cộng một dòng trong mảng đăng ký; registry từ chối trùng id+version. Không có chuỗi if/else nào ở bất kỳ đâu (ADR 0033), trả lời trực tiếp §12 và kịch bản "thêm MACD" ở §41.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s06">
+        <div class="num">06</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Composite Strategy / Combination</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Hàm <code>analyze()</code> trong <code>runnable-strategy.ts</code> kết hợp tín hiệu của các strategy thành viên bằng điểm số có trọng số (Σ direction × weight). Cách kia mà đề bài nêu, majority vote, đã được cân nhắc và chủ động bỏ qua (ADR 0014) — một lựa chọn có ghi lại lý do, không phải bỏ sót.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s07">
+        <div class="num">07</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Search Engine</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Cả hai cách tìm kiếm bắt buộc đều đã có: <code>search/random-candidate.generator.ts</code> và <code>search/domain-guided-candidate.generator.ts</code>, trong đó cách thứ hai nhóm các strategy thành Trend / Momentum / Volatility / Structure / Information và yêu cầu mỗi composite phải có một strategy nhóm trend + một nhóm momentum + một nhóm ngữ cảnh, đúng theo §17. Genetic/Bayesian search (§18, đề bài ghi rõ không bắt buộc) chưa được xây dựng.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s08">
+        <div class="num">08</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Backtesting Engine</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>search/backtest-runner.service.ts</code> mô phỏng giao dịch từng lệnh một với tính nhân quả nghiêm ngặt (candle ở vị trí <i>i</i> không bao giờ thấy được dữ liệu sau nó), entry price và fee rate có thể cấu hình, lấy từ chính rule của dataset (ADR 0034).</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s09">
+        <div class="num">09</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Evaluation</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>evaluation/evaluator.service.ts</code> cùng các calculator của nó (<code>return</code>, <code>drawdown</code>, <code>risk-metrics</code>, <code>win-rate</code>) tính Return, Win Rate, số lượng Trade, Max Drawdown, Profit Factor và Sharpe. Evaluator chỉ nhận trades và rules như input thuần (ADR 0035) — nó không biết gì về cách một strategy tạo ra các trade đó, đáp ứng đúng yêu cầu tách biệt ở §20.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s10">
+        <div class="num">10</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Leaderboard</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>ranking/score.calculator.ts</code> tính một overall score có trọng số (return, win rate, drawdown, Sharpe) kèm hệ số giảm theo độ tin cậy dựa trên số lượng trade (ADR 0036) — đáp ứng yêu cầu ở §21 là phải trình bày rõ công thức. Leaderboard tính lại từ toàn bộ experiment ở mỗi lần đọc, thay vì chèn top-K tăng dần như ví dụ trong đề bài (§22); ADR 0011 ghi lại đây là một đánh đổi có chủ đích giữa sự đơn giản và tính nhất quán, không phải một thiếu sót.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s11">
+        <div class="num">11</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Continuous Strategy Loop</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>search/active-run.ts</code> theo dõi số lượng tried / failed / duplicate, thời gian backtest trung bình và candidate tốt nhất hiện tại — với stop condition rõ ràng, không bao giờ là vòng lặp vô hạn (§23). BullMQ đứng sau pipeline Generator → Queue → Worker → Evaluator → Ranking (§24, §32.5), và pause/resume đã tồn tại sẵn ở phía server.</p>
+          <div class="gapline"><b>Khoảng trống</b>Trạng thái backend của vòng lặp chưa có trang UI riêng — các câu hỏi observability ở §32.7 (đang chạy hay không? đã thử bao nhiêu? ai đang top 1?) chưa được hiển thị ở đâu cả. Được theo dõi ở <b>T21</b>, và trên board đã ghi rõ là không bắt buộc.</div>
+        </div>
+      </div>
+
+      <div class="entry" id="s12">
+        <div class="num">12</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Visualization</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>backtest/SingleRunChart.tsx</code> + <code>TradesTable.tsx</code> — chọn một dòng trade sẽ pan và highlight chart tới đúng khoảng entry/exit của trade đó, khớp trực tiếp với §26.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s13">
+        <div class="num">13</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">News Crawler</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>news/ports/news-provider.port.ts</code> trừu tượng hóa nguồn tin; <code>news/providers/cryptocompare-news.provider.ts</code> và <code>rss-news.provider.ts</code> đều implement nó (ADR 0031) — đổi nguồn tin không lan ảnh hưởng xuống bất kỳ đâu phía sau, đúng như §28 yêu cầu.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s14">
+        <div class="num">14</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Sentiment Analysis</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>sentiment/sentiment.service.ts</code> cùng <code>providers/groq-sentiment.provider.ts</code> và <code>heuristic-sentiment.provider.ts</code> phân loại và lưu POSITIVE/NEGATIVE/NEUTRAL kèm điểm số, phía sau một interface <code>SentimentProvider</code> (ADR 0005). Sentiment giờ cũng đã trở thành đầu vào cho một strategy (mục 04 ở trên) — trường hợp "sentiment trở thành strategy" ở §30 đã được đóng lại.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s15">
+        <div class="num">15</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Database / Lưu trữ dữ liệu</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p><code>apps/api/prisma/schema.prisma</code> bao phủ đủ năm nhóm dữ liệu mà §35 liệt kê — Candle, Strategy (khóa kết hợp id+version), Dataset, Experiment, Trade, News (kèm các trường sentiment).</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s16">
+        <div class="num">16</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Strategy Versioning / Reproducibility</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Một strategy được định danh bằng <code>(strategyId, version)</code> cộng một hash của tham số (ADR 0009). <code>Experiment.specHash</code> cho phép truy ngược mọi dòng trên leaderboard về đúng (các) phiên bản strategy và tham số đã tạo ra nó — đúng y yêu cầu ở §36.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s17">
+        <div class="num">17</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Event-Driven Architecture</span><span class="pill pill--ok">Đã triển khai</span></div>
+          <p>Một event emitter chạy in-process (ADR 0003) kết nối <code>market</code>, <code>news</code>, <code>sentiment</code>, <code>search</code>, <code>backtest</code>, <code>ranking</code> và realtime gateway — các module publish và subscribe với nhau thay vì gọi thẳng service của nhau, đúng kiểu decoupling mà §34 mô tả.</p>
+        </div>
+      </div>
+
+      <div class="entry" id="s18">
+        <div class="num">18</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Tài liệu nộp bài (Deliverables)</span><span class="pill pill--partial">Còn dang dở</span></div>
+          <p>Đã có 39 decision record trong <code>docs/decisions/</code> — vượt xa mức "ít nhất 4" mà §45 yêu cầu — và <code>openspec/</code> theo dõi phần lớn các thay đổi đang diễn ra. Những gì chưa được viết: README có đủ Install/Run/Scripts/Layout/Committing nhưng chưa có phần Architecture hay Demo; chưa có tài liệu kiến trúc hệ thống độc lập (System Context, Container/Module decomposition, Component responsibilities, Data Flow, các luồng Realtime/Strategy/Search-Backtest — bảy phần mà §45 yêu cầu); ADR-001 (WebSocket) và ADR-002 (Plugin) chưa được viết thành file riêng, dù phần lý luận đó thật ra đã tồn tại rải rác trong các record khác; và 2 trong 8 câu hỏi ở §40 vẫn chưa được trả lời bằng văn bản.</p>
+          <div class="gapline"><b>Khoảng trống</b>README, một tài liệu kiến trúc độc lập, và hai bài viết ADR ngắn là những deliverable cụ thể duy nhất chưa được tạo ra. Tất cả đều đã được theo dõi (T26, T27, T28 — xem phần độ phủ trên Trello bên dưới).</div>
+        </div>
+      </div>
+
+      <div class="entry" id="s19">
+        <div class="num">19</div>
+        <div>
+          <div class="entry-head"><span class="entry-title">Anti-Patterns (§44)</span><span class="pill pill--clean">Sạch</span></div>
+          <p>Không có God Service — market, news, sentiment, search, evaluation và ranking là các module NestJS tách biệt. Không có chuỗi if/else hardcode để kết hợp (mục 06 ở trên). Không có strategy nào chạm trực tiếp vào Prisma. <code>apps/web</code> chỉ render những gì API trả về và không tính toán gì cả.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="mvp">
+      <h2 class="block-h">Checklist MVP — §37</h2>
+      <p class="block-sub">Cả chín mục đều đã đáp ứng, và hai phần mở rộng ngoài phạm vi MVP cũng đã lên: domain-guided search (§17, không bắt buộc) và sentiment-as-strategy (§30, không bắt buộc).</p>
+      <div class="mvp-grid">
+        <div class="mvp-item"><span class="chk">✓</span>Dữ liệu thị trường</div>
+        <div class="mvp-item"><span class="chk">✓</span>4 strategy</div>
+        <div class="mvp-item"><span class="chk">✓</span>Combination</div>
+        <div class="mvp-item"><span class="chk">✓</span>Backtest</div>
+        <div class="mvp-item"><span class="chk">✓</span>Evaluation</div>
+        <div class="mvp-item"><span class="chk">✓</span>Random search</div>
+        <div class="mvp-item"><span class="chk">✓</span>Leaderboard</div>
+        <div class="mvp-item"><span class="chk">✓</span>Visualization</div>
+        <div class="mvp-item"><span class="chk">✓</span>Pipeline News</div>
+      </div>
+    </section>
+
+    <section class="block" id="trello">
+      <h2 class="block-h">Độ phủ trên Trello</h2>
+      <p class="block-sub">Hai cột <b>In Progress</b> và <b>Issues</b> trên board đều trống — mọi thứ còn mở đều nằm ở <b>Todo</b>, sáu thẻ. Mỗi thẻ đều ứng với đúng một khoảng trống thật đã tìm thấy ở trên.</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Khoảng trống</th><th>Tham chiếu đề bài</th><th>Thẻ Trello</th><th>Độ phủ</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>README chưa có phần Architecture hay Demo</td>
+              <td class="mono">§45.2</td>
+              <td class="card-name">T26 · README</td>
+              <td><span class="covers">Đã phủ</span></td>
+            </tr>
+            <tr>
+              <td>Chưa có tài liệu kiến trúc hệ thống 7 phần riêng biệt</td>
+              <td class="mono">§45.3</td>
+              <td class="card-name">T27 · Architecture Document</td>
+              <td><span class="covers">Đã phủ</span></td>
+            </tr>
+            <tr>
+              <td>ADR-001/002 chưa là file riêng; 2 trong 8 câu hỏi ở §40 chưa được viết</td>
+              <td class="mono">§45.4 / §40</td>
+              <td class="card-name">T28 · Các ADR + 8 câu hỏi <span style="color:var(--ink-faint)">[chưa gán người]</span></td>
+              <td><span class="covers">Đã phủ</span> — nội dung thẻ đã lỗi thời, xem bên dưới</td>
+            </tr>
+            <tr>
+              <td>Luồng demo (10 bước, thêm MACD trực tiếp) chưa được diễn tập</td>
+              <td class="mono">§41 / §46</td>
+              <td class="card-name">T29 · Chuẩn bị Demo</td>
+              <td><span class="covers">Đã phủ</span></td>
+            </tr>
+            <tr>
+              <td>Chưa có UI cho trạng thái vòng lặp / pause / resume observability</td>
+              <td class="mono">§32.7</td>
+              <td class="card-name">T21 · Trang theo dõi vòng lặp <span style="color:var(--ink-faint)">[không bắt buộc]</span></td>
+              <td><span class="covers">Đã phủ</span></td>
+            </tr>
+            <tr>
+              <td>Bộ chọn ngày ở Backtest không kéo được khoảng lịch sử từ phía Binance — storage chỉ giữ những gì tab Realtime từng backfill (~1000 candle)</td>
+              <td class="mono">§19 / §37</td>
+              <td class="card-name">"Backtest: lấy một khoảng lịch sử cụ thể từ sàn…" <span style="color:var(--ink-faint)">[chưa gắn nhãn]</span></td>
+              <td><span class="covers">Đã phủ</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:18px; font-size:14.5px; color:var(--ink-soft);"><b style="color:var(--ink);">Kết luận: có.</b> Không khoảng trống nào audit này tìm ra mà thiếu thẻ theo dõi, và không thẻ nào đang mở lại chạy theo một khoảng trống không có thật. Backlog vẫn chính xác — chỉ có nội dung mô tả của hai thẻ trong đó bị lệch khỏi thực tế, xem bên dưới.</p>
+    </section>
+
+    <section class="block" id="threads">
+      <h2 class="block-h">Việc lặt vặt còn sót</h2>
+      <p class="block-sub">Không phải khoảng trống của hệ thống — mà là khoảng trống trong giấy tờ nói về hệ thống. Đáng bỏ ra năm phút trước khi ai đó nhận thẻ liên quan.</p>
+
+      <div class="callout">
+        <div class="callout-h">Nội dung của chính thẻ T28 đang đếm thiếu phần việc đã xong</div>
+        <p>Nội dung thẻ ghi "đã có 16 record trong <code>docs/decisions/</code> (0001–0016)." Repo hiện đã có <b>39</b>, nhờ các lần merge đêm qua — trong đó có <code>0034</code>–<code>0036</code>, vốn đã chốt luôn các rule backtest và công thức overall-score mà thẻ liệt kê là còn cần cả nhóm quyết định. Ai nhận T28 thực ra chỉ cần viết hai file ADR và trả lời hai câu hỏi, không phải phạm vi lớn như nội dung hiện tại của thẻ gợi ý. Nên cập nhật lại thẻ trước khi giao việc.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-h">Mục "Still open" trong <code>docs/decisions/README.md</code> đã lỗi thời</div>
+        <p>Mục này liệt kê năm rule backtest và công thức overall-score là chưa chốt — cả hai đều đã được trả lời trong ADR 0034–0036, đã merge xong. Mục thật sự còn mở duy nhất trong phần này là "ai sẽ viết T28." Chỉ cần xóa một dòng là tránh được việc người đọc sau lại đi tìm những quyết định đã chốt từ lâu.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-h">Năm thư mục change trong OpenSpec chưa được archive dù code đã merge</div>
+        <p><code>t06-historical-candles</code>, <code>t08-4-chart-dashboard</code>, <code>t10-indicator-service</code>, <code>historical-candles-date-range</code> và <code>backtest-history-chart</code> trong <code>openspec/changes/</code> đều đã có code merge đầy đủ vào <code>dev</code>, nhưng checklist đóng change của chính chúng (commit / push / PR / chuyển thẻ Trello / archive) vẫn chưa được tick. Đây là nợ quy trình mang tính hình thức, không phải khoảng trống chức năng — nhưng đáng dọn lại trước khi nộp bài để thư mục spec khớp với thực tế.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Biên soạn bằng cách đối chiếu docs/crypto-strategy-lab-do-an-cuoi-ky.md với apps/api, apps/web, packages/contracts, docs/decisions, openspec, và bảng Trello Software Architecture. Không hiển thị source code, chỉ nêu đường dẫn file.
+</footer>
+
+<button id="themeToggle" class="theme-toggle" type="button" title="Đổi giao diện sáng/tối">
+  <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+  <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>
+</button>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function label() {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    btn.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+  }
+  label();
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('gap-ledger-theme', next); } catch (e) {}
+    label();
+  });
+})();
+</script>
+</body>
+</html>
