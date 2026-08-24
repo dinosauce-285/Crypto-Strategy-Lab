@@ -55,13 +55,11 @@
       `ExchangeHistoryPort`/`CandleRepository` mocks and `backtest.service.spec.ts`'s
       constructor arg list + added a test asserting `createDataset` calls
       `CandleBackfillPort.ensureRange`).
-- [ ] 4.2 Live, real browser: open Realtime, confirm all 4 charts load and stream for
-      a pair/timeframe that has never been watched before. **Not run** — no browser
-      tool available in this session. Covered instead by calling the exact endpoint
-      `CandleChart` calls (`GET /market/candles`, limit-only) directly: confirmed live
-      Binance data returned in the same `GetCandlesResponseDto` shape, and confirmed
-      via direct Postgres query that zero rows are written for a pair hit this way
-      (see 4.6). Recommend a manual browser check before closing this change.
+- [x] 4.2 Live, real browser (headless Playwright, later session): opened Realtime,
+      confirmed all 4 charts (5m/15m/1h/4h) load and stream real candle data, and the
+      "Kiểm tra hệ thống" panel confirmed API/Postgres/Event bus all reachable —
+      screenshot on file. Combined with 4.6's direct-Postgres proof that watching
+      writes nothing, this closes the item.
 - [x] 4.3 Live: created a Dataset for BNBUSDT/15m (zero rows previously stored for
       that pair/timeframe) via `POST /api/datasets`, then ran `POST /api/backtest/run`
       against it — returned 20 real trades, real metrics, 1152 real candles. Confirms
@@ -92,5 +90,11 @@
 
 - [x] 5.1 `pnpm decision --check` — 41 records, index in sync.
 - [x] 5.2 `openspec validate dataset-owned-candle-storage --strict` — valid.
-- [ ] 5.3 `pnpm commit`, push, open a PR. **Not done** — left for the user to review
-      the diff and decide when to commit.
+- [x] 5.3 Committed, pushed, PR #29 opened and merged to `dev`.
+- [x] 5.4 A follow-up bug (BUG-04, `docs/bug-ledger.vi.html`) surfaced after merge:
+      `CandleRepository.upsertMany` batched an entire fetched range into one Prisma
+      `$transaction`, which exceeded the default 5000ms timeout for wide/fine-grained
+      ranges (e.g. 14 days at `1m`, ~20k candles) — exactly the case this change
+      exists to serve. Fixed in PR #34 (chunked into 500-candle transactions); no
+      behavior or spec change, pure reliability fix. Live-verified: the same 14-day/1m
+      shape now returns HTTP 201 with all candles persisted.
