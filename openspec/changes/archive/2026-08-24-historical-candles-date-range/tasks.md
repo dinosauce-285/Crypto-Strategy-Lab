@@ -8,33 +8,33 @@
 
 ## 1. ExchangeHistoryPort
 
-- [ ] 1.1 `apps/api/src/market/ports/exchange-history.port.ts` — abstract
+- [x] 1.1 `apps/api/src/market/ports/exchange-history.port.ts` — abstract
       `ExchangeHistoryPort` with `fetchKlines(pair, timeframe, limit)`, same signature
       `BinanceRestAdapter` already has.
-- [ ] 1.2 `BinanceRestAdapter extends ExchangeHistoryPort` (same shape as
+- [x] 1.2 `BinanceRestAdapter extends ExchangeHistoryPort` (same shape as
       `BinanceStreamAdapter extends ExchangeStreamPort`).
-- [ ] 1.3 `market.module.ts` registers `{ provide: ExchangeHistoryPort, useClass:
+- [x] 1.3 `market.module.ts` registers `{ provide: ExchangeHistoryPort, useClass:
       BinanceRestAdapter }` instead of `BinanceRestAdapter` directly.
-- [ ] 1.4 `market.service.ts`'s constructor takes `ExchangeHistoryPort`, not the
+- [x] 1.4 `market.service.ts`'s constructor takes `ExchangeHistoryPort`, not the
       concrete adapter; `backfill()`'s call site changes type only, not behaviour.
 
 ## 2. The range query
 
-- [ ] 2.1 `candle.repository.ts`: `range(pair, timeframe, limit)` becomes `range(pair,
+- [x] 2.1 `candle.repository.ts`: `range(pair, timeframe, limit)` becomes `range(pair,
       timeframe, { limit?, from?, to? })`. With `from`/`to`: filter by `openTime`
       between them, ascending, `limit` as an optional safety cap. Without either:
       unchanged from today — most recent `limit`, byte-for-byte.
-- [ ] 2.2 `market.service.ts`'s `getHistory` gains `from`/`to`, passed straight through.
-- [ ] 2.3 `market.controller.ts`: `GET /market/candles` accepts optional `from`/`to`
+- [x] 2.2 `market.service.ts`'s `getHistory` gains `from`/`to`, passed straight through.
+- [x] 2.3 `market.controller.ts`: `GET /market/candles` accepts optional `from`/`to`
       (epoch ms). Reject one-without-the-other and `from > to`. `limit` stays optional
       and clamped in both modes.
-- [ ] 2.4 `dto/get-candles.dto.ts`: `GetCandlesQueryDto` gains `from?: number; to?:
+- [x] 2.4 `dto/get-candles.dto.ts`: `GetCandlesQueryDto` gains `from?: number; to?:
       number`.
 
 ## 3. Verify
 
-- [ ] 3.1 `pnpm --dir apps/api lint`, `exec tsc --noEmit`, `build`.
-- [ ] 3.2 Live against real Postgres: `limit`-only request unchanged from before
+- [x] 3.1 `pnpm --dir apps/api lint`, `exec tsc --noEmit`, `build`.
+- [x] 3.2 Live against real Postgres: `limit`-only request unchanged from before
       (regression check — `CandleChart`/`RecentTicks` depend on this exact shape); a
       fully-covered range returns exactly that range, ascending; a range older than the
       earliest stored candle returns partial data, not an error; `from` without `to`
@@ -44,7 +44,7 @@
 
 ## 4. Close the change
 
-- [ ] 4.1 `pnpm decision --check`.
-- [ ] 4.2 `openspec validate historical-candles-date-range --strict`.
-- [ ] 4.3 `pnpm commit`, push, open a PR.
-- [ ] 4.4 Move the Trello card to Done.
+- [x] 4.1 `pnpm decision --check`.
+- [x] 4.2 `openspec validate historical-candles-date-range --strict`.
+- [x] 4.3 `pnpm commit`, push, open a PR.
+- [x] 4.4 Move the Trello card to Done.

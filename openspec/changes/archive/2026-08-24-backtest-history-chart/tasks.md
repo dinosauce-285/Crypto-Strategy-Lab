@@ -28,4 +28,4 @@
 ## 4. Close the change
 
 - [x] 4.1 `openspec validate backtest-history-chart --strict`.
-- [ ] 4.2 Commit (multiple, by logical part), push, open a PR.
+- [x] 4.2 Commit (multiple, by logical part), push, open a PR.

@@ -106,5 +106,5 @@
 ## 8. Close the change
 
 - [x] 8.1 `pnpm decision --check` passes (24 records, index in sync).
-- [ ] 8.2 `pnpm commit`.
-- [ ] 8.3 Move the T08 Trello card to Done.
+- [x] 8.2 `pnpm commit`.
+- [x] 8.3 Move the T08 Trello card to Done.
