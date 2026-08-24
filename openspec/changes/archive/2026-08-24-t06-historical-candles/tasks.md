@@ -81,4 +81,4 @@
 - [x] 4.4 `pnpm commit`, then push — the gate wants the decision records in the same push
       as the contract, schema or module changes that assume them. Committed as `ab3ff0d`.
       **Not yet pushed.**
-- [ ] 4.5 Move the T06 Trello card to Done.
+- [x] 4.5 Move the T06 Trello card to Done.
