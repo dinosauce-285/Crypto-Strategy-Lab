@@ -5,9 +5,9 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { StrategyModule } from '../strategy/strategy.module';
 import { MarketModule } from '../market/market.module';
 import { IndicatorModule } from '../indicator/indicator.module';
+import { EvaluationModule } from '../evaluation/evaluation.module';
 import { BacktestProcessor } from './backtest.processor';
 import { BacktestWorker } from './backtest.worker';
-import { ExperimentRepository } from './experiment.repository';
 import { DatasetRepository } from './dataset.repository';
 import { BacktestRunner } from './ports/backtest-runner.port';
 import { BacktestRunnerService } from './backtest-runner.service';
@@ -24,9 +24,9 @@ import { BacktestRunnerService } from './backtest-runner.service';
     StrategyModule,
     MarketModule,
     IndicatorModule,
+    EvaluationModule,
   ],
   providers: [
-    ExperimentRepository,
     DatasetRepository,
     { provide: BacktestRunner, useClass: BacktestRunnerService },
     BacktestProcessor,
