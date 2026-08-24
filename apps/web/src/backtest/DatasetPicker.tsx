@@ -54,14 +54,14 @@ export function DatasetPicker({
   const selectedLabel = selectedDataset
     ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${new Date(selectedDataset.from).toLocaleDateString()} - ${new Date(selectedDataset.to).toLocaleDateString()})`
     : loading
-      ? 'Loading datasets…'
-      : '(No datasets defined)';
+      ? 'Đang tải dataset…'
+      : '(Chưa có dataset nào)';
 
   return (
     <div className="dataset-picker-wrap">
       <div className="dataset-picker-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
         <label className="stat-tile-label">
-          Active Dataset
+          Dataset đang dùng
         </label>
         <button
           type="button"
@@ -70,7 +70,7 @@ export function DatasetPicker({
           onClick={onOpenCreateModal}
           style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
         >
-          + New Dataset
+          + Dataset mới
         </button>
       </div>
 
@@ -121,7 +121,7 @@ export function DatasetPicker({
 
       {selectedDataset && (
         <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-          <strong>Rules:</strong> {selectedDataset.rules.entryPrice} · fee {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
+          <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
         </div>
       )}
     </div>
