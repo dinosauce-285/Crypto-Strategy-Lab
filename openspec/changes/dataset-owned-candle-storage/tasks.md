@@ -78,6 +78,15 @@
       despite real candles being returned each time. Total table row count only grew
       by exactly the 1152 rows the BNBUSDT Dataset fetch added — nothing else touched
       the table.
+- [x] 4.7 After merging `dev` (which archived `t06-historical-candles`,
+      `t08-4-chart-dashboard` and `historical-candles-date-range` into a real
+      `openspec/specs/candle-history/` capability), re-ran `openspec validate --strict`
+      and found two of its requirements directly contradicted this change
+      ("backfilled on first watch," "storage-only, never live"). Added a
+      `candle-history` delta (REMOVE the backfill requirement, MODIFY the storage-only
+      and watcher-sees-history requirements, MODIFY the Backtest tab's static-chart
+      empty-state reasoning) and added `candle-history` to the proposal's Modified
+      Capabilities. Validates clean.
 
 ## 5. Close the change
 

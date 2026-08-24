@@ -62,6 +62,15 @@ paginated, with the rate-limit discipline that entails).
   watch history being backfilled into storage — it reads live from the exchange on
   every request, which also means it now depends on the exchange being reachable at
   read time (previously resilient to exchange downtime once backfilled).
+- `candle-history`: this capability archived onto `dev` (via `t06-historical-candles`,
+  `t08-4-chart-dashboard` and `historical-candles-date-range`) after this change's
+  decisions were written, and two of its requirements directly assumed the behavior
+  `0040` removes — "a pair/timeframe is backfilled on first watch" (removed outright)
+  and "a closed candle is available from storage, not the exchange" (narrowed to the
+  explicit `from`/`to` case only, since the default "most recent N" mode no longer
+  holds it). The Backtest tab's static-chart requirement is also updated: its empty
+  state is now explained by "no Dataset covers this range" rather than "never watched
+  on Realtime," since watching no longer stores anything at all.
 
 ## Impact
 
