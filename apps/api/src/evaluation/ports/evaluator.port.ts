@@ -19,6 +19,8 @@ export interface EvaluationResult {
  * Module consumers inject this abstract token (ADR 0020 & BACKEND_CONSTRAINT).
  */
 export abstract class EvaluatorPort {
+  abstract isRecorded(datasetId: string, specHash: string): Promise<boolean>;
+
   abstract computeMetrics(
     trades: readonly Trade[],
     rules: BacktestRules,

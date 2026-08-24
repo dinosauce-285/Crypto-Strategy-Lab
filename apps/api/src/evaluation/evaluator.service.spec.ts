@@ -38,6 +38,14 @@ describe('EvaluatorService', () => {
     service = new EvaluatorService(repository);
   });
 
+  it('delegates isRecorded to the repository', async () => {
+    repository.isRecorded.mockResolvedValue(true);
+
+    const recorded = await service.isRecorded('dataset-1', 'hash-abc');
+    expect(recorded).toBe(true);
+    expect(repository.isRecorded).toHaveBeenCalledWith('dataset-1', 'hash-abc');
+  });
+
   it('computes metrics purely without calling repository', () => {
     const trades: Trade[] = [
       { entryTime: 1000, entryPrice: '100', exitTime: 2000, exitPrice: '110', side: 'BUY', profit: '10' },

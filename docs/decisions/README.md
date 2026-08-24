@@ -73,6 +73,7 @@ code that assumes it.
 - [0039](0039-news-sentiment-strategy-and-causal-aggregation.md) — news sentiment strategy plugs into the strategy registry with causal aggregation
 - [0040](0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md) — realtime-watched candles are read live from the exchange, not persisted
 - [0041](0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md) — dataset creation fetches and stores its own candle range from the exchange, paginated
+- [0042](0042-the-search-worker-evaluates-and-records-experiments-through.md) — the search worker evaluates and records experiments through EvaluatorPort, not its own repository
 
 
 

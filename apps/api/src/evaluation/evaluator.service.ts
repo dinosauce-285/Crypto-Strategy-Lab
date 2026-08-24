@@ -8,6 +8,10 @@ import { EvaluationInput, EvaluationResult, EvaluatorPort } from './ports/evalua
 export class EvaluatorService implements EvaluatorPort {
   constructor(private readonly repository: EvaluationRepository) {}
 
+  async isRecorded(datasetId: string, specHash: string): Promise<boolean> {
+    return this.repository.isRecorded(datasetId, specHash);
+  }
+
   /**
    * Pure evaluation calculation without database side effects.
    */
