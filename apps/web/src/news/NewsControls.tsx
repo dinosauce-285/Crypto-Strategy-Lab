@@ -11,9 +11,9 @@ export interface NewsControlsProps {
 
 const COIN_OPTIONS = ['ALL', 'BTC', 'ETH', 'SOL', 'BNB', 'XRP'];
 const SOURCE_OPTIONS = [
-  { value: 'ALL', label: 'All sources' },
+  { value: 'ALL', label: 'Tất cả nguồn' },
   { value: 'CryptoCompare', label: 'CryptoCompare' },
-  { value: 'RSS', label: 'RSS feeds' },
+  { value: 'RSS', label: 'RSS feed' },
 ];
 
 export function NewsControls({
@@ -28,7 +28,7 @@ export function NewsControls({
 }: NewsControlsProps) {
   return (
     <div className="controls-row" style={{ flexWrap: 'wrap' }}>
-      <div className="seg" role="group" aria-label="Coin selector">
+      <div className="seg" role="group" aria-label="Chọn coin">
         {COIN_OPTIONS.map((c) => (
           <button
             key={c}
@@ -45,7 +45,7 @@ export function NewsControls({
         className="pair-select"
         value={source}
         onChange={(e) => onSourceChange(e.target.value)}
-        aria-label="Filter by news source"
+        aria-label="Lọc theo nguồn tin"
       >
         {SOURCE_OPTIONS.map((s) => (
           <option key={s.value} value={s.value}>
@@ -61,7 +61,7 @@ export function NewsControls({
           onClick={onCollect}
           disabled={isCollecting}
         >
-          {isCollecting ? 'Crawling…' : 'Crawl news'}
+          {isCollecting ? 'Đang crawl…' : 'Crawl tin tức'}
         </button>
 
         <button
@@ -70,7 +70,7 @@ export function NewsControls({
           onClick={onAnalyze}
           disabled={isAnalyzing}
         >
-          {isAnalyzing ? 'Analyzing…' : 'Run AI sentiment'}
+          {isAnalyzing ? 'Đang phân tích…' : 'Chạy phân tích sentiment AI'}
         </button>
       </div>
     </div>

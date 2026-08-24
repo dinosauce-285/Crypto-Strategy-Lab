@@ -92,8 +92,8 @@ const TABS = [
   { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
   { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
   { to: '/search', label: 'Search', icon: SearchIcon },
-  { to: '/leaderboard', label: 'Leaderboard', icon: LeaderboardIcon },
-  { to: '/news', label: 'News Crawler', icon: NewsIcon },
+  { to: '/leaderboard', label: 'Bảng xếp hạng', icon: LeaderboardIcon },
+  { to: '/news', label: 'Tin tức', icon: NewsIcon },
 ];
 
 export function Navbar() {
@@ -101,7 +101,7 @@ export function Navbar() {
     <nav className="navbar">
       <div>
         <p className="navbar-title">Crypto Strategy Lab</p>
-        <p className="sub">the server pushes, the screen never asks twice.</p>
+        <p className="sub">server chủ động đẩy dữ liệu, màn hình không cần hỏi lại lần hai.</p>
       </div>
       <ul className="navbar-tabs">
         {TABS.map(({ to, label, icon: Icon }) => (

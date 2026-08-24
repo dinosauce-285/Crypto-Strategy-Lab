@@ -7,7 +7,7 @@ export function SearchRegistryState({ kind, message }: SearchRegistryStateProps)
   if (kind === 'loading') {
     return (
       <div className="panel search-state-panel">
-        <p className="state">Loading strategy registry metadata...</p>
+        <p className="state">Đang tải dữ liệu strategy...</p>
       </div>
     );
   }
@@ -15,7 +15,7 @@ export function SearchRegistryState({ kind, message }: SearchRegistryStateProps)
   if (kind === 'empty') {
     return (
       <div className="panel search-state-panel">
-        <p className="state">No strategies are registered yet.</p>
+        <p className="state">Chưa có strategy nào được đăng ký.</p>
       </div>
     );
   }
@@ -23,10 +23,10 @@ export function SearchRegistryState({ kind, message }: SearchRegistryStateProps)
   return (
     <div className="panel search-state-panel">
       <p className="state bad">
-        <strong>Failed to load strategies.</strong> {message}
+        <strong>Không tải được danh sách strategy.</strong> {message}
       </p>
       <button type="button" className="btn-action" onClick={() => window.location.reload()}>
-        Retry
+        Thử lại
       </button>
     </div>
   );

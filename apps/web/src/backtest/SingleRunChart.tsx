@@ -163,7 +163,7 @@ export function SingleRunChart({
         position: trade.side === 'BUY' ? 'aboveBar' : 'belowBar',
         color: isHighlighted ? token('--accent') : token('--muted'),
         shape: isHighlighted ? 'circle' : 'square',
-        text: `Exit #${trade.seq}`,
+        text: `Thoát #${trade.seq}`,
         size: isHighlighted ? 2 : 1,
       });
     }

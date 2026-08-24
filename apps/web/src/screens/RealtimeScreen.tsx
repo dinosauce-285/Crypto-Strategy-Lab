@@ -36,14 +36,14 @@ export function RealtimeScreen() {
 
   useEffect(() => {
     fetch('/api/health')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
       .then((health: Health) => setCheck({ kind: 'ready', health, at: Date.now() }))
       .catch((e: Error) => setCheck({ kind: 'error', message: e.message }));
   }, []);
 
   return (
     <main className="screen">
-      <Header title="Realtime Chart - Multi-timeframe" />
+      <Header title="Biểu đồ Realtime - Nhiều khung thời gian" />
 
       <div className="screen-body">
         <div className="screen-main">
@@ -60,20 +60,21 @@ export function RealtimeScreen() {
 
           <section className="panel panel-compact">
             <div className="panel-head">
-              <h2>System check</h2>
+              <h2>Kiểm tra hệ thống</h2>
             </div>
 
             {check.kind === 'ready' && (
               <p className="source">
-                one-time check at {clock(check.at)} — reload the page to run it again
+                kiểm tra một lần lúc {clock(check.at)} — tải lại trang để kiểm tra lại
               </p>
             )}
 
-            {check.kind === 'loading' && <p className="state">Checking the stack…</p>}
+            {check.kind === 'loading' && <p className="state">Đang kiểm tra hệ thống…</p>}
 
             {check.kind === 'error' && (
               <p className="state bad">
-                <strong>API unreachable.</strong> {check.message} Is it running?{' '}
+                <strong>Không kết nối được API.</strong> {check.message} API có đang chạy
+                không?{' '}
                 <code>pnpm dev:api</code>
               </p>
             )}
@@ -81,26 +82,26 @@ export function RealtimeScreen() {
             {check.kind === 'ready' && (
               <dl>
                 <dt>API</dt>
-                <dd className="ok">up</dd>
+                <dd className="ok">đang chạy</dd>
 
                 <dt>Postgres</dt>
                 <dd className={check.health.database === 'up' ? 'ok' : 'bad'}>
-                  {check.health.database}
+                  {check.health.database === 'up' ? 'đang chạy' : 'đang tắt'}
                   {check.health.database === 'down' && (
-                    <span> — start it with <code>pnpm db:up</code></span>
+                    <span> — khởi động bằng <code>pnpm db:up</code></span>
                   )}
                 </dd>
 
                 <dt>Event bus</dt>
                 <dd className={check.health.lastEventAt ? 'ok' : 'bad'}>
                   {check.health.lastEventAt
-                    ? `round-trip ok at ${check.health.lastEventAt}`
-                    : 'no event seen'}
+                    ? `round-trip thành công lúc ${check.health.lastEventAt}`
+                    : 'chưa nhận được event nào'}
                 </dd>
 
-                <dt>Shared contracts</dt>
+                <dt>Contract dùng chung</dt>
                 <dd className="ok">
-                  {TIMEFRAMES.length} timeframes, imported by both sides:{' '}
+                  {TIMEFRAMES.length} timeframe, dùng chung cho cả hai phía:{' '}
                   {check.health.contracts.timeframes.join(' · ')}
                 </dd>
               </dl>

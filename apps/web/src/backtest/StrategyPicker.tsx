@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { StrategyMeta, StrategyParams } from '@csl/contracts';
+import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { DynamicParamForm } from './DynamicParamForm';
 
 interface StrategyPickerProps {
@@ -50,17 +51,17 @@ export function StrategyPicker({
   return (
     <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
       <div className="panel-head">
-        <h2>Strategy Configuration</h2>
+        <h2>Cấu hình Strategy</h2>
         {selectedStrategy && (
           <span className="badge badge-neu">
-            {selectedStrategy.group} · v{selectedStrategy.version}
+            {STRATEGY_GROUP_LABELS[selectedStrategy.group]} · v{selectedStrategy.version}
           </span>
         )}
       </div>
 
       <div className="form-group" style={{ marginTop: '0.25rem' }}>
         <label htmlFor="strategy-select" className="stat-tile-label">
-          Selected Strategy
+          Strategy đã chọn
         </label>
         <select
           id="strategy-select"
@@ -81,7 +82,7 @@ export function StrategyPicker({
       {selectedStrategy && (
         <div style={{ marginTop: '0.5rem' }}>
           <h2 style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
-            Parameters ({selectedStrategy.params.length})
+            Tham số ({selectedStrategy.params.length})
           </h2>
           <DynamicParamForm
             params={selectedStrategy.params}

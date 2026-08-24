@@ -11,7 +11,7 @@ export function PairSelect({ value, onChange }: PairSelectProps) {
       className="pair-select"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      aria-label="Trading pair"
+      aria-label="Cặp giao dịch"
     >
       {PAIRS.map((p) => (
         <option key={p} value={p}>
