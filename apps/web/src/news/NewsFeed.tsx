@@ -79,7 +79,7 @@ export function NewsFeed({
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Input News Feed</h2>
+        <h2>Nguồn tin đầu vào</h2>
         <span className="source">{items.length} bài viết</span>
       </div>
 

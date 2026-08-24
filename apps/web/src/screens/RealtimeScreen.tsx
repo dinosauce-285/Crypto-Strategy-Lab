@@ -99,7 +99,7 @@ export function RealtimeScreen() {
                     : 'chưa nhận được event nào'}
                 </dd>
 
-                <dt>Shared contracts</dt>
+                <dt>Contract dùng chung</dt>
                 <dd className="ok">
                   {TIMEFRAMES.length} timeframe, dùng chung cho cả hai phía:{' '}
                   {check.health.contracts.timeframes.join(' · ')}

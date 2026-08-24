@@ -65,7 +65,7 @@ export function SearchControlsPanel({
         </label>
 
         <label className="form-group">
-          <span className="stat-tile-label">Max candidates</span>
+          <span className="stat-tile-label">Số candidate tối đa</span>
           <input
             type="number"
             className="pair-select"
