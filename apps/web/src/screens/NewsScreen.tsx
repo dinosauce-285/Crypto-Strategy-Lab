@@ -27,7 +27,7 @@ export function NewsScreen() {
     if (coin !== 'ALL') params.append('coin', coin);
 
     fetch(`/api/news?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then((data: { items: NewsItem[]; total: number }) => {
         let list = data.items;
         if (source !== 'ALL') {
@@ -52,7 +52,7 @@ export function NewsScreen() {
     if (coin !== 'ALL') params.append('coin', coin);
 
     fetch(`/api/sentiment/stats?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then((data: SentimentStats) => {
         setStats(data);
         setIsLoadingStats(false);
@@ -79,7 +79,7 @@ export function NewsScreen() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then(() => {
         setIsCollecting(false);
         fetchNews();
@@ -87,7 +87,7 @@ export function NewsScreen() {
       })
       .catch((err: Error) => {
         setIsCollecting(false);
-        alert(`Collect failed: ${err.message}`);
+        alert(`Crawl thất bại: ${err.message}`);
       });
   };
 
@@ -98,7 +98,7 @@ export function NewsScreen() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ limit: 50 }),
     })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then(() => {
         setIsAnalyzing(false);
         fetchNews();
@@ -106,13 +106,13 @@ export function NewsScreen() {
       })
       .catch((err: Error) => {
         setIsAnalyzing(false);
-        alert(`Sentiment analysis failed: ${err.message}`);
+        alert(`Phân tích sentiment thất bại: ${err.message}`);
       });
   };
 
   return (
     <main className="screen">
-      <Header title="News Crawler & Sentiment Analysis" />
+      <Header title="Crawl tin tức & Phân tích sentiment" />
 
       <div className="screen-body">
         <div className="screen-main">

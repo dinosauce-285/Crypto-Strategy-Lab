@@ -2,25 +2,26 @@ export function StrategyIntegrationCard() {
   return (
     <section className="panel panel-compact">
       <div className="panel-head">
-        <h2>Strategy Integration</h2>
+        <h2>Tích hợp Strategy</h2>
       </div>
 
       <p className="state">
-        Stored sentiment scores feed directly into <strong>NewsSentimentStrategy</strong> (Task T25) in the strategy registry.
+        Điểm sentiment đã lưu được đưa thẳng vào <strong>NewsSentimentStrategy</strong>{' '}
+        (Task T25) trong strategy registry.
       </p>
 
       <dl>
-        <dt>Long Signal</dt>
-        <dd className="ok">Score &gt; +0.70</dd>
+        <dt>Tín hiệu Long</dt>
+        <dd className="ok">Điểm &gt; +0.70</dd>
 
-        <dt>Short Signal</dt>
-        <dd className="bad">Score &lt; -0.70</dd>
+        <dt>Tín hiệu Short</dt>
+        <dd className="bad">Điểm &lt; -0.70</dd>
 
-        <dt>Backtest Rule</dt>
-        <dd>Strict timestamp ordering (no lookahead bias)</dd>
+        <dt>Quy tắc Backtest</dt>
+        <dd>Sắp xếp nghiêm ngặt theo timestamp (không có lookahead bias)</dd>
 
-        <dt>Persistence</dt>
-        <dd className="ok">Store-on-ingest (ADR 0005)</dd>
+        <dt>Lưu trữ</dt>
+        <dd className="ok">Lưu ngay khi thu thập (ADR 0005)</dd>
       </dl>
     </section>
   );
