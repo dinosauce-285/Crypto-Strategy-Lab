@@ -66,7 +66,11 @@ export function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    if (!runningDatasetId || dataset?.id === runningDatasetId) return;
+    /**
+     * Only while a run is still active — once it ends, the picker unlocks and a manual
+     * selection must stick instead of being pulled back to the last run's dataset.
+     */
+    if (!hasActiveRun || !runningDatasetId || dataset?.id === runningDatasetId) return;
     fetch('/api/datasets')
       .then((res) => readJson<Dataset[]>(res))
       .then((datasets) => {
@@ -74,7 +78,7 @@ export function SearchScreen() {
         if (match) setDataset(match);
       })
       .catch(() => undefined);
-  }, [dataset?.id, runningDatasetId]);
+  }, [dataset?.id, runningDatasetId, hasActiveRun]);
 
   useTopic(
     status ? searchRunTopic(status.runId) : null,
