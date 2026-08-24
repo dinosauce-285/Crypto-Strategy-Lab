@@ -6,6 +6,7 @@ import type {
   StrategyMeta,
   StrategyRef,
 } from '@csl/contracts';
+import { date } from '../market/format';
 
 const END_REASON_LABELS: Record<RunEndReason, string> = {
   candidates: 'Đã đạt số lượng candidate tối đa',
@@ -140,9 +141,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function datasetLabel(dataset: Dataset): string {
-  return `${dataset.pair} / ${dataset.timeframe} / ${new Date(
-    dataset.from,
-  ).toLocaleDateString()} - ${new Date(dataset.to).toLocaleDateString()}`;
+  return `${dataset.pair} / ${dataset.timeframe} / ${date(dataset.from)} - ${date(dataset.to)}`;
 }
 
 function strategyLabel(ref: StrategyRef, strategies: StrategyMeta[]): string {
