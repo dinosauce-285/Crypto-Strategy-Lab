@@ -3,6 +3,7 @@ import type { CandidateSpec, Dataset } from '@csl/contracts';
 import { BacktestService } from './backtest.service';
 import type { DatasetRepository } from './dataset.repository';
 import type { CandleRepository } from '../market/candle.repository';
+import type { CandleBackfillPort } from '../market/ports/candle-backfill.port';
 import type { IndicatorPort } from '../indicator/ports/indicator.port';
 import type { EvaluatorPort } from '../evaluation/ports/evaluator.port';
 import type { StrategyFactory } from './ports/strategy-factory.port';
@@ -12,6 +13,7 @@ describe('BacktestService', () => {
   let service: BacktestService;
   let mockDatasets: jest.Mocked<DatasetRepository>;
   let mockCandles: jest.Mocked<CandleRepository>;
+  let mockBackfill: jest.Mocked<CandleBackfillPort>;
   let mockIndicators: jest.Mocked<IndicatorPort>;
   let mockEvaluator: jest.Mocked<EvaluatorPort>;
   let mockFactory: jest.Mocked<StrategyFactory>;
@@ -66,6 +68,10 @@ describe('BacktestService', () => {
       ]),
     } as unknown as jest.Mocked<CandleRepository>;
 
+    mockBackfill = {
+      ensureRange: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<CandleBackfillPort>;
+
     mockIndicators = {
       compute: jest.fn().mockReturnValue([100]),
     } as unknown as jest.Mocked<IndicatorPort>;
@@ -105,6 +111,7 @@ describe('BacktestService', () => {
     service = new BacktestService(
       mockDatasets,
       mockCandles,
+      mockBackfill,
       mockIndicators,
       mockEvaluator,
       mockFactory,
@@ -117,6 +124,24 @@ describe('BacktestService', () => {
     const list = await service.listDatasets();
     expect(list).toHaveLength(1);
     expect(list[0].id).toBe('dataset-123');
+  });
+
+  it('creates a dataset and fetches its candle range before returning it', async () => {
+    const created = await service.createDataset({
+      pair: sampleDataset.pair,
+      timeframe: sampleDataset.timeframe,
+      from: sampleDataset.from,
+      to: sampleDataset.to,
+      rules: sampleDataset.rules,
+    });
+
+    expect(created).toEqual(sampleDataset);
+    expect(mockBackfill.ensureRange).toHaveBeenCalledWith(
+      sampleDataset.pair,
+      sampleDataset.timeframe,
+      sampleDataset.from,
+      sampleDataset.to,
+    );
   });
 
   it('runs a single backtest and returns full result payload', async () => {

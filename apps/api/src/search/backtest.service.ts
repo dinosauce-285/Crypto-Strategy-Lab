@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS, type Dataset } from '@csl/contracts';
 import { CandleRepository } from '../market/candle.repository';
+import { CandleBackfillPort } from '../market/ports/candle-backfill.port';
 import { IndicatorPort } from '../indicator/ports/indicator.port';
 import { EvaluatorPort } from '../evaluation/ports/evaluator.port';
 import { StrategyFactory } from './ports/strategy-factory.port';
@@ -16,6 +17,7 @@ export class BacktestService {
   constructor(
     private readonly datasets: DatasetRepository,
     private readonly candles: CandleRepository,
+    private readonly backfill: CandleBackfillPort,
     private readonly indicators: IndicatorPort,
     private readonly evaluator: EvaluatorPort,
     private readonly factory: StrategyFactory,
@@ -28,7 +30,18 @@ export class BacktestService {
   }
 
   async createDataset(data: Omit<Dataset, 'id'>): Promise<Dataset> {
-    return this.datasets.create(data);
+    return this.createDatasetWithHistory(data);
+  }
+
+  /**
+   * Every Dataset gets its own candle range fetched before it's usable (ADR 0041) —
+   * shared by the explicit create endpoint and `runSingle`'s inline-create path, so
+   * neither one can hand back a Dataset with no data behind it.
+   */
+  private async createDatasetWithHistory(data: Omit<Dataset, 'id'>): Promise<Dataset> {
+    const dataset = await this.datasets.create(data);
+    await this.backfill.ensureRange(dataset.pair, dataset.timeframe, dataset.from, dataset.to);
+    return dataset;
   }
 
   async runSingle(request: SingleRunRequestDto): Promise<SingleRunResponseDto> {
@@ -40,7 +53,7 @@ export class BacktestService {
         throw new NotFoundException(`Dataset "${request.datasetId}" not found`);
       }
     } else if (request.dataset) {
-      dataset = await this.datasets.create(request.dataset);
+      dataset = await this.createDatasetWithHistory(request.dataset);
     } else {
       throw new BadRequestException('Either datasetId or dataset definition must be provided');
     }
