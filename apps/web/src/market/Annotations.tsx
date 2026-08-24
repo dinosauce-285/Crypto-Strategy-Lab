@@ -10,11 +10,11 @@ export function Annotations({ pair }: AnnotationsProps) {
   return (
     <section className="panel panel-compact">
       <div className="panel-head">
-        <h2>Annotations</h2>
+        <h2>Chú thích</h2>
       </div>
       <p className="state">
-        No annotations yet for <strong>{pair}</strong>. This fills in once strategy
-        signals exist.
+        Chưa có chú thích nào cho <strong>{pair}</strong>. Mục này sẽ được điền khi có
+        tín hiệu từ strategy.
       </p>
     </section>
   );

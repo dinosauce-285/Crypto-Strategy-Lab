@@ -36,23 +36,23 @@ export function RecentTicks({ pair }: RecentTicksProps) {
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2>Recent ticks</h2>
+        <h2>Giao dịch gần đây</h2>
       </div>
 
       {status === 'connecting' && ticks.length === 0 && (
-        <p className="state">Opening the channel…</p>
+        <p className="state">Đang mở kênh kết nối…</p>
       )}
 
       {status === 'down' && (
         <p className="state bad">
-          <strong>The channel is unreachable.</strong> The API may be stopped — start it
-          with <code>pnpm dev:api</code>. This panel reconnects on its own once it is back.
+          <strong>Không kết nối được kênh.</strong> API có thể đang tắt — khởi động bằng{' '}
+          <code>pnpm dev:api</code>. Panel này sẽ tự kết nối lại khi API hoạt động trở lại.
         </p>
       )}
 
       {status === 'live' && ticks.length === 0 && (
         <p className="state">
-          Subscribed to <strong>{pair}</strong>. Waiting for the next trade.
+          Đã theo dõi <strong>{pair}</strong>. Đang chờ giao dịch tiếp theo.
         </p>
       )}
 
@@ -61,10 +61,10 @@ export function RecentTicks({ pair }: RecentTicksProps) {
           <table>
             <thead>
               <tr>
-                <th>time</th>
-                <th>price</th>
-                <th>volume</th>
-                <th>type</th>
+                <th>thời gian</th>
+                <th>giá</th>
+                <th>khối lượng</th>
+                <th>loại</th>
               </tr>
             </thead>
             <tbody>

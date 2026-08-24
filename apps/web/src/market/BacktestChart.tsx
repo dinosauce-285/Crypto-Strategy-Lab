@@ -92,7 +92,7 @@ export function BacktestChart({ pair, timeframe }: BacktestChartProps) {
     fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}&from=${from}&to=${to}`, {
       signal: controller.signal,
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
       .then((body: { candles: Candle[] }) => {
         candlesRef.current = body.candles;
         setState({ kind: 'ready', candles: body.candles });
@@ -106,22 +106,22 @@ export function BacktestChart({ pair, timeframe }: BacktestChartProps) {
 
   return (
     <>
-      {state.kind === 'loading' && <p className="state">Loading history…</p>}
+      {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
         <p className="state bad">
-          <strong>History unreachable.</strong> {state.message}{' '}
+          <strong>Không tải được dữ liệu lịch sử.</strong> {state.message}{' '}
           <button type="button" onClick={() => setAttempt((n) => n + 1)}>
-            Retry
+            Thử lại
           </button>
         </p>
       )}
 
       {state.kind === 'ready' && state.candles.length === 0 && (
         <p className="state">
-          No stored history for <strong>{pair}</strong> on <strong>{timeframe}</strong>{' '}
-          yet. A backtest chart reads storage only — open this pair on the Realtime tab
-          first to backfill it.
+          Chưa có dữ liệu lịch sử được lưu cho <strong>{pair}</strong> ở{' '}
+          <strong>{timeframe}</strong>. Biểu đồ backtest chỉ đọc dữ liệu đã lưu — hãy mở
+          cặp này ở tab Realtime trước để nạp dữ liệu.
         </p>
       )}
 

@@ -123,7 +123,7 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
     fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`, {
       signal: controller.signal,
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
       .then((body: { candles: Candle[] }) => setState({ kind: 'ready', candles: body.candles }))
       .catch((e: Error) => {
         if (e.name === 'AbortError') return;
@@ -153,21 +153,21 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
 
   return (
     <>
-      {state.kind === 'loading' && <p className="state">Loading history…</p>}
+      {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
         <p className="state bad">
-          <strong>History unreachable.</strong> {state.message}{' '}
+          <strong>Không tải được dữ liệu lịch sử.</strong> {state.message}{' '}
           <button type="button" onClick={() => setAttempt((n) => n + 1)}>
-            Retry
+            Thử lại
           </button>
         </p>
       )}
 
       {state.kind === 'ready' && state.candles.length === 0 && (
         <p className="state">
-          No history yet for <strong>{pair}</strong> on <strong>{timeframe}</strong> — it
-          backfills on first watch, and a candle appears here as soon as one closes.
+          Chưa có dữ liệu lịch sử cho <strong>{pair}</strong> ở <strong>{timeframe}</strong>{' '}
+          — dữ liệu sẽ được nạp khi bắt đầu theo dõi, và nến sẽ xuất hiện ngay khi đóng.
         </p>
       )}
 
