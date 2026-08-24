@@ -7,30 +7,17 @@ same candles it read the first time.
 
 ## Requirements
 
-### Requirement: A pair/timeframe is backfilled on first watch
-
-The system SHALL fetch historical candles for a pair and timeframe from the exchange
-the first time it is watched and has no stored history, and SHALL NOT repeat that fetch
-for a pair/timeframe that already has stored history.
-
-#### Scenario: First watch of a pair/timeframe
-
-- **WHEN** a client watches `BTCUSDT` on `1m` and no candle for that pair/timeframe is stored
-- **THEN** the system fetches historical candles from the exchange and stores them
-
-#### Scenario: A pair/timeframe already has history
-
-- **WHEN** a client watches a pair/timeframe that already has stored candles
-- **THEN** no backfill fetch is made to the exchange
-
 ### Requirement: A closed candle is available from storage, not the exchange
 
-The system SHALL serve a range of historical candles for a pair and timeframe from its
-own storage. A request for candles SHALL NOT trigger a live call to the exchange.
+The system SHALL serve an explicit-date-range request for historical candles for a
+pair and timeframe from its own storage only — a range request SHALL NOT trigger a
+live call to the exchange. This no longer holds for the default "most recent N" mode
+(no `from`/`to` given), which is read live from the exchange (`0040`) rather than from
+storage.
 
 #### Scenario: A range is requested
 
-- **WHEN** a client requests candles for `BTCUSDT` on `1m` over a time range
+- **WHEN** a client requests candles for `BTCUSDT` on `1m` with an explicit `from`/`to`
 - **THEN** the system returns the stored candles covering that range
 - **AND** no request is made to the exchange to serve it
 
@@ -38,6 +25,12 @@ own storage. A request for candles SHALL NOT trigger a live call to the exchange
 
 - **WHEN** a client requests a range older than the earliest stored candle
 - **THEN** the system returns only the candles it holds, without failing the request
+
+#### Scenario: The default "most recent N" mode reads live
+
+- **WHEN** a client requests candles with no `from`/`to`
+- **THEN** the system fetches them live from the exchange
+- **AND** nothing is written to storage as a result
 
 ### Requirement: A stored candle does not change once closed
 
@@ -63,26 +56,28 @@ specific field names, encodings or symbols SHALL NOT appear in a delivered candl
 
 ### Requirement: A watcher sees history immediately, then sees it stay live
 
-A screen watching a pair and timeframe SHALL show the stored history for it as soon as
-it is available, and SHALL continue to receive newly closed candles for it without a
-reload, using the existing live channel. It SHALL show a distinct state while loading,
-when there is no history yet, and when history cannot be reached, and the error state
-SHALL say what to do about it.
+A screen watching a pair and timeframe SHALL show its recent history as soon as it is
+read from the exchange, and SHALL continue to receive newly closed candles for it
+without a reload, using the existing live channel. It SHALL show a distinct state
+while loading, when nothing has arrived yet, and when the exchange cannot be reached,
+and the error state SHALL say what to do about it.
 
 #### Scenario: History loads
 
-- **WHEN** a client opens the chart for a pair and timeframe with stored history
-- **THEN** the chart shows that history without waiting for a new candle to close
+- **WHEN** a client opens the chart for a pair and timeframe
+- **THEN** the chart shows its recent history without waiting for a new candle to close
 
 #### Scenario: No history yet
 
-- **WHEN** a client opens the chart for a pair and timeframe with no stored history
+- **WHEN** a client opens the chart for a pair and timeframe the exchange has no
+  candles for yet (e.g. a newly listed pair)
 - **THEN** the chart shows an empty state rather than a blank grid
 
 #### Scenario: History cannot be reached
 
-- **WHEN** the history endpoint is unreachable
+- **WHEN** the exchange cannot be reached to serve the recent-candle history
 - **THEN** the chart shows an error state naming what failed and how to retry
+- **AND** no stale or partial history from prior storage is shown in its place
 
 #### Scenario: A new candle closes while the chart is open
 
@@ -152,7 +147,10 @@ backfilled.
 
 The system SHALL display one candlestick chart for a selected pair and timeframe on the
 Backtest tab, fetched once over a fixed default window and never updated live. Switching
-pair or timeframe SHALL re-fetch and replace the chart's contents.
+pair or timeframe SHALL re-fetch and replace the chart's contents. This chart requests
+an explicit `from`/`to` range and stays storage-only — its data depends on a Dataset
+having been created covering that pair, timeframe and window, not on the pair ever
+having been watched on the Realtime tab (`0040`/`0041`).
 
 #### Scenario: A covered pair/timeframe is selected
 
@@ -162,8 +160,8 @@ pair or timeframe SHALL re-fetch and replace the chart's contents.
 
 #### Scenario: An uncovered pair/timeframe is selected
 
-- **WHEN** a user selects a pair/timeframe never watched on the Realtime tab, so nothing
-  is stored for it
+- **WHEN** a user selects a pair/timeframe with no Dataset ever created covering the
+  default window, so nothing is stored for it
 - **THEN** the chart shows the empty state, explaining that it has no history yet, not a
   blank grid
 
