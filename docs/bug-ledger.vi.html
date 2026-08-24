@@ -219,9 +219,9 @@
 </header>
 
 <div class="summary">
-  <div class="stat"><div class="n critical">1</div><div class="l">lỗi nghiêm trọng</div></div>
+  <div class="stat"><div class="n critical">3</div><div class="l">lỗi nghiêm trọng</div></div>
   <div class="stat"><div class="n minor">2</div><div class="l">lỗi nhẹ / cosmetic</div></div>
-  <div class="stat"><div class="n" style="color:var(--partial)">3</div><div class="l">đang mở, chưa sửa</div></div>
+  <div class="stat"><div class="n" style="color:var(--partial)">5</div><div class="l">đang mở, chưa sửa</div></div>
 </div>
 
 <div class="shell">
@@ -230,6 +230,8 @@
     <a href="#bug-01">BUG-01 · RunEvaluator chưa được wire</a>
     <a href="#bug-02">BUG-02 · Nhãn "Ended because" thô</a>
     <a href="#bug-03">BUG-03 · "exhausted" không giải thích lý do</a>
+    <a href="#bug-04">BUG-04 · Tạo dataset 1m/khoảng dài → HTTP 500</a>
+    <a href="#bug-05">BUG-05 · Chọn dataset khác bị tự động hoàn tác</a>
   </nav>
 
   <main>
@@ -368,6 +370,97 @@
         <div class="fix-box">
           <b>Hướng sửa đề xuất</b>
           Validate trước khi cho bấm START SEARCH (ở <code>search.service.ts</code> hoặc ngay trên <code>SearchControlsPanel.tsx</code>): nếu mode là domain-guided và tập strategy đã chọn thiếu nhóm Trend, thiếu nhóm Momentum, hoặc thiếu cả ba nhóm ngữ cảnh, chặn nút và hiển thị rõ đang thiếu nhóm nào — thay vì để run bắt đầu rồi exhausted ngay lập tức không lời giải thích.
+        </div>
+      </article>
+
+      <!-- ============ BUG-04 ============ -->
+      <article class="bug-entry" id="bug-04">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-04</div>
+            <h3 class="bug-title">Tạo dataset với khoảng thời gian dài ở timeframe mịn (1m) → "Failed to create dataset: HTTP 500"</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--critical">Nghiêm trọng</span>
+            <span class="pill pill--open">Chưa sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/api/src/market (candle backfill / storage)</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Tạo Dataset mới với khoảng ngày đủ dài ở timeframe 1 phút (ví dụ 01/01/2026 – 14/01/2026, 1m) khiến request thất bại ngay lập tức với thông báo cộc lốc "Failed to create dataset: HTTP 500" — không có chi tiết nào hiển thị cho người dùng. Dataset không được tạo. Tái hiện ổn định với bất kỳ khoảng đủ nhiều nến, không phải lỗi ngẫu nhiên.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p><code>CandleBackfillService.ensureRange()</code> lấy toàn bộ nến của cả khoảng thời gian từ Binance trong một lần gọi, rồi đưa cả mảng đó cho <code>CandleRepository.upsertMany()</code>. Hàm này bọc <b>từng nến một</b> — mỗi nến một lệnh <code>candle.upsert()</code> riêng — vào chung một <code>this.prisma.$transaction([...])</code> dạng mảng (batch transaction). Prisma áp timeout mặc định 5000ms cho transaction dạng này; với 14 ngày × 1440 nến/ngày ở 1m (~20.160 nến), việc chạy tuần tự từng lệnh upsert bên trong transaction vượt quá 5000ms, Prisma rollback và ném <code>P2028</code> (<i>"A rollback cannot be executed on an expired transaction"</i>). Lỗi này không được bắt riêng ở <code>BacktestService.createDataset</code>/<code>DatasetRepository</code>, nên nó rơi thẳng xuống exception filter mặc định của Nest và trả về HTTP 500 trơn, không có message hữu ích.</p>
+          <p>Đây không phụ thuộc vào dữ liệu cụ thể — bất kỳ dataset nào có đủ số nến để việc upsert tuần tự vượt quá 5s (khoảng dài ở 1m/5m, hoặc khoảng rất dài ở timeframe thô hơn) đều sẽ tái hiện lỗi này một cách chắc chắn, không phải ngẫu nhiên.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/api/src/market/candle-backfill.service.ts:19 — <code>await this.candles.upsertMany(candles)</code> với toàn bộ mảng nến của cả khoảng, không chia nhỏ</li>
+            <li>apps/api/src/market/candle.repository.ts:16-27 — <code>upsertMany()</code> bọc một <code>candle.upsert()</code> riêng cho mỗi nến vào chung một <code>$transaction([...])</code></li>
+            <li>Log lỗi thật khi tái hiện qua UI (dataset 01/01/2026–14/01/2026, 1m): <code>PrismaClientKnownRequestError ... code: 'P2028', meta: { modelName: 'Candle', operation: 'rollback', timeout: 5000, timeTaken: 5004 }</code></li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Chặn hoàn toàn việc tạo Dataset cho bất kỳ khoảng thời gian nào đủ dài ở timeframe mịn — tức là chặn chính use case thực tế nhất (backtest trên dữ liệu 1m/5m nhiều ngày). Người dùng chỉ thấy "HTTP 500" trơn, không có gợi ý nguyên nhân hay cách khắc phục.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Chia <code>upsertMany()</code> thành nhiều transaction nhỏ theo lô (ví dụ vài trăm–1000 nến/lô, tương tự độ sâu backfill mô tả ở ADR 0023) thay vì một transaction ôm toàn bộ khoảng; hoặc thay chuỗi <code>upsert()</code> tuần tự bằng một lệnh bulk duy nhất (<code>createMany</code> với <code>skipDuplicates</code>, hoặc raw upsert theo lô) để không phụ thuộc vào timeout 5s theo số lượng nến.
+        </div>
+      </article>
+
+      <!-- ============ BUG-05 ============ -->
+      <article class="bug-entry" id="bug-05">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-05</div>
+            <h3 class="bug-title">Chọn dataset khác trên Search Control sau khi một run đã kết thúc bị tự động hoàn tác về dataset của run cũ</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--critical">Nghiêm trọng</span>
+            <span class="pill pill--open">Chưa sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/web/src/screens (Search Control)</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Sau khi một search run đã kết thúc (state: "ended"), chọn một dataset khác trong dropdown ở Search Control bị âm thầm hoàn tác về đúng dataset của run trước đó — không có lỗi, không có cảnh báo, dropdown chỉ tự nhảy lại. Người dùng không thể bắt đầu run mới trên dataset khác cho tới khi tải lại trang (và ngay cả sau khi tải lại, hành vi vẫn lặp lại vì trạng thái được phục hồi từ chính API đang gây ra lỗi). Hệ quả quan sát được: ~1761 experiment bị dồn vào một dataset trong khoảng 13 phút, khớp với nhiều lần bấm START SEARCH (mỗi lần mặc định 125 candidate) đều bị âm thầm chuyển hướng về cùng một dataset cũ.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p>Trong <code>SearchScreen.tsx</code>, biến <code>runningDatasetId</code> lấy từ <code>status?.datasetId</code>, và <code>status</code> được nạp lúc mount từ <code>GET /api/search/runs/current</code> — endpoint này tiếp tục trả về thông tin của run <b>gần nhất</b> vô thời hạn, kể cả sau khi run đã kết thúc (<code>state: "ended"</code>); không có nơi nào đặt lại <code>status</code> về <code>null</code>. Effect đồng bộ dataset (dòng 68-77) chỉ kiểm tra <code>dataset?.id !== runningDatasetId</code> mà không kiểm tra run đó có còn đang chạy hay không (<code>hasActiveRun</code>), nên mỗi khi người dùng chọn dataset khác, effect chạy lại, thấy vẫn khác với <code>runningDatasetId</code> (dữ liệu cũ), và gọi <code>setDataset(match)</code> ghi đè ngay lựa chọn thủ công.</p>
+          <p>Dataset picker vốn đã bị khoá (<code>disabled</code>) trong lúc <code>isRunning</code> (<code>SearchControlsPanel.tsx</code>) — tức là effect này chỉ thực sự cần thiết trong lúc run còn hoạt động (khôi phục lựa chọn khi tải lại trang giữa chừng). Ngay khi run kết thúc, dropdown mở khoá lại nhưng effect vẫn tiếp tục ghi đè do thiếu điều kiện chặn theo <code>hasActiveRun</code>.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/web/src/screens/SearchScreen.tsx:37 — <code>const runningDatasetId = status?.datasetId ?? null;</code> không phân biệt run đang chạy hay đã kết thúc</li>
+            <li>apps/web/src/screens/SearchScreen.tsx:68-77 — effect ghi đè <code>dataset</code> chỉ dựa trên <code>dataset?.id === runningDatasetId</code>, không kiểm tra <code>hasActiveRun</code></li>
+            <li>apps/web/src/search/SearchControlsPanel.tsx:31,43 — dataset picker chỉ <code>disabled</code> khi <code>isRunning</code>, nghĩa là sau khi kết thúc người dùng phải chọn lại được — nhưng effect trên ngăn cản việc đó</li>
+            <li>Tái hiện trực tiếp qua hội thoại: chọn dataset khác sau khi run trước đã "ended" → dropdown tự động nhảy lại dataset cũ; đối chiếu DB cho thấy 1761 experiment dồn vào đúng dataset cũ đó qua nhiều lần bấm START SEARCH</li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Chặn hoàn toàn khả năng chạy search trên dataset khác sau lần chạy đầu tiên trong phiên làm việc, không có thông báo lỗi nào để người dùng hiểu vì sao. Gây lãng phí tài nguyên thật (worker, Postgres) khi người dùng lặp lại thao tác START SEARCH nhiều lần tưởng là đang chạy trên dataset mới nhưng thực ra vẫn là dataset cũ.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Thêm điều kiện <code>hasActiveRun</code> vào đầu effect (dòng 69): <code>if (!hasActiveRun || !runningDatasetId || dataset?.id === runningDatasetId) return;</code> — effect chỉ đồng bộ dataset trong lúc run còn thực sự hoạt động (đúng mục đích ban đầu: khôi phục lựa chọn khi tải lại trang giữa chừng), và không còn ghi đè lựa chọn thủ công sau khi run đã kết thúc.
         </div>
       </article>
 
