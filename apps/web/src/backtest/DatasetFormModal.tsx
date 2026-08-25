@@ -99,7 +99,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
         <form onSubmit={handleSubmit} className="dataset-form">
           <div className="form-group">
-            <label className="stat-tile-label">Pair</label>
+            <label className="stat-tile-label">Cặp giao dịch</label>
             <select
               className="pair-select"
               value={pair}
@@ -114,7 +114,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
           </div>
 
           <div className="form-group">
-            <label className="stat-tile-label">Timeframe</label>
+            <label className="stat-tile-label">Khung thời gian</label>
             <select
               className="pair-select"
               value={timeframe}

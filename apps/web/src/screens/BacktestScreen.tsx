@@ -143,7 +143,7 @@ export function BacktestScreen() {
 
   return (
     <main className="screen">
-      <Header title="Backtest Strategy" />
+      <Header title="Chạy Backtest" />
 
       <div className="screen-body">
         {/* Left Column: Visual Chart & Analysis Panels */}

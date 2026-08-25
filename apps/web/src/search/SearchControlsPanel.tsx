@@ -66,7 +66,7 @@ export function SearchControlsPanel({
         </div>
 
         <label className="form-group">
-          <span className="stat-tile-label">Mode</span>
+          <span className="stat-tile-label">Chế độ</span>
           <select
             className="pair-select"
             value={mode}

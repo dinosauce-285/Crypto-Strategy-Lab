@@ -28,7 +28,7 @@ export function StrategySpacePicker({
   return (
     <div className="panel search-space-panel">
       <div className="panel-head">
-        <h2>Search Space</h2>
+        <h2>Không gian tìm kiếm</h2>
         <span className="badge badge-neu">Đã chọn {selectedRefs.length}</span>
       </div>
 
