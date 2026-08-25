@@ -3,6 +3,7 @@ import { IndicatorService } from './indicator.service';
 import { movingAverageCalculator } from './calculators/moving-average.calculator';
 import { bollingerBandsCalculator } from './calculators/bollinger-bands.calculator';
 import { buildCandles } from './calculators/test-candles';
+import type { IndicatorRepository } from './indicator.repository';
 
 describe('IndicatorService', () => {
   const candles = buildCandles([1, 2, 3, 4, 5]);
@@ -53,5 +54,47 @@ describe('IndicatorService', () => {
     expect(() =>
       service.compute('dataset-1', candles, { source: 'bollinger.nope', params: { period: 3 } }),
     ).toThrow();
+  });
+
+  it('loads scored articles from repository onModuleInit and computes sentiment series', async () => {
+    const t0 = candles[0].openTime;
+    const mockRepo: jest.Mocked<IndicatorRepository> = {
+      findScoredArticles: jest.fn().mockResolvedValue([
+        { publishedAt: t0, sentimentScore: 0.8 },
+      ]),
+    } as unknown as jest.Mocked<IndicatorRepository>;
+
+    const service = new IndicatorService(mockRepo);
+    await service.onModuleInit();
+
+    expect(mockRepo.findScoredArticles).toHaveBeenCalledTimes(1);
+
+    const result = service.compute('dataset-sentiment', candles, {
+      source: 'sentiment',
+      params: { windowHours: 1 },
+    });
+
+    expect(result[0]).toBe(0.8);
+  });
+
+  it('refreshes articles on sentiment analyzed event', async () => {
+    const t0 = candles[0].openTime;
+    const mockRepo: jest.Mocked<IndicatorRepository> = {
+      findScoredArticles: jest.fn().mockResolvedValue([
+        { publishedAt: t0, sentimentScore: 0.95 },
+      ]),
+    } as unknown as jest.Mocked<IndicatorRepository>;
+
+    const service = new IndicatorService(mockRepo);
+    await service.onSentimentAnalyzed();
+
+    expect(mockRepo.findScoredArticles).toHaveBeenCalled();
+
+    const result = service.compute('dataset-sentiment-2', candles, {
+      source: 'sentiment',
+      params: { windowHours: 1 },
+    });
+
+    expect(result[0]).toBe(0.95);
   });
 });

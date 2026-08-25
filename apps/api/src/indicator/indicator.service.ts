@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import type { Candle, DataRequest, StrategyParams } from '@csl/contracts';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { EVENTS, type Candle, type DataRequest, type StrategyParams } from '@csl/contracts';
 import { IndicatorPort } from './ports/indicator.port';
 import { buildCalculatorRegistry } from './calculators/calculator';
 import { movingAverageCalculator } from './calculators/moving-average.calculator';
 import { rsiCalculator } from './calculators/rsi.calculator';
 import { bollingerBandsCalculator } from './calculators/bollinger-bands.calculator';
 import { supportResistanceCalculator } from './calculators/support-resistance.calculator';
-import { sentimentCalculator } from './calculators/sentiment.calculator';
+import { sentimentCalculator, type ScoredArticle } from './calculators/sentiment.calculator';
+import { IndicatorRepository } from './indicator.repository';
 
 const DEFAULT_FIELD = 'value';
 
@@ -19,16 +21,49 @@ const DEFAULT_FIELD = 'value';
  * multi-series indicator's fields share one cache entry and one computed pass.
  */
 @Injectable()
-export class IndicatorService extends IndicatorPort {
+export class IndicatorService extends IndicatorPort implements OnModuleInit {
+  private readonly logger = new Logger(IndicatorService.name);
+  private readonly sentimentCalculator = sentimentCalculator;
+
   private readonly registry = buildCalculatorRegistry([
     movingAverageCalculator,
     rsiCalculator,
     bollingerBandsCalculator,
     supportResistanceCalculator,
-    sentimentCalculator,
+    this.sentimentCalculator,
   ]);
 
   private readonly cache = new Map<string, Record<string, number[]>>();
+
+  constructor(private readonly repository?: IndicatorRepository) {
+    super();
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.refreshArticles();
+  }
+
+  @OnEvent(EVENTS.SentimentAnalyzed)
+  async onSentimentAnalyzed(): Promise<void> {
+    await this.refreshArticles();
+  }
+
+  async refreshArticles(): Promise<void> {
+    if (this.repository) {
+      try {
+        const articles = await this.repository.findScoredArticles();
+        this.setArticles(articles);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Failed to load scored articles: ${message}`);
+      }
+    }
+  }
+
+  setArticles(articles: readonly ScoredArticle[]): void {
+    this.sentimentCalculator.setArticles(articles);
+    this.cache.clear();
+  }
 
   compute(datasetId: string, candles: readonly Candle[], request: DataRequest): readonly number[] {
     const [name, field = DEFAULT_FIELD] = request.source.split('.');

@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../prisma/prisma.module';
 import { IndicatorService } from './indicator.service';
+import { IndicatorRepository } from './indicator.repository';
 import { IndicatorPort } from './ports/indicator.port';
 
-/**
- * Nothing imports this module yet — its two callers, the backtest engine's
- * `StrategyContext` (T11-13) and a chart endpoint (T14), don't exist. It exports only
- * the port, per `BACKEND_CONSTRAINT.md`'s "no concrete cross-module injection" rule.
- */
 @Module({
-  providers: [{ provide: IndicatorPort, useClass: IndicatorService }],
+  imports: [PrismaModule],
+  providers: [
+    IndicatorRepository,
+    IndicatorService,
+    { provide: IndicatorPort, useExisting: IndicatorService },
+  ],
   exports: [IndicatorPort],
 })
 export class IndicatorModule {}
