@@ -58,8 +58,9 @@ describe('BacktestService', () => {
   beforeEach(() => {
     mockDatasets = {
       findById: jest.fn().mockResolvedValue(sampleDataset),
-      create: jest.fn().mockResolvedValue(sampleDataset),
+      create: jest.fn().mockResolvedValue({ dataset: sampleDataset, created: true }),
       list: jest.fn().mockResolvedValue([sampleDataset]),
+      delete: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<DatasetRepository>;
 
     mockCandles = {
@@ -142,6 +143,39 @@ describe('BacktestService', () => {
       sampleDataset.from,
       sampleDataset.to,
     );
+  });
+
+  it('deletes the newly-created dataset when the candle backfill fails', async () => {
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('leaves a pre-existing dataset in place when the backfill fails on a re-request', async () => {
+    mockDatasets.create.mockResolvedValue({ dataset: sampleDataset, created: false });
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).not.toHaveBeenCalled();
   });
 
   it('runs a single backtest and returns full result payload', async () => {
