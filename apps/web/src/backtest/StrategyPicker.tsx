@@ -51,7 +51,7 @@ export function StrategyPicker({
   return (
     <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
       <div className="panel-head">
-        <h2>Cấu hình Strategy</h2>
+        <h2 title="Strategy: chiến lược giao dịch được cấu hình để chạy backtest">Cấu hình Strategy</h2>
         {selectedStrategy && (
           <span className="badge badge-neu">
             {STRATEGY_GROUP_LABELS[selectedStrategy.group]} · v{selectedStrategy.version}
