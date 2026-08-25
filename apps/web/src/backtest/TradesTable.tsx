@@ -1,5 +1,5 @@
 import type { Trade } from '@csl/contracts';
-import { shortClock, sideLabel } from '../market/format';
+import { sideLabel, tradeTime } from '../market/format';
 
 interface TradeRow extends Trade {
   seq: number;
@@ -52,6 +52,10 @@ export function TradesTable({
               const isSelected = selectedSeq === trade.seq;
               const profitNum = Number(trade.profit);
               const pnlClass = profitNum > 0 ? 'ok' : profitNum < 0 ? 'bad' : '';
+              const profitSign = profitNum > 0 ? '+' : '';
+              const formattedProfit = Number.isFinite(profitNum)
+                ? `${profitSign}${(profitNum * 100).toFixed(2)}%`
+                : '0.00%';
 
               return (
                 <tr
@@ -70,13 +74,12 @@ export function TradesTable({
                       {sideLabel(trade.side)}
                     </span>
                   </td>
-                  <td>{shortClock(trade.entryTime)}</td>
+                  <td>{tradeTime(trade.entryTime)}</td>
                   <td>{trade.entryPrice}</td>
-                  <td>{shortClock(trade.exitTime)}</td>
+                  <td>{tradeTime(trade.exitTime)}</td>
                   <td>{trade.exitPrice}</td>
                   <td className={pnlClass} style={{ fontWeight: 600 }}>
-                    {profitNum > 0 ? '+' : ''}
-                    {trade.profit}
+                    {formattedProfit}
                   </td>
                 </tr>
               );
