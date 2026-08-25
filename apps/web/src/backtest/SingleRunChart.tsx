@@ -138,7 +138,34 @@ export function SingleRunChart({
 
     // 1. Add indicator overlays if present
     if (indicators) {
-      if (indicators['ma.20'] && indicators['ma.20'].length === candles.length) {
+      if (indicators['ma.fast'] && indicators['ma.fast'].length === candles.length) {
+        const maFastSeries = chart.addSeries(LineSeries, {
+          color: token('--accent'),
+          lineWidth: 1,
+          title: 'MA Fast',
+        });
+        const maFastData = candles.map((c, i) => ({
+          time: Math.floor(c.openTime / 1000) as UTCTimestamp,
+          value: indicators['ma.fast'][i],
+        })).filter((d) => !Number.isNaN(d.value) && d.value > 0);
+        maFastSeries.setData(maFastData);
+        indicatorSeriesRef.current.push(maFastSeries);
+      }
+
+      if (indicators['ma.slow'] && indicators['ma.slow'].length === candles.length) {
+        const maSlowSeries = chart.addSeries(LineSeries, {
+          color: token('--muted'),
+          lineWidth: 1,
+          lineStyle: 2,
+          title: 'MA Slow',
+        });
+        const maSlowData = candles.map((c, i) => ({
+          time: Math.floor(c.openTime / 1000) as UTCTimestamp,
+          value: indicators['ma.slow'][i],
+        })).filter((d) => !Number.isNaN(d.value) && d.value > 0);
+        maSlowSeries.setData(maSlowData);
+        indicatorSeriesRef.current.push(maSlowSeries);
+      } else if (!indicators['ma.fast'] && indicators['ma.20'] && indicators['ma.20'].length === candles.length) {
         const maSeries = chart.addSeries(LineSeries, {
           color: token('--accent'),
           lineWidth: 1,

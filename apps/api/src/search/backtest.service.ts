@@ -99,49 +99,74 @@ export class BacktestService {
       datasetId: dataset.id,
     });
 
-    // 5. Compute indicators for chart overlays (MA, Bollinger Bands, Support/Resistance)
+    // 5. Compute indicators for chart overlays using strategy's actual parameters (ADR 0008, §25)
     const indicators: Record<string, number[]> = {};
     if (candleSeries.length > 0) {
-      try {
-        const maFast = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'moving-average',
-          params: { period: 20 },
-        });
-        indicators['ma.20'] = [...maFast];
-      } catch {
-        // Safe fallback
-      }
+      for (const member of validatedSpec.members) {
+        if (member.id === 'ma') {
+          const fastPeriod = member.params.fastPeriod ?? 20;
+          const slowPeriod = member.params.slowPeriod ?? 50;
 
-      try {
-        const bbUpper = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'bollinger-bands.upper',
-          params: { period: 20, deviation: 2 },
-        });
-        indicators['bb.upper'] = [...bbUpper];
+          try {
+            const fast = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'ma',
+              params: { period: fastPeriod },
+            });
+            indicators['ma.fast'] = [...fast];
+            indicators[`ma.${fastPeriod}`] = [...fast];
+          } catch {
+            // Safe fallback
+          }
 
-        const bbLower = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'bollinger-bands.lower',
-          params: { period: 20, deviation: 2 },
-        });
-        indicators['bb.lower'] = [...bbLower];
-      } catch {
-        // Safe fallback
-      }
+          try {
+            const slow = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'ma',
+              params: { period: slowPeriod },
+            });
+            indicators['ma.slow'] = [...slow];
+            indicators[`ma.${slowPeriod}`] = [...slow];
+          } catch {
+            // Safe fallback
+          }
+        } else if (member.id === 'bollinger') {
+          const period = member.params.period ?? 20;
+          const stdDevMultiplier = member.params.stdDevMultiplier ?? 2;
 
-      try {
-        const srSupport = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'support-resistance.support',
-          params: {},
-        });
-        indicators['sr.support'] = [...srSupport];
+          try {
+            const bbUpper = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'bollinger.upper',
+              params: { period, stdDevMultiplier },
+            });
+            indicators['bb.upper'] = [...bbUpper];
 
-        const srResistance = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'support-resistance.resistance',
-          params: {},
-        });
-        indicators['sr.resistance'] = [...srResistance];
-      } catch {
-        // Safe fallback
+            const bbLower = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'bollinger.lower',
+              params: { period, stdDevMultiplier },
+            });
+            indicators['bb.lower'] = [...bbLower];
+          } catch {
+            // Safe fallback
+          }
+        } else if (member.id === 'support-resistance') {
+          const pivotLookback = member.params.pivotLookback ?? 5;
+          const mergeThresholdPct = member.params.mergeThresholdPct ?? 0.5;
+
+          try {
+            const srSupport = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'support-resistance.support',
+              params: { pivotLookback, mergeThresholdPct },
+            });
+            indicators['sr.support'] = [...srSupport];
+
+            const srResistance = this.indicators.compute(dataset.id, candleSeries, {
+              source: 'support-resistance.resistance',
+              params: { pivotLookback, mergeThresholdPct },
+            });
+            indicators['sr.resistance'] = [...srResistance];
+          } catch {
+            // Safe fallback
+          }
+        }
       }
     }
 

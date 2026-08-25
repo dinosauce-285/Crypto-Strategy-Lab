@@ -192,4 +192,40 @@ describe('BacktestService', () => {
     expect(mockRunner.run).toHaveBeenCalled();
     expect(mockEvaluator.evaluateAndRecord).toHaveBeenCalled();
   });
+
+  it('computes indicators using the actual parameters of the strategy members', async () => {
+    const maSpec: CandidateSpec = {
+      rule: 'weighted',
+      threshold: 0.5,
+      members: [
+        {
+          id: 'ma',
+          version: 1,
+          params: { fastPeriod: 10, slowPeriod: 50 },
+          paramsHash: 'hash-ma-10-50',
+          weight: 1.0,
+        },
+      ],
+    };
+
+    const result = await service.runSingle({
+      datasetId: 'dataset-123',
+      spec: maSpec,
+    });
+
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 10 } },
+    );
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 50 } },
+    );
+    expect(result.indicators['ma.fast']).toBeDefined();
+    expect(result.indicators['ma.slow']).toBeDefined();
+    expect(result.indicators['ma.10']).toBeDefined();
+    expect(result.indicators['ma.50']).toBeDefined();
+  });
 });
