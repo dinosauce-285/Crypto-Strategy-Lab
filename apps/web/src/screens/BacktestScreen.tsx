@@ -61,32 +61,59 @@ export function BacktestScreen() {
   const [state, setState] = useState<RunState>({ kind: 'idle' });
   const [selectedTrade, setSelectedTrade] = useState<TradeRow | null>(null);
 
-  // Preload if navigated from Leaderboard with state
+  // Auto-run and display results if navigated from Leaderboard with state
   useEffect(() => {
     const navState = location.state as { datasetId?: string; spec?: CandidateSpec } | null;
-    if (navState?.datasetId) {
-      fetch('/api/datasets')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((datasets: Dataset[]) => {
-          const match = datasets.find((d) => d.id === navState.datasetId);
-          if (match) setDataset(match);
-        })
-        .catch(() => {});
-    }
+    if (!navState?.datasetId || !navState?.spec) return;
 
-    if (navState?.spec?.members?.[0]) {
-      const member = navState.spec.members[0];
-      fetch('/api/strategies')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((strategies: StrategyMeta[]) => {
-          const match = strategies.find((s) => s.id === member.id);
-          if (match) {
-            setStrategy(match);
-            setParams(member.params || {});
+    let isCancelled = false;
+    setState({ kind: 'loading' });
+
+    Promise.all([
+      fetch('/api/datasets').then((res) => (res.ok ? res.json() : [])),
+      fetch('/api/strategies').then((res) => (res.ok ? res.json() : [])),
+    ])
+      .then(async ([datasets, strategies]: [Dataset[], StrategyMeta[]]) => {
+        if (isCancelled) return;
+        const matchDataset = datasets.find((d) => d.id === navState.datasetId);
+        if (matchDataset) setDataset(matchDataset);
+
+        const firstMember = navState.spec?.members?.[0];
+        if (firstMember) {
+          const matchStrategy = strategies.find((s) => s.id === firstMember.id);
+          if (matchStrategy) {
+            setStrategy(matchStrategy);
+            setParams(firstMember.params || {});
           }
-        })
-        .catch(() => {});
-    }
+        }
+
+        const res = await fetch('/api/backtest/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            datasetId: navState.datasetId,
+            spec: navState.spec,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Backtest execution failed: HTTP ${res.status}`);
+        }
+
+        const body: SingleRunResult = await res.json();
+        if (!isCancelled) {
+          setState({ kind: 'ready', result: body });
+        }
+      })
+      .catch((err) => {
+        if (!isCancelled) {
+          setState({ kind: 'error', message: (err as Error).message });
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [location.state]);
 
   const handleStrategySelect = (meta: StrategyMeta, defaultParams: StrategyParams) => {
@@ -104,21 +131,14 @@ export function BacktestScreen() {
         datasetId: dataset.id,
         spec: {
           rule: 'weighted',
-          threshold: 0.5,
+          threshold: 0.1,
           members: [
             {
               id: strategy.id,
               version: strategy.version,
               params,
               paramsHash: 'single-run-hash',
-              weight: 0.5,
-            },
-            {
-              id: strategy.id,
-              version: strategy.version,
-              params,
-              paramsHash: 'single-run-hash',
-              weight: 0.5,
+              weight: 1.0,
             },
           ],
         },

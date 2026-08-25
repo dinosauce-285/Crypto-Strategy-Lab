@@ -61,12 +61,21 @@ export function SearchScreen() {
         if (!current) return;
         setStatus(current);
         setSelectedRefs(current.strategyRefs);
+        if (current.state !== 'ended') {
+          fetch('/api/datasets')
+            .then((res) => readJson<Dataset[]>(res))
+            .then((datasets) => {
+              const match = datasets.find((item) => item.id === current.datasetId);
+              if (match) setDataset(match);
+            })
+            .catch(() => undefined);
+        }
       })
       .catch((error: Error) => setRequestError(error.message));
   }, []);
 
   useEffect(() => {
-    if (!runningDatasetId || dataset?.id === runningDatasetId) return;
+    if (!runningDatasetId || !hasActiveRun || dataset?.id === runningDatasetId) return;
     fetch('/api/datasets')
       .then((res) => readJson<Dataset[]>(res))
       .then((datasets) => {
@@ -74,7 +83,7 @@ export function SearchScreen() {
         if (match) setDataset(match);
       })
       .catch(() => undefined);
-  }, [dataset?.id, runningDatasetId]);
+  }, [dataset?.id, hasActiveRun, runningDatasetId]);
 
   useTopic(
     status ? searchRunTopic(status.runId) : null,
