@@ -32,3 +32,7 @@ export function decimal(value: string): string {
 export const clock = (at: number): string => TIME.format(new Date(at));
 export const shortClock = (at: number): string => TIME_SHORT.format(new Date(at));
 export const date = (at: number): string => DATE.format(new Date(at));
+
+export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
+  return side.toUpperCase() === 'BUY' ? 'Mua' : 'Bán';
+}

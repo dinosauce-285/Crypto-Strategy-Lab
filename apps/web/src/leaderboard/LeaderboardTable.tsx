@@ -51,10 +51,10 @@ export function LeaderboardTable({
                 Tỷ lệ thắng{renderSortIndicator('winRate')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('maxDrawdown')}>
-                DD tối đa{renderSortIndicator('maxDrawdown')}
+                Drawdown tối đa{renderSortIndicator('maxDrawdown')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('sharpeRatio')}>
-                Sharpe{renderSortIndicator('sharpeRatio')}
+                Sharpe Ratio{renderSortIndicator('sharpeRatio')}
               </th>
               <th style={{ cursor: 'pointer' }} onClick={() => onSortChange('tradeCount')}>
                 Số lệnh{renderSortIndicator('tradeCount')}

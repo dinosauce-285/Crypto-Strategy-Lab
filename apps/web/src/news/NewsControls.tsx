@@ -61,7 +61,7 @@ export function NewsControls({
           onClick={onCollect}
           disabled={isCollecting}
         >
-          {isCollecting ? 'Đang crawl…' : 'Crawl tin tức'}
+          {isCollecting ? 'Đang thu thập…' : 'Thu thập tin tức'}
         </button>
 
         <button
@@ -69,6 +69,7 @@ export function NewsControls({
           className="btn-action"
           onClick={onAnalyze}
           disabled={isAnalyzing}
+          title="Sentiment: điểm cảm xúc thị trường được tính từ nội dung tin tức"
         >
           {isAnalyzing ? 'Đang phân tích…' : 'Chạy phân tích sentiment AI'}
         </button>

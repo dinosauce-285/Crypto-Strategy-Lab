@@ -44,7 +44,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Drawdown tối đa</span>
+          <span className="stat-tile-label" title="Drawdown: mức sụt giảm vốn lớn nhất từ đỉnh xuống đáy">Drawdown tối đa</span>
           <span className="stat-tile-val bad">
             -{(metrics.maxDrawdown * 100).toFixed(2)}%
           </span>
@@ -56,7 +56,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Profit Factor</span>
+          <span className="stat-tile-label" title="Profit Factor: tỷ số giữa tổng lãi và tổng lỗ">Profit Factor</span>
           <span className="stat-tile-val">
             {metrics.profitFactor !== undefined
               ? metrics.profitFactor.toFixed(2)
@@ -65,7 +65,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile" style={{ gridColumn: 'span 2' }}>
-          <span className="stat-tile-label">Sharpe Ratio</span>
+          <span className="stat-tile-label" title="Sharpe Ratio: lợi nhuận điều chỉnh theo rủi ro (độ biến động)">Sharpe Ratio</span>
           <span className="stat-tile-val">
             {metrics.sharpeRatio !== undefined
               ? metrics.sharpeRatio.toFixed(3)

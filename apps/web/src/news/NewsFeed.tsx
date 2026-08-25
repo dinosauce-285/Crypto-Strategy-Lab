@@ -59,7 +59,7 @@ export function NewsFeed({
           <h2>Nguồn tin đầu vào</h2>
         </div>
         <p className="state">
-          Chưa thu thập bài viết nào. Nhấn <strong>Crawl tin tức</strong> để lấy bài viết
+          Chưa thu thập bài viết nào. Nhấn <strong>Thu thập tin tức</strong> để lấy bài viết
           mới nhất từ RSS feed và CryptoCompare.
         </p>
         <div>
@@ -68,7 +68,7 @@ export function NewsFeed({
             className="btn-action btn-primary"
             onClick={onCollectPrompt}
           >
-            Crawl tin tức ngay
+            Thu thập tin tức ngay
           </button>
         </div>
       </div>

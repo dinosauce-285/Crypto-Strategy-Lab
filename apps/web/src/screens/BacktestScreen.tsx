@@ -244,7 +244,7 @@ export function BacktestScreen() {
         <div className="screen-side">
           <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
             <div className="panel-head">
-              <h2>Thiết lập Dataset</h2>
+              <h2 title="Dataset: tập dữ liệu nến lịch sử đã tải, dùng để chạy backtest">Thiết lập Dataset</h2>
             </div>
             <DatasetPicker
               selectedDataset={dataset}
