@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import type { CandidateSpec, Dataset, StrategyMeta, StrategyParams, Timeframe } from '@csl/contracts';
+import {
+  canonicalJson,
+  type CandidateSpec,
+  type Dataset,
+  type StrategyMeta,
+  type StrategyParams,
+  type Timeframe,
+} from '@csl/contracts';
 import { Header } from '../layout/Header';
 import { DatasetPicker } from '../backtest/DatasetPicker';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
@@ -138,15 +145,8 @@ export function BacktestScreen() {
           id: strategy.id,
           version: strategy.version,
           params,
-          paramsHash: 'single-run-hash',
-          weight: 0.5,
-        },
-        {
-          id: strategy.id,
-          version: strategy.version,
-          params,
-          paramsHash: 'single-run-hash',
-          weight: 0.5,
+          paramsHash: canonicalJson(params),
+          weight: 1.0,
         },
       ],
     };
