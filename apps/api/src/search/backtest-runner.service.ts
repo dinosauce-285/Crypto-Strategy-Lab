@@ -50,7 +50,7 @@ export class BacktestRunnerService extends BacktestRunner {
       return [];
     }
 
-    const feeRate = parseFloat(dataset.rules.feeRate) || 0;
+    const feeRate = Math.max(0, parseFloat(dataset.rules.feeRate) || 0);
     const isNextOpen = dataset.rules.entryPrice === 'next-open';
     const trades: Trade[] = [];
 
