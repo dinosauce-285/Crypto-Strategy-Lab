@@ -36,11 +36,18 @@ export class BacktestService {
   /**
    * Every Dataset gets its own candle range fetched before it's usable (ADR 0041) —
    * shared by the explicit create endpoint and `runSingle`'s inline-create path, so
-   * neither one can hand back a Dataset with no data behind it.
+   * neither one can hand back a Dataset with no data behind it. A failed fetch must
+   * not leave an orphan row behind either — only rolled back if this call is the one
+   * that created it; a pre-existing row already has its history and stays put.
    */
   private async createDatasetWithHistory(data: Omit<Dataset, 'id'>): Promise<Dataset> {
-    const dataset = await this.datasets.create(data);
-    await this.backfill.ensureRange(dataset.pair, dataset.timeframe, dataset.from, dataset.to);
+    const { dataset, created } = await this.datasets.create(data);
+    try {
+      await this.backfill.ensureRange(dataset.pair, dataset.timeframe, dataset.from, dataset.to);
+    } catch (error) {
+      if (created) await this.datasets.delete(dataset.id);
+      throw error;
+    }
     return dataset;
   }
 
