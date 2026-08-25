@@ -106,9 +106,15 @@ export class BacktestService {
     });
 
     // Notify listeners (Leaderboard & WebSocket push channel)
-    this.emitter.emit('experiment.completed', {
-      datasetId: dataset.id,
+    this.emitter.emit(EVENTS.BacktestCompleted, {
       experimentId: evaluationResult.experimentId,
+      datasetId: dataset.id,
+      tradeCount: rawTrades.length,
+    });
+    this.emitter.emit(EVENTS.StrategyEvaluated, {
+      experimentId: evaluationResult.experimentId,
+      datasetId: dataset.id,
+      metrics: evaluationResult.metrics,
     });
     this.emitter.emit(EVENTS.LeaderboardUpdated, {
       datasetId: dataset.id,
