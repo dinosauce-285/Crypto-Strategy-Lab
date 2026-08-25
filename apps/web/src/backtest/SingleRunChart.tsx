@@ -13,6 +13,7 @@ import {
   type Time,
   type UTCTimestamp,
 } from 'lightweight-charts';
+import { sideLabel } from '../market/format';
 
 interface TradeWithSeq extends Trade {
   seq: number;
@@ -179,7 +180,7 @@ export function SingleRunChart({
         position: trade.side === 'BUY' ? 'belowBar' : 'aboveBar',
         color: isHighlighted ? token('--accent') : trade.side === 'BUY' ? token('--ok') : token('--bad'),
         shape: trade.side === 'BUY' ? 'arrowUp' : 'arrowDown',
-        text: `${trade.side} #${trade.seq}`,
+        text: `${sideLabel(trade.side)} #${trade.seq}`,
         size: isHighlighted ? 2 : 1,
       });
 

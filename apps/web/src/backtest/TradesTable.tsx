@@ -1,5 +1,5 @@
 import type { Trade } from '@csl/contracts';
-import { shortClock } from '../market/format';
+import { shortClock, sideLabel } from '../market/format';
 
 interface TradeRow extends Trade {
   seq: number;
@@ -67,7 +67,7 @@ export function TradesTable({
                     <span
                       className={`badge ${trade.side === 'BUY' ? 'badge-pos' : 'badge-neg'}`}
                     >
-                      {trade.side}
+                      {sideLabel(trade.side)}
                     </span>
                   </td>
                   <td>{shortClock(trade.entryTime)}</td>
