@@ -17,12 +17,20 @@ export function DatasetPicker({
 }: DatasetPickerProps) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch('/api/datasets')
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Lỗi kết nối máy chủ (HTTP ${res.status})`);
+        }
+        return res.json();
+      })
       .then((data: Dataset[]) => {
         setDatasets(data);
         if (data.length > 0 && !selectedDataset) {
@@ -30,7 +38,10 @@ export function DatasetPicker({
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err: Error) => {
+        setError(err.message || 'Không thể kết nối đến máy chủ.');
+        setLoading(false);
+      });
   }, [onSelectDataset, selectedDataset]);
 
   // Click outside to close dropdown
@@ -56,7 +67,9 @@ export function DatasetPicker({
     ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${date(selectedDataset.from)} - ${date(selectedDataset.to)})`
     : loading
       ? 'Đang tải dataset…'
-      : '(Chưa có dataset nào)';
+      : error
+        ? `Lỗi: ${error}`
+        : '(Chưa có dataset nào)';
 
   return (
     <div className="dataset-picker-wrap">
@@ -119,6 +132,12 @@ export function DatasetPicker({
           </div>
         )}
       </div>
+
+      {error && (
+        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--bad)' }}>
+          ⚠ {error}
+        </div>
+      )}
 
       {selectedDataset && (() => {
         const feePct = Number(selectedDataset.rules.feeRate) * 100;
