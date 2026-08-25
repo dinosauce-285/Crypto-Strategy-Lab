@@ -68,7 +68,7 @@ export function LeaderboardTable({
               const retColor = retNum > 0 ? 'ok' : retNum < 0 ? 'bad' : '';
 
               const recipeSummary = entry.spec.members
-                .map((m) => `${m.id} (${(m.weight * 100).toFixed(0)}%)`)
+                .map((m) => `${m.id}@v${m.version} (${(m.weight * 100).toFixed(0)}%)`)
                 .join(' + ');
 
               return (
