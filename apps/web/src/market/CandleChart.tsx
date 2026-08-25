@@ -13,7 +13,8 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
-import { useTopic } from '../channel/use-topic';
+import { useChannelStatus, useTopic } from '../channel/use-topic';
+import { clock } from './format';
 
 interface CandleChartProps {
   pair: string;
@@ -37,6 +38,23 @@ type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; candles: Candle[] };
+
+// Dev-mode StrictMode mounts every effect twice (mount, cleanup, remount) as a safety
+// check. Without this cache each mount would fire its own history fetch, and the first
+// one's cleanup would abort mid-flight — four ERR_ABORTED requests every time the
+// Realtime screen opens (one per timeframe). Keying by URL lets the second mount reuse
+// the first mount's in-flight request instead of starting a new one.
+const inFlightHistory = new Map<string, Promise<{ candles: Candle[] }>>();
+
+function fetchHistory(url: string): Promise<{ candles: Candle[] }> {
+  const pending = inFlightHistory.get(url);
+  if (pending) return pending;
+  const request = fetch(url)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
+    .finally(() => inFlightHistory.delete(url));
+  inFlightHistory.set(url, request);
+  return request;
+}
 
 function toBar(candle: Candle) {
   return {
@@ -71,6 +89,8 @@ function showDefaultWindow(chart: IChartApi, bars: ReturnType<typeof toBar>[], w
 export function CandleChart({ pair, timeframe }: CandleChartProps) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const channelStatus = useChannelStatus();
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The chart div only mounts once there's data to show (see `hasData` below), and in
@@ -119,17 +139,20 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
   useEffect(() => {
     setState({ kind: 'loading' });
     candlesRef.current = [];
-    const controller = new AbortController();
-    fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`, {
-      signal: controller.signal,
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
-      .then((body: { candles: Candle[] }) => setState({ kind: 'ready', candles: body.candles }))
+    let cancelled = false;
+    fetchHistory(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`)
+      .then((body) => {
+        if (cancelled) return;
+        setState({ kind: 'ready', candles: body.candles });
+        if (body.candles.length > 0) setLastUpdatedAt(Date.now());
+      })
       .catch((e: Error) => {
-        if (e.name === 'AbortError') return;
+        if (cancelled) return;
         setState({ kind: 'error', message: e.message });
       });
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [pair, timeframe, attempt]);
 
   useEffect(() => {
@@ -146,10 +169,12 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
         kind: 'ready',
         candles: appendCandle(prev.kind === 'ready' ? prev.candles : [], message.payload.candle),
       }));
+      setLastUpdatedAt(Date.now());
     }, []),
   );
 
   const hasData = state.kind === 'ready' && state.candles.length > 0;
+  const isStale = hasData && channelStatus === 'down';
 
   return (
     <>
@@ -171,7 +196,16 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
         </p>
       )}
 
-      {hasData && <div ref={attachChart} className="chart" />}
+      {isStale && (
+        <p className="chart-stale-banner state bad">
+          <strong>Mất kết nối kênh.</strong> Dữ liệu đứng yên từ{' '}
+          {lastUpdatedAt ? clock(lastUpdatedAt) : '—'}.
+        </p>
+      )}
+
+      {hasData && (
+        <div ref={attachChart} className={isStale ? 'chart chart-stale' : 'chart'} />
+      )}
     </>
   );
 }
