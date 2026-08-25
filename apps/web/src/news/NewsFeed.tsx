@@ -1,5 +1,5 @@
 import type { NewsItem, SentimentLabel } from '@csl/contracts';
-import { clock } from '../market/format';
+import { clock, date } from '../market/format';
 
 const SENTIMENT_LABELS: Record<SentimentLabel, string> = {
   POSITIVE: 'TÍCH CỰC',
@@ -16,8 +16,7 @@ export interface NewsFeedProps {
 }
 
 function formatDate(epochMs: number): string {
-  const date = new Date(epochMs);
-  return `${date.toLocaleDateString()} ${clock(epochMs)}`;
+  return `${date(epochMs)} ${clock(epochMs)}`;
 }
 
 function formatScore(score: number): string {

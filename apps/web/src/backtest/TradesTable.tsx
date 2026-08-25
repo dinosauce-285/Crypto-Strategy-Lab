@@ -1,4 +1,5 @@
 import type { Trade } from '@csl/contracts';
+import { shortClock } from '../market/format';
 
 interface TradeRow extends Trade {
   seq: number;
@@ -69,9 +70,9 @@ export function TradesTable({
                       {trade.side}
                     </span>
                   </td>
-                  <td>{new Date(trade.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{shortClock(trade.entryTime)}</td>
                   <td>{trade.entryPrice}</td>
-                  <td>{new Date(trade.exitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{shortClock(trade.exitTime)}</td>
                   <td>{trade.exitPrice}</td>
                   <td className={pnlClass} style={{ fontWeight: 600 }}>
                     {profitNum > 0 ? '+' : ''}
