@@ -22,10 +22,18 @@ export function StrategyPicker({
 }: StrategyPickerProps) {
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch('/api/strategies')
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Lỗi kết nối máy chủ (HTTP ${res.status})`);
+        }
+        return res.json();
+      })
       .then((list: StrategyMeta[]) => {
         setStrategies(list);
         if (list.length > 0 && !selectedStrategy && !customSpec) {
@@ -38,7 +46,10 @@ export function StrategyPicker({
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err: Error) => {
+        setError(err.message || 'Không thể kết nối đến máy chủ.');
+        setLoading(false);
+      });
   }, [onSelectStrategy, selectedStrategy, customSpec]);
 
   const handleStrategyChange = (strategyId: string) => {
@@ -67,6 +78,12 @@ export function StrategyPicker({
           </span>
         ) : null}
       </div>
+
+      {error && (
+        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--bad)' }}>
+          ⚠ {error}
+        </div>
+      )}
 
       {customSpec ? (
         <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -106,6 +123,13 @@ export function StrategyPicker({
               value={selectedStrategy?.id ?? ''}
               onChange={(e) => handleStrategyChange(e.target.value)}
             >
+              {loading ? (
+                <option value="">Đang tải strategy…</option>
+              ) : error ? (
+                <option value="">{`Lỗi: ${error}`}</option>
+              ) : strategies.length === 0 ? (
+                <option value="">(Chưa có strategy nào)</option>
+              ) : null}
               {strategies.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.id})
