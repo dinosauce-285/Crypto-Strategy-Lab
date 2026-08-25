@@ -9,7 +9,7 @@ describe('return.calculator', () => {
       exitTime: 2000,
       exitPrice: '110',
       side: 'BUY',
-      profit: '10',
+      profit: '0.1',
     },
     {
       entryTime: 3000,
@@ -17,30 +17,30 @@ describe('return.calculator', () => {
       exitTime: 4000,
       exitPrice: '99',
       side: 'BUY',
-      profit: '-11',
+      profit: '-0.1',
     },
   ];
 
-  it('calculates trade return correctly for BUY and SELL', () => {
-    const buyTrade: Trade = {
+  it('calculates trade return correctly for BUY and SELL with net profit accounting for fees', () => {
+    const buyTradeWithFee: Trade = {
       entryTime: 1000,
       entryPrice: '100',
       exitTime: 2000,
       exitPrice: '120',
       side: 'BUY',
-      profit: '20',
+      profit: '0.198', // 0.20 - 0.002 fee
     };
-    expect(calculateTradeReturn(buyTrade)).toBeCloseTo(0.2);
+    expect(calculateTradeReturn(buyTradeWithFee)).toBeCloseTo(0.198);
 
-    const sellTrade: Trade = {
+    const fallbackTrade: Trade = {
       entryTime: 1000,
       entryPrice: '100',
       exitTime: 2000,
       exitPrice: '90',
       side: 'SELL',
-      profit: '10',
+      profit: '',
     };
-    expect(calculateTradeReturn(sellTrade)).toBeCloseTo(0.1);
+    expect(calculateTradeReturn(fallbackTrade)).toBeCloseTo(0.1);
   });
 
   it('computes simple total return as linear sum of trade returns', () => {
@@ -53,8 +53,8 @@ describe('return.calculator', () => {
     expect(computeTotalReturn(sampleTrades, 'compound')).toBeCloseTo(-0.01);
   });
 
-  it('computes exact profit/loss sum', () => {
-    expect(computeProfitLoss(sampleTrades)).toBe('-1');
+  it('computes exact profit/loss sum matching net returns', () => {
+    expect(computeProfitLoss(sampleTrades)).toBe('0');
   });
 
   it('handles empty trade list safely', () => {
