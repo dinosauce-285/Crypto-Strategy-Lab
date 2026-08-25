@@ -1,5 +1,17 @@
-import type { Dataset, SearchMode } from '@csl/contracts';
+import { SEARCH_MODES, type Dataset, type SearchMode } from '@csl/contracts';
 import { DatasetPicker } from '../backtest/DatasetPicker';
+
+const SEARCH_MODE_LABELS: Partial<Record<SearchMode, string>> = {
+  'domain-guided': 'Có định hướng (Domain guided)',
+  random: 'Ngẫu nhiên',
+};
+
+const modeLabel = (mode: SearchMode): string =>
+  SEARCH_MODE_LABELS[mode] ??
+  mode
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 
 interface SearchControlsPanelProps {
   dataset: Dataset | null;
@@ -31,6 +43,8 @@ export function SearchControlsPanel({
   onStart,
 }: SearchControlsPanelProps) {
   const disabled = busy || isRunning;
+  const candidateLimitInvalid =
+    !Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 10000;
 
   return (
     <div className="screen-side">
@@ -59,8 +73,11 @@ export function SearchControlsPanel({
             disabled={disabled}
             onChange={(event) => onModeChange(event.target.value as SearchMode)}
           >
-            <option value="domain-guided">Có định hướng (Domain guided)</option>
-            <option value="random">Ngẫu nhiên</option>
+            {SEARCH_MODES.map((item) => (
+              <option key={item} value={item}>
+                {modeLabel(item)}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -71,9 +88,16 @@ export function SearchControlsPanel({
             className="pair-select"
             min={1}
             max={10000}
+            step={1}
+            required
             value={maxCandidates}
+            aria-invalid={candidateLimitInvalid}
             disabled={disabled}
-            onChange={(event) => onMaxCandidatesChange(Number(event.target.value))}
+            onChange={(event) =>
+              onMaxCandidatesChange(
+                Number.isFinite(event.target.valueAsNumber) ? event.target.valueAsNumber : 0,
+              )
+            }
           />
         </label>
 

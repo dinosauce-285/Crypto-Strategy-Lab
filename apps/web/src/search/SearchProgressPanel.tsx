@@ -45,7 +45,7 @@ export function SearchProgressPanel({
   if (!status) {
     return (
       <div className="panel search-progress-panel empty-progress">
-        <p className="state">Không có lượt search nào đang chạy cho dataset đã chọn.</p>
+        <p className="state">Hiện không có lượt tìm kiếm nào đang chạy.</p>
         {requestError && <p className="state bad">{requestError}</p>}
       </div>
     );
@@ -73,7 +73,14 @@ export function SearchProgressPanel({
         <strong>{runningDataset ? datasetLabel(runningDataset) : status.datasetId}</strong>
       </div>
 
-      <div className="progress-meter" aria-label="Tiến trình search">
+      <div
+        className="progress-meter"
+        role="progressbar"
+        aria-label="Tiến trình tìm kiếm"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress)}
+      >
         <span style={{ width: `${progress}%` }} />
       </div>
 
