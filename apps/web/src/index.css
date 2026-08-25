@@ -58,6 +58,7 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 .screen-main, .screen-side { display: flex; flex-direction: column; gap: 0.65rem; }
 
 .controls-row { display: flex; align-items: center; gap: 0.5rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.15rem; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -172,6 +173,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem;
   pointer-events: none;
+}
+.chart-label-selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {

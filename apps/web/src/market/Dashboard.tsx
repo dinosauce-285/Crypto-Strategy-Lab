@@ -36,7 +36,10 @@ export function Dashboard({ pair, timeframes, selected, onSelect }: DashboardPro
           }}
         >
           <div className="chart-frame">
-            <span className="chart-label">{timeframe}</span>
+            <span className={`chart-label${i === selected ? ' chart-label-selected' : ''}`}>
+              {timeframe}
+              {i === selected && ' · đang chọn'}
+            </span>
             <CandleChart pair={pair} timeframe={timeframe} />
           </div>
         </div>
