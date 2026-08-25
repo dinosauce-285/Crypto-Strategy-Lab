@@ -1,11 +1,18 @@
 import type { ProfitMode, Trade } from '@csl/contracts';
 
 /**
- * Calculates individual trade return percentage:
- * r_i = (exitPrice - entryPrice) / entryPrice for BUY
- * r_i = (entryPrice - exitPrice) / entryPrice for SELL
+ * Calculates individual net trade return percentage:
+ * - Reads `trade.profit` (which accounts for trade return minus fees).
+ * - Fallback to raw price return `(exitPrice - entryPrice) / entryPrice` if profit is absent.
  */
 export function calculateTradeReturn(trade: Trade): number {
+  if (trade.profit !== undefined && trade.profit !== null && trade.profit !== '') {
+    const p = Number(trade.profit);
+    if (Number.isFinite(p)) {
+      return p;
+    }
+  }
+
   const entry = Number(trade.entryPrice);
   const exit = Number(trade.exitPrice);
   if (entry <= 0) return 0;

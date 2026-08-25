@@ -12,10 +12,10 @@ describe('drawdown.calculator', () => {
     // Trade 4 (+40%): 1.26 (peak: 1.5, dd: (1.5 - 1.26)/1.5 = 0.16)
     // Max drawdown = 0.40 (40%)
     const trades: Trade[] = [
-      { entryTime: 1, entryPrice: '100', exitTime: 2, exitPrice: '150', side: 'BUY', profit: '50' },
-      { entryTime: 3, entryPrice: '100', exitTime: 4, exitPrice: '80', side: 'BUY', profit: '-20' },
-      { entryTime: 5, entryPrice: '100', exitTime: 6, exitPrice: '75', side: 'BUY', profit: '-25' },
-      { entryTime: 7, entryPrice: '100', exitTime: 8, exitPrice: '140', side: 'BUY', profit: '40' },
+      { entryTime: 1, entryPrice: '100', exitTime: 2, exitPrice: '150', side: 'BUY', profit: '0.50' },
+      { entryTime: 3, entryPrice: '100', exitTime: 4, exitPrice: '80', side: 'BUY', profit: '-0.20' },
+      { entryTime: 5, entryPrice: '100', exitTime: 6, exitPrice: '75', side: 'BUY', profit: '-0.25' },
+      { entryTime: 7, entryPrice: '100', exitTime: 8, exitPrice: '140', side: 'BUY', profit: '0.40' },
     ];
 
     const mdd = computeMaxDrawdown(trades, 'trade-close', 'compound');
@@ -24,7 +24,7 @@ describe('drawdown.calculator', () => {
 
   it('computes per-candle drawdown when adverse intra-candle wicks occur', () => {
     const trades: Trade[] = [
-      { entryTime: 1000, entryPrice: '100', exitTime: 3000, exitPrice: '110', side: 'BUY', profit: '10' },
+      { entryTime: 1000, entryPrice: '100', exitTime: 3000, exitPrice: '110', side: 'BUY', profit: '0.10' },
     ];
 
     // During the trade (entryPrice 100), candle 2 dips low to 70 before recovering to 110 at exit
