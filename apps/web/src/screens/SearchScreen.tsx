@@ -74,7 +74,7 @@ export function SearchScreen() {
       .then((current) => {
         if (!current) return;
         setStatus(current);
-        setSelectedRefs(current.strategyRefs);
+        if (current.state !== 'ended') setSelectedRefs(current.strategyRefs);
       })
       .catch((error: Error) => setRequestError(error.message));
   }, []);
@@ -117,16 +117,21 @@ export function SearchScreen() {
     return [...missingCore.map((group) => STRATEGY_GROUP_LABELS[group]), ...missingContext];
   }, [mode, selectedRefs, strategies]);
 
+  const candidateLimitInvalid =
+    !Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 10000;
   const blockedReason =
-    missingGroups.length > 0
-      ? `Chế độ Có định hướng cần nhóm ${CORE_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join(', ')} và ít nhất một trong số ${CONTEXT_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join('/')}. Còn thiếu: ${missingGroups.join(', ')}.`
-      : null;
+    candidateLimitInvalid
+      ? 'Số candidate tối đa phải là số nguyên từ 1 đến 10000.'
+      : missingGroups.length > 0
+        ? `Chế độ Có định hướng cần nhóm ${CORE_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join(', ')} và ít nhất một trong số ${CONTEXT_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join('/')}. Còn thiếu: ${missingGroups.join(', ')}.`
+        : null;
 
   const canStart = useMemo(
     () =>
       Boolean(dataset && selectedRefs.length > 0 && strategyState.kind === 'ready') &&
-      missingGroups.length === 0,
-    [dataset, selectedRefs.length, strategyState.kind, missingGroups],
+      missingGroups.length === 0 &&
+      !candidateLimitInvalid,
+    [dataset, selectedRefs.length, strategyState.kind, missingGroups, candidateLimitInvalid],
   );
 
   const start = async () => {
