@@ -227,5 +227,7 @@ describe('BacktestService', () => {
     expect(result.indicators['ma.slow']).toBeDefined();
     expect(result.indicators['ma.10']).toBeDefined();
     expect(result.indicators['ma.50']).toBeDefined();
+    expect(result.indicators['sr.support']).toBeDefined();
+    expect(result.indicators['sr.resistance']).toBeDefined();
   });
 });

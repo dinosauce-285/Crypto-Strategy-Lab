@@ -99,11 +99,15 @@ export class BacktestService {
       datasetId: dataset.id,
     });
 
-    // 5. Compute indicators for chart overlays using strategy's actual parameters (ADR 0008, §25)
+    // 5. Compute indicators for chart overlays (ADR 0008, §5, §25, §46 step 6)
     const indicators: Record<string, number[]> = {};
     if (candleSeries.length > 0) {
+      let hasMa = false;
+      let hasSr = false;
+
       for (const member of validatedSpec.members) {
         if (member.id === 'ma') {
+          hasMa = true;
           const fastPeriod = member.params.fastPeriod ?? 20;
           const slowPeriod = member.params.slowPeriod ?? 50;
 
@@ -148,6 +152,7 @@ export class BacktestService {
             // Safe fallback
           }
         } else if (member.id === 'support-resistance') {
+          hasSr = true;
           const pivotLookback = member.params.pivotLookback ?? 5;
           const mergeThresholdPct = member.params.mergeThresholdPct ?? 0.5;
 
@@ -166,6 +171,38 @@ export class BacktestService {
           } catch {
             // Safe fallback
           }
+        }
+      }
+
+      // If support-resistance was not explicitly configured in candidate, compute baseline (§5, §46 step 6)
+      if (!hasSr) {
+        try {
+          const srSupport = this.indicators.compute(dataset.id, candleSeries, {
+            source: 'support-resistance.support',
+            params: { pivotLookback: 5, mergeThresholdPct: 0.5 },
+          });
+          indicators['sr.support'] = [...srSupport];
+
+          const srResistance = this.indicators.compute(dataset.id, candleSeries, {
+            source: 'support-resistance.resistance',
+            params: { pivotLookback: 5, mergeThresholdPct: 0.5 },
+          });
+          indicators['sr.resistance'] = [...srResistance];
+        } catch {
+          // Safe fallback
+        }
+      }
+
+      // If MA was not explicitly configured in candidate, compute baseline MA(20)
+      if (!hasMa) {
+        try {
+          const ma20 = this.indicators.compute(dataset.id, candleSeries, {
+            source: 'ma',
+            params: { period: 20 },
+          });
+          indicators['ma.20'] = [...ma20];
+        } catch {
+          // Safe fallback
         }
       }
     }
