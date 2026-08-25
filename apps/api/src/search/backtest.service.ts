@@ -44,6 +44,15 @@ export class BacktestService {
     const { dataset, created } = await this.datasets.create(data);
     try {
       await this.backfill.ensureRange(dataset.pair, dataset.timeframe, dataset.from, dataset.to);
+      const candles = await this.candles.range(dataset.pair, dataset.timeframe, {
+        from: dataset.from,
+        to: dataset.to,
+      });
+      if (candles.length === 0) {
+        throw new BadRequestException(
+          `Dataset range (${new Date(dataset.from).toISOString()} - ${new Date(dataset.to).toISOString()}) contains no market candle data`,
+        );
+      }
     } catch (error) {
       if (created) await this.datasets.delete(dataset.id);
       throw error;
@@ -71,14 +80,20 @@ export class BacktestService {
     // 1. Build strategy instance
     const strategy = await this.factory.build(validatedSpec);
 
-    // 2. Run backtest simulation
-    const rawTrades = await this.runner.run(strategy, dataset.id);
-
-    // 3. Load candle bars for the dataset range
+    // 2. Load candle bars for the dataset range
     const candleSeries = await this.candles.range(dataset.pair, dataset.timeframe, {
       from: dataset.from,
       to: dataset.to,
     });
+
+    if (candleSeries.length === 0) {
+      throw new BadRequestException(
+        `Dataset "${dataset.id}" contains no market candle data for backtesting`,
+      );
+    }
+
+    // 3. Run backtest simulation
+    const rawTrades = await this.runner.run(strategy, dataset.id);
 
     // 4. Evaluate metrics & persist to DB atomically via EvaluatorPort
     const evaluationResult = await this.evaluator.evaluateAndRecord({

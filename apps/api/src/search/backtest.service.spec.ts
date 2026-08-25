@@ -230,4 +230,31 @@ describe('BacktestService', () => {
     expect(result.indicators['sr.support']).toBeDefined();
     expect(result.indicators['sr.resistance']).toBeDefined();
   });
+
+  it('rejects dataset creation and deletes created row when dataset range has no candles', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('contains no market candle data');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('rejects runSingle when dataset has no candle data for the range', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.runSingle({
+        datasetId: 'dataset-123',
+        spec: sampleSpec,
+      }),
+    ).rejects.toThrow('contains no market candle data');
+  });
 });
