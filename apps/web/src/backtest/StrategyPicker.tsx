@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CandidateSpec, StrategyMeta, StrategyParams } from '@csl/contracts';
+import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { DynamicParamForm } from './DynamicParamForm';
 
 interface StrategyPickerProps {
@@ -55,14 +56,14 @@ export function StrategyPicker({
   return (
     <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
       <div className="panel-head">
-        <h2>Strategy Configuration</h2>
+        <h2 title="Strategy: chiến lược giao dịch được cấu hình để chạy backtest">Cấu hình Strategy</h2>
         {customSpec ? (
           <span className="badge badge-pos">
-            Composite ({customSpec.members.length} strategies)
+            Tổ hợp ({customSpec.members.length} chiến lược)
           </span>
         ) : selectedStrategy ? (
           <span className="badge badge-neu">
-            {selectedStrategy.group} · v{selectedStrategy.version}
+            {STRATEGY_GROUP_LABELS[selectedStrategy.group]} · v{selectedStrategy.version}
           </span>
         ) : null}
       </div>
@@ -70,7 +71,7 @@ export function StrategyPicker({
       {customSpec ? (
         <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-tile-label">Active Recipe ({customSpec.rule} · {customSpec.threshold})</span>
+            <span className="stat-tile-label">Công thức đang chọn ({customSpec.rule} · {customSpec.threshold})</span>
             {onClearCustomSpec && (
               <button
                 type="button"
@@ -78,7 +79,7 @@ export function StrategyPicker({
                 style={{ fontSize: '0.72rem', height: '1.5rem', padding: '0 0.4rem' }}
                 onClick={onClearCustomSpec}
               >
-                Switch to Standalone
+                Chuyển sang đơn lẻ
               </button>
             )}
           </div>
@@ -95,7 +96,7 @@ export function StrategyPicker({
         <>
           <div className="form-group" style={{ marginTop: '0.25rem' }}>
             <label htmlFor="strategy-select" className="stat-tile-label">
-              Selected Strategy
+              Strategy đã chọn
             </label>
             <select
               id="strategy-select"
@@ -116,7 +117,7 @@ export function StrategyPicker({
           {selectedStrategy && (
             <div style={{ marginTop: '0.5rem' }}>
               <h2 style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
-                Parameters ({selectedStrategy.params.length})
+                Tham số ({selectedStrategy.params.length})
               </h2>
               <DynamicParamForm
                 params={selectedStrategy.params}

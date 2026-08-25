@@ -12,7 +12,7 @@ export function DynamicParamForm({
   onChange,
 }: DynamicParamFormProps) {
   if (params.length === 0) {
-    return <p className="source">(No tunable parameters for this strategy)</p>;
+    return <p className="source">(Strategy này không có tham số nào để tinh chỉnh)</p>;
   }
 
   const handleChange = (name: string, rawVal: string, spec: ParamSpec) => {

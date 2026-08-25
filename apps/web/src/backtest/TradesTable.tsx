@@ -1,4 +1,5 @@
 import type { Trade } from '@csl/contracts';
+import { shortClock, sideLabel } from '../market/format';
 
 interface TradeRow extends Trade {
   seq: number;
@@ -19,9 +20,9 @@ export function TradesTable({
     return (
       <div className="panel">
         <div className="panel-head">
-          <h2>Executed Trades</h2>
+          <h2>Lệnh đã khớp</h2>
         </div>
-        <p className="state">No trades generated during this backtest window.</p>
+        <p className="state">Không có lệnh nào được tạo trong khoảng backtest này.</p>
       </div>
     );
   }
@@ -29,8 +30,8 @@ export function TradesTable({
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Executed Trades ({trades.length})</h2>
-        <span className="source">Click row to highlight entry/exit on chart</span>
+        <h2>Lệnh đã khớp ({trades.length})</h2>
+        <span className="source">Nhấn vào dòng để làm nổi bật điểm vào/ra trên biểu đồ</span>
       </div>
 
       <div className="candles" style={{ maxHeight: '280px', overflowY: 'auto' }}>
@@ -38,12 +39,12 @@ export function TradesTable({
           <thead>
             <tr>
               <th>#</th>
-              <th>Side</th>
-              <th>Entry Time</th>
-              <th>Entry Price</th>
-              <th>Exit Time</th>
-              <th>Exit Price</th>
-              <th>Net Profit</th>
+              <th>Chiều lệnh</th>
+              <th>Thời gian vào</th>
+              <th>Giá vào</th>
+              <th>Thời gian ra</th>
+              <th>Giá ra</th>
+              <th>Lãi ròng</th>
             </tr>
           </thead>
           <tbody>
@@ -66,12 +67,12 @@ export function TradesTable({
                     <span
                       className={`badge ${trade.side === 'BUY' ? 'badge-pos' : 'badge-neg'}`}
                     >
-                      {trade.side}
+                      {sideLabel(trade.side)}
                     </span>
                   </td>
-                  <td>{new Date(trade.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{shortClock(trade.entryTime)}</td>
                   <td>{trade.entryPrice}</td>
-                  <td>{new Date(trade.exitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{shortClock(trade.exitTime)}</td>
                   <td>{trade.exitPrice}</td>
                   <td className={pnlClass} style={{ fontWeight: 600 }}>
                     {profitNum > 0 ? '+' : ''}

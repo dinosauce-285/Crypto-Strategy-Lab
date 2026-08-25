@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dataset, Timeframe } from '@csl/contracts';
 import { PAIRS } from '../market/PairSelect';
 
@@ -28,6 +28,16 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!submitting) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [submitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +48,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
     const toEpoch = new Date(toDate).getTime();
 
     if (fromEpoch >= toEpoch) {
-      setError('"From" date must be earlier than "To" date.');
+      setError('"Từ ngày" phải sớm hơn "Đến ngày".');
       setSubmitting(false);
       return;
     }
@@ -65,7 +75,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
       });
 
       if (!res.ok) {
-        throw new Error(`Failed to create dataset: HTTP ${res.status}`);
+        throw new Error(`Tạo dataset thất bại: Lỗi HTTP ${res.status}`);
       }
 
       const created: Dataset = await res.json();
@@ -81,7 +91,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
     <div className="modal-backdrop">
       <div className="modal-card">
         <div className="panel-head">
-          <h2>Define Dataset & Backtest Rules</h2>
+          <h2>Cấu hình Dataset & Quy tắc Backtest</h2>
           <button type="button" className="btn-action" onClick={onClose}>
             ✕
           </button>
@@ -89,7 +99,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
         <form onSubmit={handleSubmit} className="dataset-form">
           <div className="form-group">
-            <label className="stat-tile-label">Pair</label>
+            <label className="stat-tile-label">Cặp giao dịch</label>
             <select
               className="pair-select"
               value={pair}
@@ -104,7 +114,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
           </div>
 
           <div className="form-group">
-            <label className="stat-tile-label">Timeframe</label>
+            <label className="stat-tile-label">Khung thời gian</label>
             <select
               className="pair-select"
               value={timeframe}
@@ -120,7 +130,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
           <div className="form-row">
             <div className="form-group">
-              <label className="stat-tile-label">From Date</label>
+              <label className="stat-tile-label">Từ ngày</label>
               <input
                 type="date"
                 className="pair-select"
@@ -130,7 +140,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               />
             </div>
             <div className="form-group">
-              <label className="stat-tile-label">To Date</label>
+              <label className="stat-tile-label">Đến ngày</label>
               <input
                 type="date"
                 className="pair-select"
@@ -143,12 +153,12 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
           <div className="rules-section">
             <h2 style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
-              Execution Rules (ADR 0010)
+              Quy tắc thực thi lệnh (ADR 0010)
             </h2>
 
             <div className="form-row">
               <div className="form-group">
-                <label className="stat-tile-label">Entry Price Timing</label>
+                <label className="stat-tile-label">Thời điểm vào lệnh</label>
                 <select
                   className="pair-select"
                   value={entryPrice}
@@ -156,13 +166,13 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
                     setEntryPrice(e.target.value as 'next-open' | 'signal-close')
                   }
                 >
-                  <option value="next-open">Next Open (Realistic)</option>
-                  <option value="signal-close">Signal Close (Theoretical)</option>
+                  <option value="next-open">Giá mở nến kế tiếp (Thực tế)</option>
+                  <option value="signal-close">Giá đóng nến tín hiệu (Lý thuyết)</option>
                 </select>
               </div>
 
               <div className="form-group">
-                <label className="stat-tile-label">Fee Rate (Fraction)</label>
+                <label className="stat-tile-label">Phí giao dịch (dạng phân số)</label>
                 <input
                   type="text"
                   className="pair-select"
@@ -176,7 +186,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
             <div className="form-row">
               <div className="form-group">
-                <label className="stat-tile-label">Warmup Candles</label>
+                <label className="stat-tile-label">Số nến khởi động (Warmup)</label>
                 <input
                   type="number"
                   className="pair-select"
@@ -189,7 +199,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               </div>
 
               <div className="form-group">
-                <label className="stat-tile-label">Profit Mode</label>
+                <label className="stat-tile-label">Cách tính lợi nhuận</label>
                 <select
                   className="pair-select"
                   value={profitMode}
@@ -197,14 +207,14 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
                     setProfitMode(e.target.value as 'simple' | 'compound')
                   }
                 >
-                  <option value="compound">Compound (Geometric)</option>
-                  <option value="simple">Simple (Linear Sum)</option>
+                  <option value="compound">Lãi kép (Geometric)</option>
+                  <option value="simple">Cộng dồn đơn giản (Linear Sum)</option>
                 </select>
               </div>
             </div>
 
             <div className="form-group">
-              <label className="stat-tile-label">Drawdown Mode</label>
+              <label className="stat-tile-label">Cách tính Drawdown</label>
               <select
                 className="pair-select"
                 value={drawdownMode}
@@ -212,11 +222,17 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
                   setDrawdownMode(e.target.value as 'trade-close' | 'per-candle')
                 }
               >
-                <option value="trade-close">Trade Close (Closed Equity)</option>
-                <option value="per-candle">Per Candle (Intra-trade Wicks)</option>
+                <option value="trade-close">Khi đóng lệnh (Closed Equity)</option>
+                <option value="per-candle">Theo từng nến (Intra-trade Wicks)</option>
               </select>
             </div>
           </div>
+
+          {submitting && (
+            <p className="state">
+              Đang tải nến từ Binance — với khoảng ngày dài có thể mất 10-20 giây.
+            </p>
+          )}
 
           {error && <p className="state bad">{error}</p>}
 
@@ -226,7 +242,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               className="btn-action btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Creating…' : 'Create & Select Dataset'}
+              {submitting ? `Đang tạo… (${elapsedSeconds}s)` : 'Tạo & Chọn Dataset'}
             </button>
             <button
               type="button"
@@ -234,7 +250,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               onClick={onClose}
               disabled={submitting}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

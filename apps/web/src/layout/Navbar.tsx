@@ -73,11 +73,27 @@ function LeaderboardIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M4 5.5h8M4 10h12M4 14.5h6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="14.5" cy="5.5" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="8.5" cy="14.5" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 const TABS = [
-  { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
-  { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
-  { to: '/leaderboard', label: 'Leaderboard', icon: LeaderboardIcon },
-  { to: '/news', label: 'News Crawler', icon: NewsIcon },
+  { to: '/realtime', label: 'Thời gian thực', icon: RealtimeIcon },
+  { to: '/backtest', label: 'Backtest', icon: BacktestIcon, title: 'Backtest: kiểm thử chiến lược trên dữ liệu lịch sử' },
+  { to: '/search', label: 'Tìm kiếm', icon: SearchIcon },
+  { to: '/leaderboard', label: 'Bảng xếp hạng', icon: LeaderboardIcon },
+  { to: '/news', label: 'Tin tức', icon: NewsIcon },
 ];
 
 export function Navbar() {
@@ -85,12 +101,16 @@ export function Navbar() {
     <nav className="navbar">
       <div>
         <p className="navbar-title">Crypto Strategy Lab</p>
-        <p className="sub">the server pushes, the screen never asks twice.</p>
+        <p className="sub">server chủ động đẩy dữ liệu, màn hình không cần hỏi lại lần hai.</p>
       </div>
       <ul className="navbar-tabs">
-        {TABS.map(({ to, label, icon: Icon }) => (
+        {TABS.map(({ to, label, icon: Icon, title }) => (
           <li key={to}>
-            <NavLink to={to} className={({ isActive }) => (isActive ? 'active' : undefined)}>
+            <NavLink
+              to={to}
+              className={({ isActive }) => (isActive ? 'active' : undefined)}
+              title={title}
+            >
               <Icon />
               {label}
             </NavLink>

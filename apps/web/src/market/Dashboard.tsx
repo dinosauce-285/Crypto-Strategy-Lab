@@ -26,7 +26,7 @@ export function Dashboard({ pair, timeframes, selected, onSelect }: DashboardPro
           role="button"
           tabIndex={0}
           aria-pressed={i === selected}
-          aria-label={`Chart ${i + 1}, ${timeframe}`}
+          aria-label={`Biểu đồ ${i + 1}, ${timeframe}`}
           onClick={() => onSelect(i)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -36,7 +36,10 @@ export function Dashboard({ pair, timeframes, selected, onSelect }: DashboardPro
           }}
         >
           <div className="chart-frame">
-            <span className="chart-label">{timeframe}</span>
+            <span className={`chart-label${i === selected ? ' chart-label-selected' : ''}`}>
+              {timeframe}
+              {i === selected && ' · đang chọn'}
+            </span>
             <CandleChart pair={pair} timeframe={timeframe} />
           </div>
         </div>

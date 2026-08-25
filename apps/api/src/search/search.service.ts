@@ -3,11 +3,12 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   EVENTS,
   MESSAGES,
-  canonicalSpec,
   searchRunTopic,
   type RunBound,
   type RunEndReason,
   type RunStatus,
+  type SearchMode,
+  type StrategyRef,
 } from '@csl/contracts';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { ActiveRun } from './active-run';
@@ -15,6 +16,7 @@ import { BacktestQueue } from './backtest-queue';
 import type { JobOutcome } from './job-outcome';
 import { CandidateSource } from './ports/candidate-source.port';
 import { reachedBound } from './run-bounds';
+import { specHash } from './spec-hash';
 
 const TICK_MS = 500;
 const QUEUE_DEPTH = 50;
@@ -40,10 +42,16 @@ export class SearchService implements OnModuleDestroy {
     this.stopTicking();
   }
 
-  async start(datasetId: string, bound: RunBound): Promise<RunStatus> {
+  async start(
+    datasetId: string,
+    strategyRefs: readonly StrategyRef[],
+    bound: RunBound,
+    mode: SearchMode,
+  ): Promise<RunStatus> {
     if (this.run && this.run.state !== 'ended') throw new RunAlreadyActiveError();
     await this.queue.clearOrphans();
-    const run = new ActiveRun(datasetId, bound);
+    this.source?.reset(mode, strategyRefs);
+    const run = new ActiveRun(datasetId, strategyRefs, bound, mode);
     this.run = run;
     if (!this.source) this.logger.warn('no CandidateSource is registered — T17 supplies it');
     this.ticker = setInterval(() => void this.tick(), TICK_MS);
@@ -83,7 +91,6 @@ export class SearchService implements OnModuleDestroy {
     }
   }
 
-  /** A tick that throws must not take the interval's promise with it. */
   private async advance(run: ActiveRun): Promise<void> {
     run.queued = await this.queue.waiting();
     if (run.state === 'running') await this.fill(run);
@@ -112,8 +119,14 @@ export class SearchService implements OnModuleDestroy {
         return;
       }
       for (const spec of specs.slice(0, room)) {
+        const hash = specHash(spec);
         const jobId = await this.queue.add({ spec, datasetId: run.datasetId });
-        run.pending.set(jobId, canonicalSpec(spec));
+        run.pending.set(jobId, { spec, specHash: hash });
+        this.events.emit(EVENTS.StrategyGenerated, {
+          spec,
+          specHash: hash,
+          datasetId: run.datasetId,
+        });
         run.queued += 1;
       }
       room = this.room(run);
@@ -137,7 +150,7 @@ export class SearchService implements OnModuleDestroy {
     const run = this.run;
     if (!run) return;
     this.events.emit(EVENTS.BacktestStarted, {
-      specHash: run.pending.get(jobId) ?? jobId,
+      specHash: run.pending.get(jobId)?.specHash ?? jobId,
       datasetId: run.datasetId,
     });
   }
@@ -145,8 +158,10 @@ export class SearchService implements OnModuleDestroy {
   private onFinished(jobId: string, outcome: JobOutcome): void {
     const run = this.run;
     if (!run) return;
+    const pending = run.pending.get(jobId);
+    if (!pending) return;
     run.pending.delete(jobId);
-    run.recordFinished(outcome);
+    run.recordFinished(outcome, pending.spec);
     if (outcome.experimentId && outcome.metrics) {
       this.events.emit(EVENTS.BacktestCompleted, {
         experimentId: outcome.experimentId,
@@ -165,6 +180,7 @@ export class SearchService implements OnModuleDestroy {
   private onFailed(jobId: string, reason: string): void {
     const run = this.run;
     if (!run) return;
+    if (!run.pending.has(jobId)) return;
     run.pending.delete(jobId);
     run.recordFailed();
     this.logger.warn(`candidate failed permanently: ${reason}`);

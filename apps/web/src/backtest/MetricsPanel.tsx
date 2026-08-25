@@ -16,12 +16,12 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Performance Evaluation</h2>
+        <h2>Đánh giá hiệu suất</h2>
       </div>
 
       <div className="stat-tiles">
         <div className="stat-tile">
-          <span className="stat-tile-label">Total Return</span>
+          <span className="stat-tile-label">Tổng lợi nhuận</span>
           <span className={`stat-tile-val ${returnColor}`}>
             {returnSign}
             {(metrics.totalReturn * 100).toFixed(2)}%
@@ -29,7 +29,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Profit / Loss</span>
+          <span className="stat-tile-label">Lãi / Lỗ</span>
           <span className={`stat-tile-val ${pnlColor}`}>
             {pnlSign}
             {metrics.profitLoss}
@@ -37,26 +37,26 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Win Rate</span>
+          <span className="stat-tile-label">Tỷ lệ thắng</span>
           <span className="stat-tile-val">
             {(metrics.winRate * 100).toFixed(1)}%
           </span>
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Max Drawdown</span>
+          <span className="stat-tile-label" title="Drawdown: mức sụt giảm vốn lớn nhất từ đỉnh xuống đáy">Drawdown tối đa</span>
           <span className="stat-tile-val bad">
             -{(metrics.maxDrawdown * 100).toFixed(2)}%
           </span>
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Trade Count</span>
+          <span className="stat-tile-label">Số lệnh</span>
           <span className="stat-tile-val">{metrics.tradeCount}</span>
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Profit Factor</span>
+          <span className="stat-tile-label" title="Profit Factor: tỷ số giữa tổng lãi và tổng lỗ">Profit Factor</span>
           <span className="stat-tile-val">
             {metrics.profitFactor !== undefined
               ? metrics.profitFactor.toFixed(2)
@@ -65,7 +65,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile" style={{ gridColumn: 'span 2' }}>
-          <span className="stat-tile-label">Sharpe Ratio</span>
+          <span className="stat-tile-label" title="Sharpe Ratio: lợi nhuận điều chỉnh theo rủi ro (độ biến động)">Sharpe Ratio</span>
           <span className="stat-tile-val">
             {metrics.sharpeRatio !== undefined
               ? metrics.sharpeRatio.toFixed(3)

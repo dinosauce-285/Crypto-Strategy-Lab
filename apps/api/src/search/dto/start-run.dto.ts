@@ -1,8 +1,10 @@
-import type { RunBound } from '@csl/contracts';
+import { SEARCH_MODES, type RunBound, type SearchMode, type StrategyRef } from '@csl/contracts';
 
 export interface StartRunDto {
   datasetId: string;
+  strategyRefs: StrategyRef[];
   bound: RunBound;
+  mode: SearchMode;
 }
 
 const optionalPositive = (value: unknown): number | undefined => {
@@ -11,6 +13,38 @@ const optionalPositive = (value: unknown): number | undefined => {
     throw new TypeError('a bound must be a positive number');
   }
   return value;
+};
+
+const parseMode = (value: unknown): SearchMode => {
+  if (value === undefined || value === null) return 'random';
+  if (typeof value === 'string' && isSearchMode(value)) return value;
+  throw new TypeError('mode must be random or domain-guided');
+};
+
+const isSearchMode = (value: string): value is SearchMode =>
+  SEARCH_MODES.some((mode: SearchMode) => mode === value);
+
+const strategyRefKey = (ref: StrategyRef): string => `${ref.id}@${ref.version}`;
+
+const parseStrategyRefs = (value: unknown): StrategyRef[] => {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new TypeError('strategyRefs must contain at least one strategy reference');
+  }
+  const refs = value.map((item) => {
+    const source = (item ?? {}) as Record<string, unknown>;
+    const id = source.id;
+    const version = source.version;
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      throw new TypeError('strategyRefs must contain non-empty ids');
+    }
+    if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
+      throw new TypeError('strategyRefs must contain positive integer versions');
+    }
+    return { id: id.trim(), version };
+  });
+
+  const byKey = new Map(refs.map((ref) => [strategyRefKey(ref), ref]));
+  return [...byKey.values()];
 };
 
 /** The queue is never reached by a request that failed here — ADR 0021. */
@@ -23,6 +57,8 @@ export function parseStartRun(body: unknown): StartRunDto {
   const bound = (source.bound ?? {}) as Record<string, unknown>;
   return {
     datasetId,
+    strategyRefs: parseStrategyRefs(source.strategyRefs),
+    mode: parseMode(source.mode),
     bound: {
       maxCandidates: optionalPositive(bound.maxCandidates),
       maxDurationMs: optionalPositive(bound.maxDurationMs),

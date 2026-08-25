@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
+import { date } from '../market/format';
 
 interface DatasetPickerProps {
   selectedDataset: Dataset | null;
   onSelectDataset: (dataset: Dataset) => void;
   onOpenCreateModal: () => void;
+  disabled?: boolean;
 }
 
 export function DatasetPicker({
   selectedDataset,
   onSelectDataset,
   onOpenCreateModal,
+  disabled = false,
 }: DatasetPickerProps) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,24 +53,25 @@ export function DatasetPicker({
   }, []);
 
   const selectedLabel = selectedDataset
-    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${new Date(selectedDataset.from).toLocaleDateString()} - ${new Date(selectedDataset.to).toLocaleDateString()})`
+    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${date(selectedDataset.from)} - ${date(selectedDataset.to)})`
     : loading
-      ? 'Loading datasets…'
-      : '(No datasets defined)';
+      ? 'Đang tải dataset…'
+      : '(Chưa có dataset nào)';
 
   return (
     <div className="dataset-picker-wrap">
       <div className="dataset-picker-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
         <label className="stat-tile-label">
-          Active Dataset
+          Dataset đang dùng
         </label>
         <button
           type="button"
           className="btn-action"
+          disabled={disabled}
           onClick={onOpenCreateModal}
           style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
         >
-          + New Dataset
+          + Dataset mới
         </button>
       </div>
 
@@ -75,7 +79,7 @@ export function DatasetPicker({
         <button
           type="button"
           className="custom-dropdown-trigger"
-          disabled={loading || datasets.length === 0}
+          disabled={disabled || loading || datasets.length === 0}
           onClick={() => setIsOpen((prev) => !prev)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -99,13 +103,14 @@ export function DatasetPicker({
                   role="option"
                   aria-selected={isSelected}
                   className="custom-dropdown-item"
+                  disabled={disabled}
                   onClick={() => {
                     onSelectDataset(d);
                     setIsOpen(false);
                   }}
                 >
                   <span>
-                    {d.pair} · {d.timeframe} ({new Date(d.from).toLocaleDateString()} - {new Date(d.to).toLocaleDateString()})
+                    {d.pair} · {d.timeframe} ({date(d.from)} - {date(d.to)})
                   </span>
                   {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
                 </button>
@@ -117,7 +122,7 @@ export function DatasetPicker({
 
       {selectedDataset && (
         <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-          <strong>Rules:</strong> {selectedDataset.rules.entryPrice} · fee {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
+          <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
         </div>
       )}
     </div>

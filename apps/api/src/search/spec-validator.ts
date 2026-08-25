@@ -22,8 +22,14 @@ const isMergeRule = (value: unknown): value is MergeRule =>
 
 const onGrid = (value: number): boolean => Math.abs(value / GRID - Math.round(value / GRID)) < 1e-9;
 
-const inUnitRange = (value: unknown): value is number =>
+const isThreshold = (value: unknown): value is number =>
   typeof value === 'number' && value > 0 && value < 1 && onGrid(value);
+
+const isWeight = (value: unknown): value is number =>
+  typeof value === 'number' && value > 0 && value <= 1 && onGrid(value);
+
+const memberKey = (member: CandidateMember): string =>
+  `${member.id}@${member.version}/${member.paramsHash}`;
 
 function readParams(value: unknown, id: string): StrategyParams {
   if (!isRecord(value)) reject(`member ${id} has no params`);
@@ -43,7 +49,7 @@ function readMember(value: unknown): CandidateMember {
   if (typeof id !== 'string' || id.length === 0) reject('a member has no id');
   if (typeof version !== 'number' || !Number.isInteger(version)) reject(`member ${id} has no version`);
   if (typeof paramsHash !== 'string' || paramsHash.length === 0) reject(`member ${id} has no paramsHash`);
-  if (!inUnitRange(weight)) reject(`member ${id} has a weight outside (0,1) on the 0.1 grid`);
+  if (!isWeight(weight)) reject(`member ${id} has a weight outside (0,1] on the 0.1 grid`);
   return { id, version, params: readParams(params, id), paramsHash, weight };
 }
 
@@ -56,9 +62,15 @@ export function validateSpec(value: unknown): CandidateSpec {
   if (!isRecord(value)) reject('the specification is not an object');
   const { rule, threshold, members } = value;
   if (!isMergeRule(rule)) reject(`unknown merge rule "${String(rule)}"`);
-  if (!inUnitRange(threshold)) reject('the threshold is outside (0,1) on the 0.1 grid');
+  if (!isThreshold(threshold)) reject('the threshold is outside (0,1) on the 0.1 grid');
   if (!Array.isArray(members) || members.length === 0) reject('the specification has no members');
   const read = members.map(readMember);
+  const seen = new Set<string>();
+  for (const member of read) {
+    const key = memberKey(member);
+    if (seen.has(key)) reject(`duplicate member ${member.id}@${member.version}`);
+    seen.add(key);
+  }
   const total = Number(read.reduce((sum, member) => sum + member.weight, 0).toFixed(6));
   if (total !== 1) reject(`member weights sum to ${total}, not 1`);
   return { rule, threshold, members: read };

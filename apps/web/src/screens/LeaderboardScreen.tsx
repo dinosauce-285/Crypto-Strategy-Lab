@@ -39,7 +39,7 @@ export function LeaderboardScreen() {
       `/api/leaderboard?datasetId=${selectedDataset.id}&sortBy=${sortBy}&direction=${direction}&limit=10`,
       { signal: controller.signal },
     )
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then((data: LeaderboardEntry[]) => {
         setState({ kind: 'ready', entries: data });
       })
@@ -84,7 +84,7 @@ export function LeaderboardScreen() {
 
   return (
     <main className="screen">
-      <Header title="Strategy Leaderboard" />
+      <Header title="Bảng xếp hạng Strategy" />
 
       <div className="screen-main" style={{ gap: '1rem' }}>
         {/* Top Control Bar: Dataset Picker */}
@@ -119,7 +119,7 @@ export function LeaderboardScreen() {
               textAlign: 'center',
             }}
           >
-            <p className="state">Computing live rankings for this dataset…</p>
+            <p className="state">Đang tính xếp hạng trực tiếp cho dataset này…</p>
           </div>
         )}
 
@@ -139,14 +139,14 @@ export function LeaderboardScreen() {
             }}
           >
             <p className="state bad" style={{ marginBottom: '0.75rem' }}>
-              <strong>Failed to load rankings.</strong> {state.message}
+              <strong>Không tải được bảng xếp hạng.</strong> {state.message}
             </p>
             <button
               type="button"
               className="btn-action"
               onClick={fetchLeaderboard}
             >
-              Retry
+              Thử lại
             </button>
           </div>
         )}
@@ -166,7 +166,8 @@ export function LeaderboardScreen() {
             }}
           >
             <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-              No completed experiments recorded for this dataset yet. Run a single strategy on the <strong>Backtest</strong> tab to record your first experiment.
+              Chưa có experiment nào hoàn tất cho dataset này. Chạy một strategy ở tab{' '}
+              <strong>Backtest</strong> để ghi nhận experiment đầu tiên.
             </p>
           </div>
         )}

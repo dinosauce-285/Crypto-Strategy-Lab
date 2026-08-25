@@ -77,7 +77,7 @@ export function BacktestScreen() {
       });
 
       if (!res.ok) {
-        throw new Error(`Backtest execution failed: HTTP ${res.status}`);
+        throw new Error(`Chạy backtest thất bại: Lỗi HTTP ${res.status}`);
       }
 
       const body: SingleRunResult = await res.json();
@@ -156,7 +156,7 @@ export function BacktestScreen() {
 
   return (
     <main className="screen">
-      <Header title="Strategy Backtest" />
+      <Header title="Chạy Backtest" />
 
       <div className="screen-body">
         {/* Left Column: Visual Chart & Analysis Panels */}
@@ -176,7 +176,7 @@ export function BacktestScreen() {
               }}
             >
               <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-                Select a dataset and strategy on the right, then press <strong>▶ Run Backtest</strong> to simulate execution, plot candlestick charts with indicators, and inspect trade performance metrics.
+                Chọn dataset và strategy ở bên phải, sau đó nhấn <strong>▶ Chạy Backtest</strong> để mô phỏng việc thực thi lệnh, vẽ biểu đồ nến kèm indicator, và xem các chỉ số hiệu suất giao dịch.
               </p>
             </div>
           )}
@@ -195,7 +195,7 @@ export function BacktestScreen() {
                 textAlign: 'center',
               }}
             >
-              <p className="state">Executing backtest simulation & computing metrics…</p>
+              <p className="state">Đang mô phỏng backtest & tính toán chỉ số…</p>
             </div>
           )}
 
@@ -215,10 +215,10 @@ export function BacktestScreen() {
               }}
             >
               <p className="state bad" style={{ marginBottom: '0.75rem' }}>
-                <strong>Simulation Failed.</strong> {state.message}
+                <strong>Mô phỏng thất bại.</strong> {state.message}
               </p>
               <button type="button" className="btn-action" onClick={handleRun}>
-                Retry
+                Thử lại
               </button>
             </div>
           )}
@@ -232,7 +232,7 @@ export function BacktestScreen() {
                     {state.result.candles.length} candles)
                   </h2>
                   <span className="source">
-                    Experiment ID: <code>{state.result.experimentId ?? 'ephemeral'}</code>
+                    Experiment ID: <code>{state.result.experimentId ?? 'tạm thời'}</code>
                   </span>
                 </div>
 
@@ -257,7 +257,7 @@ export function BacktestScreen() {
         <div className="screen-side">
           <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
             <div className="panel-head">
-              <h2>Dataset Setup</h2>
+              <h2 title="Dataset: tập dữ liệu nến lịch sử đã tải, dùng để chạy backtest">Thiết lập Dataset</h2>
             </div>
             <DatasetPicker
               selectedDataset={dataset}
@@ -282,7 +282,7 @@ export function BacktestScreen() {
             disabled={!dataset || (!strategy && !customSpec) || state.kind === 'loading'}
             onClick={handleRun}
           >
-            {state.kind === 'loading' ? 'Simulating…' : '▶ Run Backtest'}
+            {state.kind === 'loading' ? 'Đang mô phỏng…' : '▶ Chạy Backtest'}
           </button>
 
           {state.kind === 'ready' && (

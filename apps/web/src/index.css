@@ -58,6 +58,7 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 .screen-main, .screen-side { display: flex; flex-direction: column; gap: 0.65rem; }
 
 .controls-row { display: flex; align-items: center; gap: 0.5rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.15rem; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -147,6 +148,18 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
 .chart-frame { position: relative; }
+.chart-stale { opacity: 0.45; transition: opacity 0.2s; }
+.chart-stale-banner {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  text-align: right;
+  pointer-events: none;
+}
 .chart-label {
   position: absolute;
   top: 0.5rem;
@@ -160,6 +173,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem;
   pointer-events: none;
+}
+.chart-label-selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {
@@ -544,3 +561,98 @@ tbody tr:last-child td { border-bottom: 0; }
   font-weight: 600;
 }
 
+/* --- search control screen (T20) --- */
+
+.search-control-panel,
+.search-space-panel,
+.search-progress-panel,
+.search-state-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+}
+
+.search-state-panel {
+  min-height: 16rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem;
+}
+
+.strategy-choice {
+  min-height: 4rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  cursor: pointer;
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+.strategy-choice[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.strategy-choice input {
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+}
+
+.strategy-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.strategy-choice-title {
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.running-dataset,
+.search-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.running-dataset strong,
+.search-recipe strong {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.progress-meter {
+  height: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.empty-progress {
+  min-height: 13rem;
+  justify-content: center;
+}
+
+.start-search-btn {
+  width: 100%;
+  justify-content: center;
+}

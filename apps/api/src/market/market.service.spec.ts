@@ -1,4 +1,3 @@
-import { strictEqual, deepStrictEqual, ok } from 'node:assert';
 import { Subject } from 'rxjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Candle, Timeframe } from '@csl/contracts';
@@ -88,14 +87,12 @@ describe('MarketService & Connection Recovery (T09)', () => {
 
     const exchangeHistory: ExchangeHistoryPort = {
       fetchKlines: async () => [],
+      fetchRange: async () => [],
     };
 
     const candles = {
       range: async () => [],
-      hasHistory: async () => false,
       upsertMany: async () => {},
-      upsert: async () => {},
-      onCandleClosed: async () => {},
     } as unknown as CandleRepository;
 
     const service = new MarketService(
@@ -115,13 +112,13 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    ok(exchange.handlers);
+    expect(exchange.handlers).toBeTruthy();
 
     const c1 = makeCandle('BTCUSDT', '1m', 1000);
     exchange.handlers?.candle(c1);
 
-    strictEqual(published.length, 1);
-    strictEqual(published[0].topic, 'market:BTCUSDT:1m');
+    expect(published.length).toBe(1);
+    expect(published[0].topic).toBe('market:BTCUSDT:1m');
 
     service.onModuleDestroy();
   });
@@ -130,11 +127,11 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    ok(exchange.handlers);
+    expect(exchange.handlers).toBeTruthy();
 
     // Initial candle establishing cursor at T=1000
     exchange.handlers?.candle(makeCandle('BTCUSDT', '1m', 1000));
-    strictEqual(published.length, 1);
+    expect(published.length).toBe(1);
 
     // Disconnect happens
     exchange.handlers?.status?.('reconnecting');
@@ -160,7 +157,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const emittedOpenTimes = published.map(
       (p) => (p.message as { payload: { candle: Candle } }).payload.candle.openTime,
     );
-    deepStrictEqual(emittedOpenTimes, [1000, 1060, 1120, 1180, 1240]);
+    expect(emittedOpenTimes).toEqual([1000, 1060, 1120, 1180, 1240]);
 
     service.onModuleDestroy();
   });
@@ -169,7 +166,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    ok(exchange.handlers);
+    expect(exchange.handlers).toBeTruthy();
 
     exchange.handlers?.candle(makeCandle('BTCUSDT', '1m', 1000));
 
@@ -185,9 +182,9 @@ describe('MarketService & Connection Recovery (T09)', () => {
     await recoveryPromise;
 
     // fetchCandles should have been called twice (1000 chunk + 200 chunk)
-    strictEqual(exchange.fetchHistoryCalls.length, 2);
+    expect(exchange.fetchHistoryCalls.length).toBe(2);
     // 1 initial candle + 1200 recovered candles
-    strictEqual(published.length, 1201);
+    expect(published.length).toBe(1201);
 
     service.onModuleDestroy();
   });
@@ -196,7 +193,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:ETHUSDT:5m', watched: true });
-    ok(exchange.handlers);
+    expect(exchange.handlers).toBeTruthy();
 
     exchange.handlers?.candle(makeCandle('ETHUSDT', '5m', 5000));
     exchange.shouldFailFetch = true;
@@ -211,7 +208,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const emittedOpenTimes = published.map(
       (p) => (p.message as { payload: { candle: Candle } }).payload.candle.openTime,
     );
-    deepStrictEqual(emittedOpenTimes, [5000, 6000]);
+    expect(emittedOpenTimes).toEqual([5000, 6000]);
 
     service.onModuleDestroy();
   });
@@ -220,10 +217,10 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { exchange, service, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    strictEqual(exchange.isClosed, false);
+    expect(exchange.isClosed).toBe(false);
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: false });
-    strictEqual(exchange.isClosed, true);
+    expect(exchange.isClosed).toBe(true);
 
     service.onModuleDestroy();
   });

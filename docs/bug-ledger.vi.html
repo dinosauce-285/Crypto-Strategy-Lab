@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ Cái Lỗi</title>
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('bug-ledger-theme');
+    var theme = (saved === 'light' || saved === 'dark')
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#EEF1EE; --surface:#FFFFFF; --surface-2:#E3E9E3;
+    --ink:#182220; --ink-soft:#4B5854; --ink-faint:#7C8A85;
+    --line:#D2DAD2; --line-soft:#E2E7E1;
+    --accent:#2F6F6B; --accent-ink:#1E4B48; --accent-tint:#DEEBEA;
+    --mark:#B5652D; --mark-tint:#F2E3D4;
+    --ok:#2F7D46; --ok-bg:#E1F0E3;
+    --partial:#A9741F; --partial-bg:#F4E9D2;
+    --critical:#A8433A; --critical-bg:#F5E2E0;
+    --minor:#55625E; --minor-bg:#E6EAE6;
+    --shadow: 0 1px 2px rgba(24,34,32,.06), 0 8px 24px -12px rgba(24,34,32,.12);
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+      --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+      --line:#28332F; --line-soft:#202B27;
+      --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+      --mark:#E0954F; --mark-tint:#2A2016;
+      --ok:#7BD08C; --ok-bg:#16261A;
+      --partial:#E3B65E; --partial-bg:#2C2413;
+      --critical:#E88E80; --critical-bg:#2E1B18;
+      --minor:#93A29C; --minor-bg:#1B2321;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+    --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+    --line:#28332F; --line-soft:#202B27;
+    --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+    --mark:#E0954F; --mark-tint:#2A2016;
+    --ok:#7BD08C; --ok-bg:#16261A;
+    --partial:#E3B65E; --partial-bg:#2C2413;
+    --critical:#E88E80; --critical-bg:#2E1B18;
+    --minor:#93A29C; --minor-bg:#1B2321;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-tint); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--accent); text-underline-offset:2px; }
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;
+  }
+  code, .mono{ font-family:var(--mono); }
+
+  header.cover{
+    padding:56px 32px 40px; border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(1100px 260px at 12% -30%, var(--accent-tint), transparent 60%),
+      var(--surface);
+  }
+  .cover-inner{ max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--mark); }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,54px);
+    line-height:1.05; margin:0 0 14px; text-wrap:balance; letter-spacing:-.01em;
+  }
+  .dek{ font-size:17.5px; color:var(--ink-soft); max-width:62ch; margin:0 0 26px; text-wrap:pretty; }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px; font-family:var(--mono); font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .meta-row b{ color:var(--ink-soft); font-weight:500; }
+
+  .summary{
+    max-width:1180px; margin:-1px auto 0; padding:28px 32px 8px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;
+  }
+  .stat{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:18px 18px 16px; box-shadow:var(--shadow);
+  }
+  .stat .n{ font-family:var(--serif); font-weight:600; font-size:32px; line-height:1; }
+  .stat .n.critical{ color:var(--critical); } .stat .n.partial{ color:var(--partial); } .stat .n.minor{ color:var(--minor); }
+  .stat .l{ margin-top:8px; font-size:13px; color:var(--ink-soft); }
+
+  .shell{
+    max-width:1180px; margin:0 auto; padding:36px 32px 90px;
+    display:grid; grid-template-columns:220px 1fr; gap:44px; align-items:start;
+  }
+  nav.toc{
+    position:sticky; top:24px; display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--line); padding-left:16px;
+  }
+  nav.toc .toc-h{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:10px;
+  }
+  nav.toc a{
+    font-size:13px; color:var(--ink-soft); text-decoration:none; padding:5px 0;
+    border-left:2px solid transparent; margin-left:-17px; padding-left:15px;
+  }
+  nav.toc a:hover{ color:var(--ink); border-left-color:var(--line); }
+
+  main{ min-width:0; }
+  section.block{ margin-bottom:56px; }
+  .block-h{
+    font-family:var(--serif); font-weight:600; font-size:23px; margin:0 0 6px; letter-spacing:-.01em;
+  }
+  .block-sub{ color:var(--ink-soft); font-size:14.5px; margin:0 0 22px; max-width:68ch; }
+
+  /* ---------- bug entries ---------- */
+  .bug-entry{
+    border:1px solid var(--line); border-radius:14px; background:var(--surface);
+    box-shadow:var(--shadow); padding:26px 28px; margin-bottom:28px; scroll-margin-top:20px;
+  }
+  .bug-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
+  .bug-id{ font-family:var(--mono); font-size:12.5px; color:var(--mark); letter-spacing:.04em; }
+  .bug-title{ font-family:var(--serif); font-weight:600; font-size:19px; margin:2px 0 0; letter-spacing:-.005em; }
+  .bug-pills{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill{
+    font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px; white-space:nowrap; font-weight:500;
+  }
+  .pill--critical{ background:var(--critical-bg); color:var(--critical); }
+  .pill--minor{ background:var(--minor-bg); color:var(--minor); }
+  .pill--open{ background:var(--partial-bg); color:var(--partial); }
+  .pill--fixed{ background:var(--ok-bg); color:var(--ok); }
+
+  .bug-meta{ font-family:var(--mono); font-size:12px; color:var(--ink-faint); margin:10px 0 18px; }
+
+  .bug-section{ margin-top:16px; }
+  .bug-section h4{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 6px; font-weight:500;
+  }
+  .bug-section p{ margin:0; color:var(--ink-soft); font-size:14.5px; max-width:76ch; }
+  .bug-section p + p{ margin-top:8px; }
+  .evidence-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:4px; }
+  .evidence-list li{
+    font-family:var(--mono); font-size:12.8px; color:var(--ink-soft);
+    background:var(--surface-2); border-radius:5px; padding:6px 10px; width:fit-content; max-width:100%;
+  }
+  .fix-box{
+    margin-top:8px; padding:12px 14px; border-left:2px solid var(--accent);
+    background:var(--accent-tint); border-radius:0 6px 6px 0; font-size:14px; color:var(--ink);
+    max-width:76ch;
+  }
+  .fix-box b{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink); display:block; margin-bottom:4px; }
+  code{ background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:.92em; }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 32px 60px; color:var(--ink-faint); font-size:12.5px;
+    font-family:var(--mono);
+  }
+
+  @media (max-width: 880px){
+    .shell{ grid-template-columns:1fr; }
+    nav.toc{ position:static; border-left:none; padding-left:0; flex-direction:row; flex-wrap:wrap; gap:4px 14px; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px; }
+    nav.toc .toc-h{ width:100%; }
+    nav.toc a{ margin-left:0; padding-left:0; border-left:none; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ scroll-behavior:auto !important; } }
+  html{ scroll-behavior:smooth; }
+
+  .theme-toggle{
+    position:fixed; top:20px; right:24px; z-index:50;
+    width:40px; height:40px; border-radius:50%; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);
+    color:var(--ink-soft); cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+  .theme-toggle:active{ transform:scale(.94); }
+  .theme-toggle svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .theme-toggle .i-moon{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-sun{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-moon{ display:block; }
+  @media (prefers-reduced-motion: reduce){ .theme-toggle{ transition:none; } }
+  @media (max-width: 520px){ .theme-toggle{ top:14px; right:14px; width:36px; height:36px; } }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="cover-inner">
+    <div class="eyebrow"><span class="dot"></span>Nhật ký lỗi · Crypto Strategy Lab</div>
+    <h1>Sổ Cái Lỗi</h1>
+    <p class="dek">Danh sách các lỗi phát hiện được trong lúc dùng thử và audit hệ thống. Mỗi mục ghi lại triệu chứng, nguyên nhân gốc (kèm file/dòng cụ thể), mức độ ảnh hưởng và hướng sửa đề xuất. Tài liệu này sẽ được bổ sung dần khi tìm thêm lỗi mới.</p>
+    <div class="meta-row">
+      <span><b>Nhánh</b> dev @ d3ae1a3</span>
+      <span><b>Cập nhật lần cuối</b> 24/08/2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="stat"><div class="n critical">3</div><div class="l">lỗi nghiêm trọng</div></div>
+  <div class="stat"><div class="n minor">2</div><div class="l">lỗi nhẹ / cosmetic</div></div>
+  <div class="stat"><div class="n" style="color:var(--partial)">0</div><div class="l">đang mở, chưa sửa</div></div>
+</div>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-h">Danh sách lỗi</div>
+    <a href="#bug-01">BUG-01 · RunEvaluator chưa được wire</a>
+    <a href="#bug-02">BUG-02 · Nhãn "Ended because" thô</a>
+    <a href="#bug-03">BUG-03 · "exhausted" không giải thích lý do</a>
+    <a href="#bug-04">BUG-04 · Tạo dataset 1m/khoảng dài → HTTP 500</a>
+    <a href="#bug-05">BUG-05 · Chọn dataset khác bị tự động hoàn tác</a>
+  </nav>
+
+  <main>
+    <section class="block">
+
+      <!-- ============ BUG-01 ============ -->
+      <article class="bug-entry" id="bug-01">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-01</div>
+            <h3 class="bug-title">Search Control: mọi candidate đều "failed", vì port đánh giá kết quả (T13) chưa được kết nối vào worker</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--critical">Nghiêm trọng</span>
+            <span class="pill pill--fixed">Đã sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/api/src/search (backtest worker)</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Trên màn Search Control, mọi candidate được sinh ra đều bị đánh dấu "failed" — không có candidate nào backtest thành công. Run luôn kết thúc với thông báo cộc lốc "Ended because: candidates" (do chạm giới hạn số lượng candidate tối đa trước khi có candidate nào sống sót).</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p>Worker xử lý backtest (<code>backtest.processor.ts</code>) phụ thuộc vào một port trừu tượng tên <code>RunEvaluator</code>, được inject qua <code>@Optional()</code>. Không có module nào trong toàn bộ codebase bind (<code>provide</code>) port này cho một implementation cụ thể — module mà lệnh <code>pnpm worker</code> thực sự chạy (<code>backtest-worker.module.ts</code>) không import <code>EvaluationModule</code> và không khai báo provider nào cho <code>RunEvaluator</code>. Vì vậy giá trị inject luôn là <code>undefined</code>.</p>
+          <p>Khi tiến trình chạy tới bước tính điểm, nó ném ra <code>MissingPortError</code> ngay lập tức — đúng ngay sau khi backtest thật đã chạy xong (strategy build, trade mô phỏng bình thường), chỉ fail ở bước evaluate. Vì lỗi này nằm trong danh sách lỗi "permanent" (không retry), mọi candidate đều fail nhanh và giống hệt nhau.</p>
+          <p>Đây không đơn thuần là "quên bind provider". Implementation thật của T13, <code>EvaluatorService</code>, lại implement một port khác có hình dạng khác — <code>EvaluatorPort</code> (với method <code>evaluateAndRecord(input)</code>) — chứ không phải <code>RunEvaluator.score(trades, datasetId)</code> mà worker đang cần. <code>RunEvaluator</code> không có bất kỳ implementation nào trong toàn bộ repo. Có vẻ việc wiring giữa T12 (worker) và T13 (evaluator) đã bị lệch nhau trong lúc phát triển và chưa ai đối chiếu lại hai port này.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/api/src/search/backtest.processor.ts:39 — <code>@Optional() private readonly evaluator?: RunEvaluator</code></li>
+            <li>apps/api/src/search/backtest.processor.ts:62 — nơi ném MissingPortError khi gọi evaluator</li>
+            <li>apps/api/src/search/backtest-worker.module.ts — không import EvaluationModule, không bind RunEvaluator</li>
+            <li>apps/api/src/evaluation/evaluation.module.ts — chỉ export EvaluatorPort, không phải RunEvaluator</li>
+            <li>Xác nhận qua dữ liệu thật: GET /api/search/runs/current → tried: 15, failed: 15, endReason: "candidates"; toàn bộ 15 dòng Experiment đều có error "no RunEvaluator is registered — T13 supplies it"</li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Toàn bộ tính năng Search / Continuous Strategy Loop (Module 6 và 9 trong đề bài) không hoạt động được — không candidate nào bao giờ thành công, Leaderboard sẽ luôn trống với mọi search run mới.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Đối chiếu lại <code>RunEvaluator</code> và <code>EvaluatorPort</code> — hợp nhất về một port dùng chung, rồi bind implementation tương ứng (<code>EvaluatorService</code> hoặc một adapter) vào <code>backtest-worker.module.ts</code>.
+        </div>
+      </article>
+
+      <!-- ============ BUG-02 ============ -->
+      <article class="bug-entry" id="bug-02">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-02</div>
+            <h3 class="bug-title">"Ended because: candidates" hiển thị enum thô, không có nhãn thân thiện với người dùng</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--minor">Nhẹ / Cosmetic</span>
+            <span class="pill pill--fixed">Đã sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/web/src/search</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Khi một search run dừng vì chạm số lượng candidate tối đa, UI hiển thị nguyên văn "Ended because: candidates" — khó hiểu với người dùng cuối, dễ bị nhầm là lỗi hệ thống (đặc biệt khi demo).</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p><code>packages/contracts/src/search.ts</code> định nghĩa <code>RUN_END_REASONS = ['candidates', 'duration', 'plateau', 'exhausted', 'stopped']</code>. <code>apps/web/src/search/SearchProgressPanel.tsx</code> render thẳng <code>status.endReason</code> mà không map qua bảng nhãn dễ hiểu.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>packages/contracts/src/search.ts — định nghĩa RUN_END_REASONS</li>
+            <li>apps/web/src/search/SearchProgressPanel.tsx (~dòng 88) — render status.endReason trực tiếp</li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Không ảnh hưởng chức năng, chỉ ảnh hưởng trải nghiệm người dùng và cảm giác "đáng tin cậy" của sản phẩm khi demo.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Thêm bảng map từ RunEndReason sang nhãn hiển thị (ví dụ "candidates" → "Đã đạt số lượng candidate tối đa") ngay tại SearchProgressPanel.tsx.
+        </div>
+      </article>
+
+      <!-- ============ BUG-03 ============ -->
+      <article class="bug-entry" id="bug-03">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-03</div>
+            <h3 class="bug-title">Domain guided search báo "exhausted" ngay ở tried: 0 mà không giải thích lý do — thiếu nhóm strategy bắt buộc</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--minor">Nhẹ / Cosmetic</span>
+            <span class="pill pill--fixed">Đã sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/api/src/search, apps/web/src/search</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Chạy Search ở chế độ <code>Domain guided</code> với một tập strategy đã chọn không đủ cấu trúc nhóm bắt buộc — run kết thúc ngay lập tức với "Ended because: exhausted" và Candidates tested: 0, không có bất kỳ thông báo nào giải thích vì sao. Người dùng dễ tưởng đây là lỗi hệ thống thay vì do chọn thiếu strategy. Tái hiện được hai lần liên tiếp trong cùng một phiên: chọn MA + Bollinger + Sentiment (thiếu nhóm Momentum) → exhausted; chọn MA + RSI (thiếu cả ba nhóm ngữ cảnh) → exhausted.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p><code>DomainGuidedCandidateGenerator.generate()</code> yêu cầu cứng: ít nhất một strategy thuộc nhóm <code>Trend</code>, một thuộc nhóm <code>Momentum</code> (<code>CORE_GROUPS</code>), và ít nhất một thuộc một trong ba nhóm ngữ cảnh <code>Structure</code>/<code>Volatility</code>/<code>Information</code> (<code>CONTEXT_GROUPS</code>). Thiếu bất kỳ điều kiện nào, hàm trả về mảng rỗng ngay từ lần gọi đầu tiên. Search loop coi đây là "hết candidate để sinh" và kết thúc run với <code>endReason: "exhausted"</code>, <code>tried: 0</code> — không có bước nào ở tầng trên (<code>search.service.ts</code> hay <code>SearchControlsPanel.tsx</code>) kiểm tra điều kiện này trước khi cho bấm START SEARCH.</p>
+          <p>Với bộ strategy hiện đăng ký (đúng 1 strategy mỗi nhóm: MA=Trend, RSI=Momentum, Bollinger=Volatility, Support-Resistance=Structure, Sentiment=Information), lựa chọn hợp lệ tối thiểu cho Domain guided là chính xác 3 strategy: MA + RSI + (Bollinger hoặc Support-Resistance hoặc Sentiment). Bất kỳ lựa chọn nào khác đều exhausted ngay ở tried: 0, không phụ thuộc vào Max candidates.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/api/src/search/domain-guided-candidate.generator.ts — CORE_GROUPS = ['Trend','Momentum']; if (!CORE_GROUPS.every(...) || contextGroups.length === 0) return [];</li>
+            <li>apps/web/src/search/SearchProgressPanel.tsx — chỉ render "Ended because: {endReason}" nguyên văn, không có nhánh riêng giải thích exhausted do thiếu nhóm</li>
+            <li>Tái hiện trực tiếp qua hội thoại: hai lựa chọn strategy khác nhau, cả hai đều thiếu một nhóm bắt buộc, cả hai đều exhausted ở tried: 0</li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Không phải lỗi logic — generator hoạt động đúng thiết kế. Nhưng trải nghiệm người dùng kém: exhausted + tried: 0 trông giống hệt một lỗi hệ thống, người dùng phải đoán hoặc hỏi mới biết nguyên nhân thật là thiếu nhóm strategy bắt buộc. Rất dễ gặp lại vì bộ strategy hiện tại chỉ có đúng 1 lựa chọn mỗi nhóm, nên biên độ chọn sai rất hẹp.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Validate trước khi cho bấm START SEARCH (ở <code>search.service.ts</code> hoặc ngay trên <code>SearchControlsPanel.tsx</code>): nếu mode là domain-guided và tập strategy đã chọn thiếu nhóm Trend, thiếu nhóm Momentum, hoặc thiếu cả ba nhóm ngữ cảnh, chặn nút và hiển thị rõ đang thiếu nhóm nào — thay vì để run bắt đầu rồi exhausted ngay lập tức không lời giải thích.
+        </div>
+      </article>
+
+      <!-- ============ BUG-04 ============ -->
+      <article class="bug-entry" id="bug-04">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-04</div>
+            <h3 class="bug-title">Tạo dataset với khoảng thời gian dài ở timeframe mịn (1m) → "Failed to create dataset: HTTP 500"</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--critical">Nghiêm trọng</span>
+            <span class="pill pill--fixed">Đã sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/api/src/market (candle backfill / storage)</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Tạo Dataset mới với khoảng ngày đủ dài ở timeframe 1 phút (ví dụ 01/01/2026 – 14/01/2026, 1m) khiến request thất bại ngay lập tức với thông báo cộc lốc "Failed to create dataset: HTTP 500" — không có chi tiết nào hiển thị cho người dùng. Dataset không được tạo. Tái hiện ổn định với bất kỳ khoảng đủ nhiều nến, không phải lỗi ngẫu nhiên.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p><code>CandleBackfillService.ensureRange()</code> lấy toàn bộ nến của cả khoảng thời gian từ Binance trong một lần gọi, rồi đưa cả mảng đó cho <code>CandleRepository.upsertMany()</code>. Hàm này bọc <b>từng nến một</b> — mỗi nến một lệnh <code>candle.upsert()</code> riêng — vào chung một <code>this.prisma.$transaction([...])</code> dạng mảng (batch transaction). Prisma áp timeout mặc định 5000ms cho transaction dạng này; với 14 ngày × 1440 nến/ngày ở 1m (~20.160 nến), việc chạy tuần tự từng lệnh upsert bên trong transaction vượt quá 5000ms, Prisma rollback và ném <code>P2028</code> (<i>"A rollback cannot be executed on an expired transaction"</i>). Lỗi này không được bắt riêng ở <code>BacktestService.createDataset</code>/<code>DatasetRepository</code>, nên nó rơi thẳng xuống exception filter mặc định của Nest và trả về HTTP 500 trơn, không có message hữu ích.</p>
+          <p>Đây không phụ thuộc vào dữ liệu cụ thể — bất kỳ dataset nào có đủ số nến để việc upsert tuần tự vượt quá 5s (khoảng dài ở 1m/5m, hoặc khoảng rất dài ở timeframe thô hơn) đều sẽ tái hiện lỗi này một cách chắc chắn, không phải ngẫu nhiên.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/api/src/market/candle-backfill.service.ts:19 — <code>await this.candles.upsertMany(candles)</code> với toàn bộ mảng nến của cả khoảng, không chia nhỏ</li>
+            <li>apps/api/src/market/candle.repository.ts:16-27 — <code>upsertMany()</code> bọc một <code>candle.upsert()</code> riêng cho mỗi nến vào chung một <code>$transaction([...])</code></li>
+            <li>Log lỗi thật khi tái hiện qua UI (dataset 01/01/2026–14/01/2026, 1m): <code>PrismaClientKnownRequestError ... code: 'P2028', meta: { modelName: 'Candle', operation: 'rollback', timeout: 5000, timeTaken: 5004 }</code></li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Chặn hoàn toàn việc tạo Dataset cho bất kỳ khoảng thời gian nào đủ dài ở timeframe mịn — tức là chặn chính use case thực tế nhất (backtest trên dữ liệu 1m/5m nhiều ngày). Người dùng chỉ thấy "HTTP 500" trơn, không có gợi ý nguyên nhân hay cách khắc phục.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Chia <code>upsertMany()</code> thành nhiều transaction nhỏ theo lô (ví dụ vài trăm–1000 nến/lô, tương tự độ sâu backfill mô tả ở ADR 0023) thay vì một transaction ôm toàn bộ khoảng; hoặc thay chuỗi <code>upsert()</code> tuần tự bằng một lệnh bulk duy nhất (<code>createMany</code> với <code>skipDuplicates</code>, hoặc raw upsert theo lô) để không phụ thuộc vào timeout 5s theo số lượng nến.
+        </div>
+      </article>
+
+      <!-- ============ BUG-05 ============ -->
+      <article class="bug-entry" id="bug-05">
+        <div class="bug-head">
+          <div>
+            <div class="bug-id">BUG-05</div>
+            <h3 class="bug-title">Chọn dataset khác trên Search Control sau khi một run đã kết thúc bị tự động hoàn tác về dataset của run cũ</h3>
+          </div>
+          <div class="bug-pills">
+            <span class="pill pill--critical">Nghiêm trọng</span>
+            <span class="pill pill--fixed">Đã sửa</span>
+          </div>
+        </div>
+        <div class="bug-meta">Phát hiện: 24/08/2026 · Khu vực: apps/web/src/screens (Search Control)</div>
+
+        <div class="bug-section">
+          <h4>Triệu chứng</h4>
+          <p>Sau khi một search run đã kết thúc (state: "ended"), chọn một dataset khác trong dropdown ở Search Control bị âm thầm hoàn tác về đúng dataset của run trước đó — không có lỗi, không có cảnh báo, dropdown chỉ tự nhảy lại. Người dùng không thể bắt đầu run mới trên dataset khác cho tới khi tải lại trang (và ngay cả sau khi tải lại, hành vi vẫn lặp lại vì trạng thái được phục hồi từ chính API đang gây ra lỗi). Hệ quả quan sát được: ~1761 experiment bị dồn vào một dataset trong khoảng 13 phút, khớp với nhiều lần bấm START SEARCH (mỗi lần mặc định 125 candidate) đều bị âm thầm chuyển hướng về cùng một dataset cũ.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Nguyên nhân gốc</h4>
+          <p>Trong <code>SearchScreen.tsx</code>, biến <code>runningDatasetId</code> lấy từ <code>status?.datasetId</code>, và <code>status</code> được nạp lúc mount từ <code>GET /api/search/runs/current</code> — endpoint này tiếp tục trả về thông tin của run <b>gần nhất</b> vô thời hạn, kể cả sau khi run đã kết thúc (<code>state: "ended"</code>); không có nơi nào đặt lại <code>status</code> về <code>null</code>. Effect đồng bộ dataset (dòng 68-77) chỉ kiểm tra <code>dataset?.id !== runningDatasetId</code> mà không kiểm tra run đó có còn đang chạy hay không (<code>hasActiveRun</code>), nên mỗi khi người dùng chọn dataset khác, effect chạy lại, thấy vẫn khác với <code>runningDatasetId</code> (dữ liệu cũ), và gọi <code>setDataset(match)</code> ghi đè ngay lựa chọn thủ công.</p>
+          <p>Dataset picker vốn đã bị khoá (<code>disabled</code>) trong lúc <code>isRunning</code> (<code>SearchControlsPanel.tsx</code>) — tức là effect này chỉ thực sự cần thiết trong lúc run còn hoạt động (khôi phục lựa chọn khi tải lại trang giữa chừng). Ngay khi run kết thúc, dropdown mở khoá lại nhưng effect vẫn tiếp tục ghi đè do thiếu điều kiện chặn theo <code>hasActiveRun</code>.</p>
+        </div>
+
+        <div class="bug-section">
+          <h4>Bằng chứng</h4>
+          <ul class="evidence-list">
+            <li>apps/web/src/screens/SearchScreen.tsx:37 — <code>const runningDatasetId = status?.datasetId ?? null;</code> không phân biệt run đang chạy hay đã kết thúc</li>
+            <li>apps/web/src/screens/SearchScreen.tsx:68-77 — effect ghi đè <code>dataset</code> chỉ dựa trên <code>dataset?.id === runningDatasetId</code>, không kiểm tra <code>hasActiveRun</code></li>
+            <li>apps/web/src/search/SearchControlsPanel.tsx:31,43 — dataset picker chỉ <code>disabled</code> khi <code>isRunning</code>, nghĩa là sau khi kết thúc người dùng phải chọn lại được — nhưng effect trên ngăn cản việc đó</li>
+            <li>Tái hiện trực tiếp qua hội thoại: chọn dataset khác sau khi run trước đã "ended" → dropdown tự động nhảy lại dataset cũ; đối chiếu DB cho thấy 1761 experiment dồn vào đúng dataset cũ đó qua nhiều lần bấm START SEARCH</li>
+          </ul>
+        </div>
+
+        <div class="bug-section">
+          <h4>Ảnh hưởng</h4>
+          <p>Chặn hoàn toàn khả năng chạy search trên dataset khác sau lần chạy đầu tiên trong phiên làm việc, không có thông báo lỗi nào để người dùng hiểu vì sao. Gây lãng phí tài nguyên thật (worker, Postgres) khi người dùng lặp lại thao tác START SEARCH nhiều lần tưởng là đang chạy trên dataset mới nhưng thực ra vẫn là dataset cũ.</p>
+        </div>
+
+        <div class="fix-box">
+          <b>Hướng sửa đề xuất</b>
+          Thêm điều kiện <code>hasActiveRun</code> vào đầu effect (dòng 69): <code>if (!hasActiveRun || !runningDatasetId || dataset?.id === runningDatasetId) return;</code> — effect chỉ đồng bộ dataset trong lúc run còn thực sự hoạt động (đúng mục đích ban đầu: khôi phục lựa chọn khi tải lại trang giữa chừng), và không còn ghi đè lựa chọn thủ công sau khi run đã kết thúc.
+        </div>
+      </article>
+
+      <!-- Thêm bug mới: copy một <article class="bug-entry" id="bug-XX"> ở trên, đổi nội dung, và thêm link tương ứng vào <nav class="toc"> phía trên. -->
+
+    </section>
+  </main>
+</div>
+
+<footer>
+  Ghi nhận qua audit code và kiểm tra trực tiếp trên môi trường chạy thật (dev @ d3ae1a3). Sẽ được bổ sung khi phát hiện thêm lỗi mới.
+</footer>
+
+<button id="themeToggle" class="theme-toggle" type="button" title="Đổi giao diện sáng/tối">
+  <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+  <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>
+</button>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function label() {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    btn.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+  }
+  label();
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('bug-ledger-theme', next); } catch (e) {}
+    label();
+  });
+})();
+</script>
+</body>
+</html>
