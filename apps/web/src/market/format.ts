@@ -33,6 +33,15 @@ export const clock = (at: number): string => TIME.format(new Date(at));
 export const shortClock = (at: number): string => TIME_SHORT.format(new Date(at));
 export const date = (at: number): string => DATE.format(new Date(at));
 
+export function tradeTime(at: number): string {
+  const d = new Date(at);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month} ${hours}:${minutes}`;
+}
+
 export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
   return side.toUpperCase() === 'BUY' ? 'Mua' : 'Bán';
 }

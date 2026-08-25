@@ -36,7 +36,7 @@ export class LeaderboardController {
 
   @OnEvent(EVENTS.StrategyEvaluated)
   @OnEvent(EVENTS.LeaderboardUpdated)
-  @OnEvent('experiment.completed')
+  @OnEvent(EVENTS.BacktestCompleted)
   handleExperimentCompleted(event: { datasetId: string; experimentId?: string }) {
     if (event?.datasetId) {
       const topic = leaderboardTopic(event.datasetId);

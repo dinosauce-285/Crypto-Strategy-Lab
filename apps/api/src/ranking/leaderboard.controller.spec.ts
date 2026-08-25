@@ -48,7 +48,7 @@ describe('LeaderboardController', () => {
     });
   });
 
-  it('publishes update notification when experiment.completed event fires', () => {
+  it('publishes update notification when backtest.completed event fires', () => {
     controller.handleExperimentCompleted({ datasetId: 'ds-1', experimentId: 'exp-1' });
 
     expect(mockChannel.publish).toHaveBeenCalledWith(
