@@ -76,4 +76,16 @@ describe('BacktestController', () => {
     await expect(() => controller.createDataset(invalidPayload)).toThrow(InvalidDatasetError);
     expect(service.createDataset).not.toHaveBeenCalled();
   });
+
+  it('translates InvalidSpecError to BadRequestException in runBacktest', async () => {
+    const { InvalidSpecError } = await import('./spec-validator');
+    service.runSingle.mockRejectedValueOnce(new InvalidSpecError('member weights sum to 0, not 1'));
+
+    await expect(
+      controller.runBacktest({
+        datasetId: 'dataset-1',
+        spec: { rule: 'weighted', threshold: 0.5, members: [] },
+      }),
+    ).rejects.toThrow('member weights sum to 0, not 1');
+  });
 });

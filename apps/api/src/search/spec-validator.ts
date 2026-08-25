@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import {
   MERGE_RULES,
   type CandidateMember,
@@ -6,7 +7,11 @@ import {
   type StrategyParams,
 } from '@csl/contracts';
 
-export class InvalidSpecError extends Error {}
+export class InvalidSpecError extends BadRequestException {
+  constructor(reason: string) {
+    super(reason);
+  }
+}
 
 const GRID = 0.1;
 
