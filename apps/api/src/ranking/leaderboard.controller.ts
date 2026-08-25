@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
+  EVENTS,
   leaderboardTopic,
   MESSAGES,
   type LeaderboardEntry,
@@ -33,6 +34,8 @@ export class LeaderboardController {
     });
   }
 
+  @OnEvent(EVENTS.StrategyEvaluated)
+  @OnEvent(EVENTS.LeaderboardUpdated)
   @OnEvent('experiment.completed')
   handleExperimentCompleted(event: { datasetId: string; experimentId?: string }) {
     if (event?.datasetId) {
