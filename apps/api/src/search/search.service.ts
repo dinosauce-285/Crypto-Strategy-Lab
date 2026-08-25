@@ -119,8 +119,14 @@ export class SearchService implements OnModuleDestroy {
         return;
       }
       for (const spec of specs.slice(0, room)) {
+        const hash = specHash(spec);
         const jobId = await this.queue.add({ spec, datasetId: run.datasetId });
-        run.pending.set(jobId, { spec, specHash: specHash(spec) });
+        run.pending.set(jobId, { spec, specHash: hash });
+        this.events.emit(EVENTS.StrategyGenerated, {
+          spec,
+          specHash: hash,
+          datasetId: run.datasetId,
+        });
         run.queued += 1;
       }
       room = this.room(run);
