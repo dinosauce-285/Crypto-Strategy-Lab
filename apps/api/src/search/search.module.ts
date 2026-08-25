@@ -16,6 +16,9 @@ import { BacktestRunnerService } from './backtest-runner.service';
 import { CandidateSource } from './ports/candidate-source.port';
 import { GeneratedCandidateSource } from './generated-candidate-source';
 
+import { RunEvaluator } from './ports/run-evaluator.port';
+import { SearchRunEvaluatorService } from './search-run-evaluator.service';
+
 /**
  * The API half of the loop: it queues candidates, runs single backtests on demand,
  * and manages search lifecycle.
@@ -37,6 +40,7 @@ import { GeneratedCandidateSource } from './generated-candidate-source';
     BacktestService,
     { provide: BacktestRunner, useClass: BacktestRunnerService },
     { provide: CandidateSource, useClass: GeneratedCandidateSource },
+    { provide: RunEvaluator, useClass: SearchRunEvaluatorService },
   ],
   exports: [DatasetRepository],
 })

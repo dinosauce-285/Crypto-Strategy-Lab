@@ -12,6 +12,10 @@ import { DatasetRepository } from './dataset.repository';
 import { BacktestRunner } from './ports/backtest-runner.port';
 import { BacktestRunnerService } from './backtest-runner.service';
 
+import { EvaluationModule } from '../evaluation/evaluation.module';
+import { RunEvaluator } from './ports/run-evaluator.port';
+import { SearchRunEvaluatorService } from './search-run-evaluator.service';
+
 /**
  * What a worker process boots: the queue consumer, the pipeline it runs, and the database.
  * No HTTP server and no gateway: the API turns queue outcomes into browser events.
@@ -24,11 +28,13 @@ import { BacktestRunnerService } from './backtest-runner.service';
     StrategyModule,
     MarketModule,
     IndicatorModule,
+    EvaluationModule,
   ],
   providers: [
     ExperimentRepository,
     DatasetRepository,
     { provide: BacktestRunner, useClass: BacktestRunnerService },
+    { provide: RunEvaluator, useClass: SearchRunEvaluatorService },
     BacktestProcessor,
     BacktestWorker,
   ],
