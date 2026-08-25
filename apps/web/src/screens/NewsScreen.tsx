@@ -87,7 +87,7 @@ export function NewsScreen() {
       })
       .catch((err: Error) => {
         setIsCollecting(false);
-        alert(`Crawl thất bại: ${err.message}`);
+        alert(`Thu thập tin tức thất bại: ${err.message}`);
       });
   };
 
@@ -112,7 +112,7 @@ export function NewsScreen() {
 
   return (
     <main className="screen">
-      <Header title="Crawl tin tức & Phân tích sentiment" />
+      <Header title="Thu thập tin tức & Phân tích Sentiment" />
 
       <div className="screen-body">
         <div className="screen-main">
