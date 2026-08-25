@@ -21,7 +21,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
   const [toDate, setToDate] = useState(now.toISOString().split('T')[0]);
 
   const [entryPrice, setEntryPrice] = useState<'next-open' | 'signal-close'>('next-open');
-  const [feeRate, setFeeRate] = useState('0.001');
+  const [feePercent, setFeePercent] = useState('0.1');
   const [warmupCandles, setWarmupCandles] = useState(20);
   const [profitMode, setProfitMode] = useState<'simple' | 'compound'>('compound');
   const [drawdownMode, setDrawdownMode] = useState<'trade-close' | 'per-candle'>('trade-close');
@@ -53,6 +53,14 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
       return;
     }
 
+    const parsedPercent = parseFloat(String(feePercent).replace(',', '.'));
+    if (isNaN(parsedPercent) || parsedPercent < 0 || parsedPercent > 100) {
+      setError('Phí giao dịch phải là một số hợp lệ từ 0% đến 100%.');
+      setSubmitting(false);
+      return;
+    }
+    const calculatedFeeRate = String(Number((parsedPercent / 100).toFixed(8)));
+
     try {
       const payload: Omit<Dataset, 'id'> = {
         pair,
@@ -61,7 +69,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
         to: toEpoch,
         rules: {
           entryPrice,
-          feeRate,
+          feeRate: calculatedFeeRate,
           warmupCandles: Number(warmupCandles),
           profitMode,
           drawdownMode,
@@ -172,13 +180,16 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
               </div>
 
               <div className="form-group">
-                <label className="stat-tile-label">Phí giao dịch (dạng phân số)</label>
+                <label className="stat-tile-label">Phí giao dịch (%)</label>
                 <input
-                  type="text"
+                  type="number"
                   className="pair-select"
-                  value={feeRate}
-                  onChange={(e) => setFeeRate(e.target.value)}
-                  placeholder="0.001 (0.1%)"
+                  value={feePercent}
+                  onChange={(e) => setFeePercent(e.target.value)}
+                  placeholder="0.1"
+                  min={0}
+                  max={100}
+                  step={0.001}
                   required
                 />
               </div>

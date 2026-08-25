@@ -120,11 +120,15 @@ export function DatasetPicker({
         )}
       </div>
 
-      {selectedDataset && (
-        <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-          <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
-        </div>
-      )}
+      {selectedDataset && (() => {
+        const feePct = Number(selectedDataset.rules.feeRate) * 100;
+        const formattedFee = Number.isFinite(feePct) ? `${Number(feePct.toFixed(4))}%` : '0%';
+        return (
+          <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
+            <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {formattedFee} · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
+          </div>
+        );
+      })()}
     </div>
   );
 }
