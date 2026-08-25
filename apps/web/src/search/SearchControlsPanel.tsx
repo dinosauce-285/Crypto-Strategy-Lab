@@ -82,7 +82,7 @@ export function SearchControlsPanel({
         </label>
 
         <label className="form-group">
-          <span className="stat-tile-label">Số candidate tối đa</span>
+          <span className="stat-tile-label" title="Candidate: một tổ hợp chiến lược cụ thể được sinh ra và đánh giá trong lượt tìm kiếm">Số candidate tối đa</span>
           <input
             type="number"
             className="pair-select"
@@ -109,7 +109,7 @@ export function SearchControlsPanel({
           disabled={!canStart || busy || isRunning}
           onClick={onStart}
         >
-          {busy ? 'Đang bắt đầu...' : 'BẮT ĐẦU SEARCH'}
+          {busy ? 'Đang bắt đầu...' : 'BẮT ĐẦU TÌM KIẾM'}
         </button>
       </div>
     </div>
