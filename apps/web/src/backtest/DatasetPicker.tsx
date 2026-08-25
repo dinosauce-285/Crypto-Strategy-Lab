@@ -9,6 +9,21 @@ interface DatasetPickerProps {
   disabled?: boolean;
 }
 
+const ENTRY_PRICE_LABELS: Record<'next-open' | 'signal-close', string> = {
+  'next-open': 'Mở nến kế tiếp',
+  'signal-close': 'Đóng nến tín hiệu',
+};
+
+const PROFIT_MODE_LABELS: Record<'simple' | 'compound', string> = {
+  compound: 'Lãi kép',
+  simple: 'Cộng dồn đơn giản',
+};
+
+const DRAWDOWN_MODE_LABELS: Record<'trade-close' | 'per-candle', string> = {
+  'trade-close': 'Drawdown khi đóng lệnh',
+  'per-candle': 'Drawdown theo từng nến',
+};
+
 export function DatasetPicker({
   selectedDataset,
   onSelectDataset,
@@ -142,9 +157,13 @@ export function DatasetPicker({
       {selectedDataset && (() => {
         const feePct = Number(selectedDataset.rules.feeRate) * 100;
         const formattedFee = Number.isFinite(feePct) ? `${Number(feePct.toFixed(4))}%` : '0%';
+        const entryLabel = ENTRY_PRICE_LABELS[selectedDataset.rules.entryPrice] ?? selectedDataset.rules.entryPrice;
+        const profitLabel = PROFIT_MODE_LABELS[selectedDataset.rules.profitMode] ?? selectedDataset.rules.profitMode;
+        const ddLabel = DRAWDOWN_MODE_LABELS[selectedDataset.rules.drawdownMode] ?? selectedDataset.rules.drawdownMode;
+
         return (
           <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-            <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {formattedFee} · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
+            <strong>Quy tắc:</strong> {entryLabel} · phí {formattedFee} · warmup {selectedDataset.rules.warmupCandles} nến · {profitLabel} · {ddLabel}
           </div>
         );
       })()}
