@@ -34,7 +34,7 @@ export function RealtimeScreen() {
 
         <div className="screen-side">
           <RecentTicks pair={pair} />
-          <Annotations pair={pair} />
+          <Annotations />
         </div>
       </div>
     </main>
