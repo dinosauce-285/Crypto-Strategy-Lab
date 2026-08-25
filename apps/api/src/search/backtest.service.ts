@@ -81,31 +81,49 @@ export class BacktestService {
       datasetId: dataset.id,
     });
 
-    // 5. Compute indicators for chart overlays (MA, Bollinger Bands, RSI)
+    // 5. Compute indicators for chart overlays (MA, Bollinger Bands, Support/Resistance)
     const indicators: Record<string, number[]> = {};
     if (candleSeries.length > 0) {
       try {
-        // Collect indicators requested by the strategy or default overlays
         const maFast = this.indicators.compute(dataset.id, candleSeries, {
           source: 'moving-average',
           params: { period: 20 },
         });
         indicators['ma.20'] = [...maFast];
-
-        const bb = this.indicators.compute(dataset.id, candleSeries, {
-          source: 'bollinger-bands',
-          params: { period: 20, deviation: 2 },
-        }) as Record<string, unknown> | readonly number[];
-        if (bb && typeof bb === 'object') {
-          const upper = 'upper' in bb ? bb.upper : bb;
-          const middle = 'middle' in bb ? bb.middle : bb;
-          const lower = 'lower' in bb ? bb.lower : bb;
-          if (Array.isArray(upper)) indicators['bb.upper'] = [...upper];
-          if (Array.isArray(middle)) indicators['bb.middle'] = [...middle];
-          if (Array.isArray(lower)) indicators['bb.lower'] = [...lower];
-        }
       } catch {
-        // Safe fallback if optional indicator calculator throws
+        // Safe fallback
+      }
+
+      try {
+        const bbUpper = this.indicators.compute(dataset.id, candleSeries, {
+          source: 'bollinger-bands.upper',
+          params: { period: 20, deviation: 2 },
+        });
+        indicators['bb.upper'] = [...bbUpper];
+
+        const bbLower = this.indicators.compute(dataset.id, candleSeries, {
+          source: 'bollinger-bands.lower',
+          params: { period: 20, deviation: 2 },
+        });
+        indicators['bb.lower'] = [...bbLower];
+      } catch {
+        // Safe fallback
+      }
+
+      try {
+        const srSupport = this.indicators.compute(dataset.id, candleSeries, {
+          source: 'support-resistance.support',
+          params: {},
+        });
+        indicators['sr.support'] = [...srSupport];
+
+        const srResistance = this.indicators.compute(dataset.id, candleSeries, {
+          source: 'support-resistance.resistance',
+          params: {},
+        });
+        indicators['sr.resistance'] = [...srResistance];
+      } catch {
+        // Safe fallback
       }
     }
 

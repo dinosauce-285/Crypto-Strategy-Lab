@@ -49,12 +49,15 @@ export function SingleRunChart({
   const mainSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
+  const indicatorSeriesRef = useRef<ISeriesApi<'Line'>[]>([]);
+
   const initChart = useCallback((node: HTMLDivElement | null) => {
     if (!node) {
       chartRef.current?.remove();
       chartRef.current = null;
       mainSeriesRef.current = null;
       markersPluginRef.current = null;
+      indicatorSeriesRef.current = [];
       return;
     }
 
@@ -96,6 +99,16 @@ export function SingleRunChart({
 
     candleSeries.setData(candles.map(toBar));
 
+    // Clear previous indicator series
+    indicatorSeriesRef.current.forEach((s) => {
+      try {
+        chart.removeSeries(s);
+      } catch {
+        // Safe fallback
+      }
+    });
+    indicatorSeriesRef.current = [];
+
     // 1. Add indicator overlays if present
     if (indicators) {
       if (indicators['ma.20'] && indicators['ma.20'].length === candles.length) {
@@ -109,6 +122,7 @@ export function SingleRunChart({
           value: indicators['ma.20'][i],
         })).filter((d) => !Number.isNaN(d.value) && d.value > 0);
         maSeries.setData(maData);
+        indicatorSeriesRef.current.push(maSeries);
       }
 
       if (indicators['bb.upper'] && indicators['bb.lower']) {
@@ -137,6 +151,39 @@ export function SingleRunChart({
             value: indicators['bb.lower'][i],
           })).filter((d) => !Number.isNaN(d.value) && d.value > 0),
         );
+        indicatorSeriesRef.current.push(bbUpper, bbLower);
+      }
+
+      if (indicators['sr.support']) {
+        const srSupport = chart.addSeries(LineSeries, {
+          color: token('--ok'),
+          lineWidth: 1,
+          lineStyle: 1,
+          title: 'Support',
+        });
+        srSupport.setData(
+          candles.map((c, i) => ({
+            time: Math.floor(c.openTime / 1000) as UTCTimestamp,
+            value: indicators['sr.support'][i],
+          })).filter((d) => !Number.isNaN(d.value) && d.value > 0),
+        );
+        indicatorSeriesRef.current.push(srSupport);
+      }
+
+      if (indicators['sr.resistance']) {
+        const srResistance = chart.addSeries(LineSeries, {
+          color: token('--bad'),
+          lineWidth: 1,
+          lineStyle: 1,
+          title: 'Resistance',
+        });
+        srResistance.setData(
+          candles.map((c, i) => ({
+            time: Math.floor(c.openTime / 1000) as UTCTimestamp,
+            value: indicators['sr.resistance'][i],
+          })).filter((d) => !Number.isNaN(d.value) && d.value > 0),
+        );
+        indicatorSeriesRef.current.push(srResistance);
       }
     }
 

@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
-import type { StrategyMeta, StrategyParams } from '@csl/contracts';
+import type { CandidateSpec, StrategyMeta, StrategyParams } from '@csl/contracts';
 import { DynamicParamForm } from './DynamicParamForm';
 
 interface StrategyPickerProps {
   selectedStrategy: StrategyMeta | null;
+  customSpec?: CandidateSpec | null;
   params: StrategyParams;
   onSelectStrategy: (strategy: StrategyMeta, defaultParams: StrategyParams) => void;
   onChangeParams: (params: StrategyParams) => void;
+  onClearCustomSpec?: () => void;
 }
 
 export function StrategyPicker({
   selectedStrategy,
+  customSpec,
   params,
   onSelectStrategy,
   onChangeParams,
+  onClearCustomSpec,
 }: StrategyPickerProps) {
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +27,7 @@ export function StrategyPicker({
       .then((res) => (res.ok ? res.json() : []))
       .then((list: StrategyMeta[]) => {
         setStrategies(list);
-        if (list.length > 0 && !selectedStrategy) {
+        if (list.length > 0 && !selectedStrategy && !customSpec) {
           const first = list[0];
           const defaults: StrategyParams = {};
           first.params.forEach((p) => {
@@ -34,9 +38,10 @@ export function StrategyPicker({
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [onSelectStrategy, selectedStrategy]);
+  }, [onSelectStrategy, selectedStrategy, customSpec]);
 
   const handleStrategyChange = (strategyId: string) => {
+    if (onClearCustomSpec) onClearCustomSpec();
     const found = strategies.find((s) => s.id === strategyId);
     if (found) {
       const defaults: StrategyParams = {};
@@ -51,44 +56,76 @@ export function StrategyPicker({
     <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
       <div className="panel-head">
         <h2>Strategy Configuration</h2>
-        {selectedStrategy && (
+        {customSpec ? (
+          <span className="badge badge-pos">
+            Composite ({customSpec.members.length} strategies)
+          </span>
+        ) : selectedStrategy ? (
           <span className="badge badge-neu">
             {selectedStrategy.group} · v{selectedStrategy.version}
           </span>
-        )}
+        ) : null}
       </div>
 
-      <div className="form-group" style={{ marginTop: '0.25rem' }}>
-        <label htmlFor="strategy-select" className="stat-tile-label">
-          Selected Strategy
-        </label>
-        <select
-          id="strategy-select"
-          className="pair-select"
-          style={{ width: '100%', minWidth: 0 }}
-          disabled={loading || strategies.length === 0}
-          value={selectedStrategy?.id ?? ''}
-          onChange={(e) => handleStrategyChange(e.target.value)}
-        >
-          {strategies.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} ({s.id})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedStrategy && (
-        <div style={{ marginTop: '0.5rem' }}>
-          <h2 style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
-            Parameters ({selectedStrategy.params.length})
-          </h2>
-          <DynamicParamForm
-            params={selectedStrategy.params}
-            values={params}
-            onChange={onChangeParams}
-          />
+      {customSpec ? (
+        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="stat-tile-label">Active Recipe ({customSpec.rule} · {customSpec.threshold})</span>
+            {onClearCustomSpec && (
+              <button
+                type="button"
+                className="btn-action"
+                style={{ fontSize: '0.72rem', height: '1.5rem', padding: '0 0.4rem' }}
+                onClick={onClearCustomSpec}
+              >
+                Switch to Standalone
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--bg)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+            {customSpec.members.map((m, idx) => (
+              <div key={idx} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <strong>{m.id} <span className="source" style={{ fontWeight: 'normal' }}>v{m.version}</span></strong>
+                <span className="source">{(m.weight * 100).toFixed(0)}% · {JSON.stringify(m.params)}</span>
+              </div>
+            ))}
+          </div>
         </div>
+      ) : (
+        <>
+          <div className="form-group" style={{ marginTop: '0.25rem' }}>
+            <label htmlFor="strategy-select" className="stat-tile-label">
+              Selected Strategy
+            </label>
+            <select
+              id="strategy-select"
+              className="pair-select"
+              style={{ width: '100%', minWidth: 0 }}
+              disabled={loading || strategies.length === 0}
+              value={selectedStrategy?.id ?? ''}
+              onChange={(e) => handleStrategyChange(e.target.value)}
+            >
+              {strategies.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.id})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedStrategy && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <h2 style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
+                Parameters ({selectedStrategy.params.length})
+              </h2>
+              <DynamicParamForm
+                params={selectedStrategy.params}
+                values={params}
+                onChange={onChangeParams}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
