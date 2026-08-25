@@ -4,6 +4,7 @@ import {
   CandlestickSeries,
   createChart,
   createSeriesMarkers,
+  HistogramSeries,
   LineSeries,
   type IChartApi,
   type ISeriesApi,
@@ -38,6 +39,14 @@ function token(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+function toVolumeBar(candle: Candle, upColor: string, downColor: string) {
+  return {
+    time: Math.floor(candle.openTime / 1000) as UTCTimestamp,
+    value: Number(candle.volume),
+    color: Number(candle.close) >= Number(candle.open) ? upColor : downColor,
+  };
+}
+
 export function SingleRunChart({
   candles,
   trades,
@@ -47,6 +56,7 @@ export function SingleRunChart({
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const mainSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
 
   const initChart = useCallback((node: HTMLDivElement | null) => {
@@ -54,6 +64,7 @@ export function SingleRunChart({
       chartRef.current?.remove();
       chartRef.current = null;
       mainSeriesRef.current = null;
+      volumeSeriesRef.current = null;
       markersPluginRef.current = null;
       return;
     }
@@ -68,22 +79,34 @@ export function SingleRunChart({
       timeScale: { rightOffset: 6, timeVisible: true, secondsVisible: false },
     });
 
+    const upColor = token('--ok');
+    const downColor = token('--bad');
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: token('--ok'),
-      downColor: token('--bad'),
-      borderUpColor: token('--ok'),
-      borderDownColor: token('--bad'),
-      wickUpColor: token('--ok'),
-      wickDownColor: token('--bad'),
+      upColor,
+      downColor,
+      borderUpColor: upColor,
+      borderDownColor: downColor,
+      wickUpColor: upColor,
+      wickDownColor: downColor,
     });
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+    });
+    // Confines the volume histogram to the bottom 20% of the pane instead of sharing
+    // the candlesticks' own scale, so bars read as a strip under the price action
+    // rather than overlapping it.
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     chartRef.current = chart;
     mainSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
     chartContainerRef.current = node;
 
     // Set candle bars
     if (candles.length > 0) {
       candleSeries.setData(candles.map(toBar));
+      volumeSeries.setData(candles.map((c) => toVolumeBar(c, upColor, downColor)));
       chart.timeScale().fitContent();
     }
   }, [candles]);
@@ -95,6 +118,9 @@ export function SingleRunChart({
     if (!chart || !candleSeries || candles.length === 0) return;
 
     candleSeries.setData(candles.map(toBar));
+    volumeSeriesRef.current?.setData(
+      candles.map((c) => toVolumeBar(c, token('--ok'), token('--bad'))),
+    );
 
     // 1. Add indicator overlays if present
     if (indicators) {
