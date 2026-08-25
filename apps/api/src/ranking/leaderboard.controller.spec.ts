@@ -61,4 +61,18 @@ describe('LeaderboardController', () => {
       }),
     );
   });
+
+  it('publishes update notification when strategy.evaluated event fires', () => {
+    controller.handleExperimentCompleted({ datasetId: 'ds-1' });
+
+    expect(mockChannel.publish).toHaveBeenCalledWith(
+      'leaderboard:ds-1',
+      expect.objectContaining({
+        type: 'leaderboard.update',
+        payload: expect.objectContaining({
+          datasetId: 'ds-1',
+        }),
+      }),
+    );
+  });
 });
