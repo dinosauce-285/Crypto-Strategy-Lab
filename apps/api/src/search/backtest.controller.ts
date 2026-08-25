@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import type { Dataset } from '@csl/contracts';
 import { BacktestService } from './backtest.service';
+import { validateDataset } from './dataset-validator';
 import type { SingleRunRequestDto, SingleRunResponseDto } from './dto/single-run.dto';
 
 @Controller()
@@ -13,8 +14,9 @@ export class BacktestController {
   }
 
   @Post('datasets')
-  createDataset(@Body() body: Omit<Dataset, 'id'>): Promise<Dataset> {
-    return this.backtestService.createDataset(body);
+  createDataset(@Body() body: unknown): Promise<Dataset> {
+    const validated = validateDataset(body);
+    return this.backtestService.createDataset(validated);
   }
 
   @Post('backtest/run')

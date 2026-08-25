@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Dataset, Timeframe } from '@csl/contracts';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { validateDataset } from './dataset-validator';
 
 type DatasetRow = Prisma.DatasetModel;
 
@@ -30,16 +31,17 @@ export class DatasetRepository {
   }
 
   async create(data: Omit<Dataset, 'id'>): Promise<CreateDatasetResult> {
+    const validated = validateDataset(data);
     const key = {
-      pair: data.pair,
-      timeframe: data.timeframe,
-      from: new Date(data.from),
-      to: new Date(data.to),
-      entryPrice: data.rules.entryPrice,
-      feeRate: data.rules.feeRate,
-      warmupCandles: data.rules.warmupCandles,
-      profitMode: data.rules.profitMode,
-      drawdownMode: data.rules.drawdownMode,
+      pair: validated.pair,
+      timeframe: validated.timeframe,
+      from: new Date(validated.from),
+      to: new Date(validated.to),
+      entryPrice: validated.rules.entryPrice,
+      feeRate: validated.rules.feeRate,
+      warmupCandles: validated.rules.warmupCandles,
+      profitMode: validated.rules.profitMode,
+      drawdownMode: validated.rules.drawdownMode,
     };
 
     const existing = await this.prisma.dataset.findUnique({
