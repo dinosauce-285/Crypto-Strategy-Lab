@@ -147,6 +147,18 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
 .chart-frame { position: relative; }
+.chart-stale { opacity: 0.45; transition: opacity 0.2s; }
+.chart-stale-banner {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  text-align: right;
+  pointer-events: none;
+}
 .chart-label {
   position: absolute;
   top: 0.5rem;
