@@ -74,6 +74,7 @@ code that assumes it.
 - [0040](0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md) — realtime-watched candles are read live from the exchange, not persisted
 - [0041](0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md) — dataset creation fetches and stores its own candle range from the exchange, paginated
 - [0042](0042-the-search-worker-evaluates-and-records-experiments-through.md) — the search worker evaluates and records experiments through EvaluatorPort, not its own repository
+- [0043](0043-backtest-screen-supports-full-candidate-specification-inspec.md) — backtest screen supports full candidate specification inspection and auto execution
 
 
 

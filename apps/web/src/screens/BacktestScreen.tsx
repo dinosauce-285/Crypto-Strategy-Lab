@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { CandidateSpec, Dataset, StrategyMeta, StrategyParams, Timeframe } from '@csl/contracts';
 import { Header } from '../layout/Header';
@@ -56,78 +56,24 @@ export function BacktestScreen() {
   const location = useLocation();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [strategy, setStrategy] = useState<StrategyMeta | null>(null);
+  const [customSpec, setCustomSpec] = useState<CandidateSpec | null>(null);
   const [params, setParams] = useState<StrategyParams>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [state, setState] = useState<RunState>({ kind: 'idle' });
   const [selectedTrade, setSelectedTrade] = useState<TradeRow | null>(null);
 
-  // Preload if navigated from Leaderboard with state
-  useEffect(() => {
-    const navState = location.state as { datasetId?: string; spec?: CandidateSpec } | null;
-    if (navState?.datasetId) {
-      fetch('/api/datasets')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((datasets: Dataset[]) => {
-          const match = datasets.find((d) => d.id === navState.datasetId);
-          if (match) setDataset(match);
-        })
-        .catch(() => {});
-    }
-
-    if (navState?.spec?.members?.[0]) {
-      const member = navState.spec.members[0];
-      fetch('/api/strategies')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((strategies: StrategyMeta[]) => {
-          const match = strategies.find((s) => s.id === member.id);
-          if (match) {
-            setStrategy(match);
-            setParams(member.params || {});
-          }
-        })
-        .catch(() => {});
-    }
-  }, [location.state]);
-
-  const handleStrategySelect = (meta: StrategyMeta, defaultParams: StrategyParams) => {
-    setStrategy(meta);
-    setParams(defaultParams);
-  };
-
-  const handleRun = async () => {
-    if (!dataset || !strategy) return;
+  const runSimulation = useCallback(async (targetDatasetId: string, targetSpec: CandidateSpec) => {
     setState({ kind: 'loading' });
     setSelectedTrade(null);
 
     try {
-      const payload = {
-        datasetId: dataset.id,
-        spec: {
-          rule: 'weighted',
-          threshold: 0.5,
-          members: [
-            {
-              id: strategy.id,
-              version: strategy.version,
-              params,
-              paramsHash: 'single-run-hash',
-              weight: 0.5,
-            },
-            {
-              id: strategy.id,
-              version: strategy.version,
-              params,
-              paramsHash: 'single-run-hash',
-              weight: 0.5,
-            },
-          ],
-        },
-      };
-
       const res = await fetch('/api/backtest/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          datasetId: targetDatasetId,
+          spec: targetSpec,
+        }),
       });
 
       if (!res.ok) {
@@ -139,6 +85,73 @@ export function BacktestScreen() {
     } catch (err) {
       setState({ kind: 'error', message: (err as Error).message });
     }
+  }, []);
+
+  // Preload and auto-run if navigated from Leaderboard with state
+  useEffect(() => {
+    const navState = location.state as { datasetId?: string; spec?: CandidateSpec } | null;
+    if (!navState?.datasetId) return;
+
+    if (navState.spec) {
+      setCustomSpec(navState.spec);
+    }
+
+    fetch('/api/datasets')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((datasets: Dataset[]) => {
+        const match = datasets.find((d) => d.id === navState.datasetId);
+        if (match) {
+          setDataset(match);
+          if (navState.spec) {
+            void runSimulation(match.id, navState.spec);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [location.state, runSimulation]);
+
+  const handleStrategySelect = (meta: StrategyMeta, defaultParams: StrategyParams) => {
+    setCustomSpec(null);
+    setStrategy(meta);
+    setParams(defaultParams);
+  };
+
+  const handleClearCustomSpec = () => {
+    setCustomSpec(null);
+  };
+
+  const handleRun = async () => {
+    if (!dataset) return;
+
+    if (customSpec) {
+      void runSimulation(dataset.id, customSpec);
+      return;
+    }
+
+    if (!strategy) return;
+
+    const payloadSpec: CandidateSpec = {
+      rule: 'weighted',
+      threshold: 0.5,
+      members: [
+        {
+          id: strategy.id,
+          version: strategy.version,
+          params,
+          paramsHash: 'single-run-hash',
+          weight: 0.5,
+        },
+        {
+          id: strategy.id,
+          version: strategy.version,
+          params,
+          paramsHash: 'single-run-hash',
+          weight: 0.5,
+        },
+      ],
+    };
+
+    void runSimulation(dataset.id, payloadSpec);
   };
 
   return (
@@ -255,16 +268,18 @@ export function BacktestScreen() {
 
           <StrategyPicker
             selectedStrategy={strategy}
+            customSpec={customSpec}
             params={params}
             onSelectStrategy={handleStrategySelect}
             onChangeParams={setParams}
+            onClearCustomSpec={handleClearCustomSpec}
           />
 
           <button
             type="button"
             className="btn-action btn-primary"
             style={{ height: '2.4rem', fontSize: '0.9rem', justifyContent: 'center' }}
-            disabled={!dataset || !strategy || state.kind === 'loading'}
+            disabled={!dataset || (!strategy && !customSpec) || state.kind === 'loading'}
             onClick={handleRun}
           >
             {state.kind === 'loading' ? 'Đang mô phỏng…' : '▶ Chạy Backtest'}
