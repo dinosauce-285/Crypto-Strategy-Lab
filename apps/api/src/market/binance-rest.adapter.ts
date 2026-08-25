@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Candle, Timeframe } from '@csl/contracts';
 import { ExchangeHistoryPort } from './ports/exchange-history.port';
@@ -31,11 +31,15 @@ export class BinanceRestAdapter extends ExchangeHistoryPort {
 
   async fetchKlines(pair: string, timeframe: Timeframe, limit: number): Promise<Candle[]> {
     const base = this.config.get<string>('BINANCE_REST_URL', DEFAULT_URL);
-    const url = `${base}/api/v3/klines?symbol=${pair}&interval=${timeframe}&limit=${limit}`;
+    const url = this.buildKlinesUrl(base, {
+      symbol: pair,
+      interval: timeframe,
+      limit: String(limit),
+    });
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Binance klines request failed: HTTP ${response.status}`);
+      throw await this.toKlinesError(response, pair);
     }
 
     const rows = (await response.json()) as BinanceKlineRow[];
@@ -68,17 +72,29 @@ export class BinanceRestAdapter extends ExchangeHistoryPort {
     endTime: number,
   ): Promise<Candle[]> {
     const base = this.config.get<string>('BINANCE_REST_URL', DEFAULT_URL);
-    const url =
-      `${base}/api/v3/klines?symbol=${pair}&interval=${timeframe}` +
-      `&startTime=${startTime}&endTime=${endTime}&limit=${CHUNK_LIMIT}`;
+    const url = this.buildKlinesUrl(base, {
+      symbol: pair,
+      interval: timeframe,
+      startTime: String(startTime),
+      endTime: String(endTime),
+      limit: String(CHUNK_LIMIT),
+    });
 
-    const response = await this.fetchWithRateLimitRetry(url);
+    const response = await this.fetchWithRateLimitRetry(url, pair);
     const rows = (await response.json()) as BinanceKlineRow[];
     return rows.map((row) => toCandle(row, pair, timeframe));
   }
 
+  private buildKlinesUrl(base: string, params: Record<string, string>): string {
+    const url = new URL('/api/v3/klines', base);
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+    return url.toString();
+  }
+
   /** One retry on 429, waiting exactly what Binance asks for — never more than that (ADR 0041). */
-  private async fetchWithRateLimitRetry(url: string): Promise<Response> {
+  private async fetchWithRateLimitRetry(url: string, pair: string): Promise<Response> {
     const response = await fetch(url);
     if (response.ok) return response;
 
@@ -89,10 +105,22 @@ export class BinanceRestAdapter extends ExchangeHistoryPort {
 
       const retried = await fetch(url);
       if (retried.ok) return retried;
-      throw new Error(`Binance klines request failed after rate-limit retry: HTTP ${retried.status}`);
+      throw await this.toKlinesError(retried, pair);
     }
 
-    throw new Error(`Binance klines request failed: HTTP ${response.status}`);
+    throw await this.toKlinesError(response, pair);
+  }
+
+  /**
+   * `pair` is the only user-supplied part of a klines request (timeframe is validated
+   * against the Timeframe enum before it ever gets here), so a 400 from Binance always
+   * means the symbol was rejected — map it to a real "not found" instead of a 500.
+   */
+  private async toKlinesError(response: Response, pair: string): Promise<Error> {
+    if (response.status === 400) {
+      return new NotFoundException(`Cặp giao dịch "${pair}" không tồn tại`);
+    }
+    return new Error(`Binance klines request failed: HTTP ${response.status}`);
   }
 }
 
