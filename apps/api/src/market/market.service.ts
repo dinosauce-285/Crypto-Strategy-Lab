@@ -223,6 +223,9 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
           const lastInChunk = chunk[chunk.length - 1];
           if (chunk.length < 1000 || lastInChunk.openTime <= currentStart) break;
           currentStart = lastInChunk.openTime + 1;
+
+          // Pacing delay between pages to avoid burst load / rate limit
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         const buffered = watch.liveBuffers.get(timeframe) ?? [];
