@@ -29,10 +29,10 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
         </div>
 
         <div className="stat-tile">
-          <span className="stat-tile-label">Lãi / Lỗ</span>
+          <span className="stat-tile-label" title="Tổng tỷ suất đơn: tổng tỷ suất sinh lời của tất cả các lệnh (linear sum)">Tổng tỷ suất đơn</span>
           <span className={`stat-tile-val ${pnlColor}`}>
             {pnlSign}
-            {metrics.profitLoss}
+            {Number.isFinite(pnlNum) ? `${(pnlNum * 100).toFixed(2)}%` : '0.00%'}
           </span>
         </div>
 
