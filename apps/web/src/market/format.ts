@@ -42,6 +42,14 @@ export function tradeTime(at: number): string {
   return `${day}/${month} ${hours}:${minutes}`;
 }
 
+export function formatDatasetRange(from: number, to: number): string {
+  const d1 = new Date(from);
+  const d2 = new Date(to);
+  const f1 = `${String(d1.getDate()).padStart(2, '0')}/${String(d1.getMonth() + 1).padStart(2, '0')}/${d1.getFullYear()} ${String(d1.getHours()).padStart(2, '0')}:${String(d1.getMinutes()).padStart(2, '0')}`;
+  const f2 = `${String(d2.getDate()).padStart(2, '0')}/${String(d2.getMonth() + 1).padStart(2, '0')}/${d2.getFullYear()} ${String(d2.getHours()).padStart(2, '0')}:${String(d2.getMinutes()).padStart(2, '0')}`;
+  return `${f1} - ${f2}`;
+}
+
 export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
   return side.toUpperCase() === 'BUY' ? 'Mua' : 'Bán';
 }

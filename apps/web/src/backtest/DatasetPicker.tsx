@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
-import { date } from '../market/format';
+import { formatDatasetRange } from '../market/format';
 
 interface DatasetPickerProps {
   selectedDataset: Dataset | null;
@@ -79,7 +79,7 @@ export function DatasetPicker({
   }, []);
 
   const selectedLabel = selectedDataset
-    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${date(selectedDataset.from)} - ${date(selectedDataset.to)})`
+    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${formatDatasetRange(selectedDataset.from, selectedDataset.to)})`
     : loading
       ? 'Đang tải dataset…'
       : error
@@ -124,6 +124,11 @@ export function DatasetPicker({
           <div className="custom-dropdown-menu" role="listbox">
             {datasets.map((d) => {
               const isSelected = selectedDataset?.id === d.id;
+              const feePct = Number(d.rules?.feeRate ?? 0) * 100;
+              const formattedFee = Number.isFinite(feePct) ? `${Number(feePct.toFixed(4))}%` : '0%';
+              const entryLabel = ENTRY_PRICE_LABELS[d.rules?.entryPrice] ?? d.rules?.entryPrice ?? '';
+              const profitLabel = PROFIT_MODE_LABELS[d.rules?.profitMode] ?? d.rules?.profitMode ?? '';
+
               return (
                 <button
                   key={d.id}
@@ -136,11 +141,24 @@ export function DatasetPicker({
                     onSelectDataset(d);
                     setIsOpen(false);
                   }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '0.2rem',
+                    padding: '0.45rem 0.6rem',
+                    textAlign: 'left',
+                  }}
                 >
-                  <span>
-                    {d.pair} · {d.timeframe} ({date(d.from)} - {date(d.to)})
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>
+                      {d.pair} · {d.timeframe} ({formatDatasetRange(d.from, d.to)})
+                    </span>
+                    {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
+                  </div>
+                  <span className="source" style={{ fontSize: '0.72rem' }}>
+                    {entryLabel} · phí {formattedFee} · {profitLabel} · warmup {d.rules?.warmupCandles ?? 0} nến
                   </span>
-                  {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
                 </button>
               );
             })}
