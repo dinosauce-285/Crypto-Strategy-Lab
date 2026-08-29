@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dataset, Timeframe } from '@csl/contracts';
 import { PAIRS } from '../market/PairSelect';
 
@@ -10,6 +10,9 @@ interface DatasetFormModalProps {
 }
 
 export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
   const [pair, setPair] = useState(PAIRS[0]);
   const [timeframe, setTimeframe] = useState<Timeframe>('1h');
   
@@ -29,6 +32,56 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    previousActiveElement.current = document.activeElement as HTMLElement | null;
+
+    // Focus first focusable element inside modal
+    const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (focusableElements && focusableElements.length > 0) {
+      focusableElements[0].focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusables = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+        if (focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousActiveElement.current?.focus();
+    };
+  }, [onClose]);
 
   useEffect(() => {
     if (!submitting) {
@@ -96,11 +149,30 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
   };
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card">
+    <div
+      className="modal-backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="modal-card"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dataset-modal-title"
+      >
         <div className="panel-head">
-          <h2>Cấu hình Dataset & Quy tắc Backtest</h2>
-          <button type="button" className="btn-action" onClick={onClose}>
+          <h2 id="dataset-modal-title">Cấu hình Dataset & Quy tắc Backtest</h2>
+          <button
+            type="button"
+            className="btn-action"
+            onClick={onClose}
+            aria-label="Đóng hộp thoại"
+            disabled={submitting}
+          >
             ✕
           </button>
         </div>
