@@ -14,6 +14,7 @@ import { LeaderboardTable } from '../leaderboard/LeaderboardTable';
 import { useTopic } from '../channel/use-topic';
 
 type State =
+  | { kind: 'no-dataset' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; entries: LeaderboardEntry[] };
@@ -24,11 +25,11 @@ export function LeaderboardScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<LeaderboardSortField>('score');
   const [direction, setDirection] = useState<SortDirection>('desc');
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const [state, setState] = useState<State>({ kind: 'no-dataset' });
 
   const fetchLeaderboard = useCallback(() => {
     if (!selectedDataset) {
-      setState({ kind: 'ready', entries: [] });
+      setState({ kind: 'no-dataset' });
       return;
     }
 
@@ -102,7 +103,36 @@ export function LeaderboardScreen() {
           />
         </div>
 
-        {/* Leaderboard Table / 4 States */}
+        {/* Leaderboard Table / 5 States */}
+        {state.kind === 'no-dataset' && (
+          <div
+            className="panel"
+            style={{
+              minHeight: '280px',
+              border: '1px dashed var(--line)',
+              borderRadius: 'var(--radius)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              textAlign: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
+              Vui lòng chọn một dataset hoặc tạo dataset mới để xem bảng xếp hạng.
+            </p>
+            <button
+              type="button"
+              className="btn-action"
+              onClick={() => setIsModalOpen(true)}
+            >
+              + Tạo dataset mới
+            </button>
+          </div>
+        )}
+
         {state.kind === 'loading' && (
           <div
             className="panel"
@@ -164,8 +194,8 @@ export function LeaderboardScreen() {
             }}
           >
             <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-              Chưa có experiment nào hoàn tất cho dataset này. Chạy một strategy ở tab{' '}
-              <strong>Backtest</strong> để ghi nhận experiment đầu tiên.
+              Chưa có kết quả thí nghiệm nào hoàn tất cho dataset này. Hãy chạy kiểm thử chiến lược ở tab{' '}
+              <strong>Backtest</strong> hoặc <strong>Search</strong> để ghi nhận kết quả đầu tiên.
             </p>
           </div>
         )}
