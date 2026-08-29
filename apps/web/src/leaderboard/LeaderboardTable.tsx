@@ -1,4 +1,5 @@
-import type { LeaderboardEntry, LeaderboardSortField, SortDirection } from '@csl/contracts';
+import { useEffect, useState } from 'react';
+import type { LeaderboardEntry, LeaderboardSortField, SortDirection, StrategyMeta } from '@csl/contracts';
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
@@ -15,6 +16,24 @@ export function LeaderboardTable({
   onSortChange,
   onSelectEntry,
 }: LeaderboardTableProps) {
+  const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
+
+  useEffect(() => {
+    fetch('/api/strategies')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((list: StrategyMeta[]) => {
+        if (Array.isArray(list)) {
+          setStrategies(list);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const getStrategyName = (id: string) => {
+    const found = strategies.find((s) => s.id === id);
+    return found ? found.name : id;
+  };
+
   const renderSortIndicator = (field: LeaderboardSortField) => {
     if (sortBy !== field) return null;
     return direction === 'asc' ? ' ▲' : ' ▼';
@@ -163,7 +182,7 @@ export function LeaderboardTable({
               const retColor = retNum > 0 ? 'ok' : retNum < 0 ? 'bad' : '';
 
               const recipeSummary = entry.spec.members
-                .map((m) => `${m.id}@v${m.version} (${(m.weight * 100).toFixed(0)}%)`)
+                .map((m) => `${getStrategyName(m.id)} (${(m.weight * 100).toFixed(0)}%)`)
                 .join(' + ');
 
               return (
