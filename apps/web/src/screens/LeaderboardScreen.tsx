@@ -51,9 +51,7 @@ export function LeaderboardScreen() {
     return () => controller.abort();
   }, [selectedDataset, sortBy, direction]);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+  useEffect(() => fetchLeaderboard(), [fetchLeaderboard]);
 
   // Real-time push updates: when a better candidate appears or experiment completes, refresh table
   const topic = selectedDataset ? leaderboardTopic(selectedDataset.id) : null;
