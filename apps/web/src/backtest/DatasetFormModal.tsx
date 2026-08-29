@@ -161,7 +161,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
           <div className="rules-section">
             <h2 style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
-              Quy tắc thực thi lệnh (ADR 0010)
+              Quy tắc khớp lệnh khi mô phỏng
             </h2>
 
             <div className="form-row">
