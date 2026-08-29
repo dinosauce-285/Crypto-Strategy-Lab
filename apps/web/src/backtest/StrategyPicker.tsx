@@ -132,7 +132,7 @@ export function StrategyPicker({
               ) : null}
               {strategies.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.id})
+                  {s.name}
                 </option>
               ))}
             </select>
