@@ -1,7 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   EVENTS,
+  LEADERBOARD_SORT_FIELDS,
+  SORT_DIRECTIONS,
   leaderboardTopic,
   MESSAGES,
   type LeaderboardEntry,
@@ -20,16 +22,42 @@ export class LeaderboardController {
 
   @Get()
   async getLeaderboard(
-    @Query('datasetId') datasetId: string,
-    @Query('sortBy') sortBy?: LeaderboardSortField,
-    @Query('direction') direction?: SortDirection,
+    @Query('datasetId') datasetId?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('direction') direction?: string,
     @Query('limit') limitStr?: string,
   ): Promise<LeaderboardEntry[]> {
-    const limit = limitStr ? parseInt(limitStr, 10) : undefined;
+    if (!datasetId || typeof datasetId !== 'string' || datasetId.trim() === '') {
+      throw new BadRequestException('Query parameter "datasetId" is required');
+    }
+
+    if (sortBy && !LEADERBOARD_SORT_FIELDS.includes(sortBy as LeaderboardSortField)) {
+      throw new BadRequestException(
+        `Invalid sortBy parameter "${sortBy}". Allowed values: ${LEADERBOARD_SORT_FIELDS.join(', ')}`,
+      );
+    }
+
+    if (direction && !SORT_DIRECTIONS.includes(direction as SortDirection)) {
+      throw new BadRequestException(
+        `Invalid direction parameter "${direction}". Allowed values: ${SORT_DIRECTIONS.join(', ')}`,
+      );
+    }
+
+    let limit: number | undefined;
+    if (limitStr !== undefined && limitStr !== '') {
+      const parsedLimit = Number(limitStr);
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 50) {
+        throw new BadRequestException(
+          `Query parameter "limit" must be an integer between 1 and 50, received "${limitStr}"`,
+        );
+      }
+      limit = parsedLimit;
+    }
+
     return this.ranking.getLeaderboard({
-      datasetId,
-      sortBy,
-      direction,
+      datasetId: datasetId.trim(),
+      sortBy: sortBy as LeaderboardSortField | undefined,
+      direction: direction as SortDirection | undefined,
       limit,
     });
   }
