@@ -1,5 +1,3 @@
-import { describe, it } from 'node:test';
-import { strictEqual, deepStrictEqual } from 'node:assert';
 import { ConfigService } from '@nestjs/config';
 import { BinanceStreamAdapter } from './binance-stream.adapter';
 
@@ -19,8 +17,8 @@ describe('BinanceStreamAdapter', () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (input: Parameters<typeof fetch>[0]) => {
       const urlStr = input.toString();
-      strictEqual(urlStr.includes('symbol=BTCUSDT'), true);
-      strictEqual(urlStr.includes('interval=1m'), true);
+      expect(urlStr.includes('symbol=BTCUSDT')).toBe(true);
+      expect(urlStr.includes('interval=1m')).toBe(true);
       return {
         ok: true,
         json: async () => mockKlines,
@@ -35,8 +33,8 @@ describe('BinanceStreamAdapter', () => {
         endTime: 1600000120000,
       });
 
-      strictEqual(candles.length, 2);
-      deepStrictEqual(candles[0], {
+      expect(candles).toHaveLength(2);
+      expect(candles[0]).toEqual({
         pair: 'BTCUSDT',
         timeframe: '1m',
         openTime: 1600000000000,
@@ -47,6 +45,46 @@ describe('BinanceStreamAdapter', () => {
         volume: '50.12',
         closed: true,
       });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('fetchCandles retries on HTTP 429 rate limit before succeeding', async () => {
+    const config = new ConfigService({
+      BINANCE_REST_URL: 'https://mock-binance.test',
+    });
+
+    const adapter = new BinanceStreamAdapter(config);
+    let attempts = 0;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      attempts++;
+      if (attempts === 1) {
+        return {
+          status: 429,
+          ok: false,
+          headers: new Headers({ 'Retry-After': '0' }),
+        } as unknown as Response;
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: async () => [[1600000000000, '100.0', '105.0', '95.0', '102.0', '10']],
+      } as unknown as Response;
+    };
+
+    try {
+      const candles = await adapter.fetchCandles({
+        pair: 'BTCUSDT',
+        timeframe: '1m',
+        startTime: 1600000000000,
+      });
+
+      expect(attempts).toBe(2);
+      expect(candles).toHaveLength(1);
+      expect(candles[0].open).toBe('100.0');
     } finally {
       globalThis.fetch = originalFetch;
     }
