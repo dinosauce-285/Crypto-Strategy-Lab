@@ -60,7 +60,17 @@ export function TradesTable({
               return (
                 <tr
                   key={trade.seq}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isSelected}
+                  aria-label={`Lệnh số ${trade.seq}`}
                   onClick={() => onSelectTrade(trade)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectTrade(trade);
+                    }
+                  }}
                   style={{
                     cursor: 'pointer',
                     background: isSelected ? 'var(--line)' : undefined,
