@@ -229,10 +229,10 @@ export function BacktestScreen() {
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (
-                    {state.result.candles.length} candles)
+                    {state.result.candles.length} nến)
                   </h2>
-                  <span className="source">
-                    Experiment ID: <code>{state.result.experimentId ?? 'tạm thời'}</code>
+                  <span className="source badge badge-neu">
+                    Mô phỏng hoàn tất
                   </span>
                 </div>
 

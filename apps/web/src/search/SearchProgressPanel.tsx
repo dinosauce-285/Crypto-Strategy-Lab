@@ -71,7 +71,7 @@ export function SearchProgressPanel({
 
       <div className="running-dataset">
         <span className="stat-tile-label">Dataset đang chạy</span>
-        <strong>{runningDataset ? datasetLabel(runningDataset) : status.datasetId}</strong>
+        <strong>{runningDataset ? datasetLabel(runningDataset) : 'Đang tải thông tin dataset…'}</strong>
       </div>
 
       <div
@@ -108,8 +108,7 @@ export function SearchProgressPanel({
         <div className="search-recipe">
           <span className="stat-tile-label">Kết quả tốt nhất hiện tại</span>
           <strong>
-            Lợi nhuận {formatPercent(status.counters.best.totalReturn)} /{' '}
-            {status.counters.best.specHash.slice(0, 8)}
+            Lợi nhuận {formatPercent(status.counters.best.totalReturn)}
           </strong>
         </div>
       )}

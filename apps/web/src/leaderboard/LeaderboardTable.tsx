@@ -86,7 +86,7 @@ export function LeaderboardTable({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
                       <strong style={{ fontSize: '0.82rem' }}>{recipeSummary || 'Một Strategy'}</strong>
                       <span className="source" style={{ fontSize: '0.7rem' }}>
-                        hash: <code>{entry.specHash.slice(0, 8)}</code> · {entry.spec.rule} ({entry.spec.threshold})
+                        {entry.spec.rule === 'weighted' ? 'Trọng số' : entry.spec.rule} (ngưỡng {entry.spec.threshold})
                       </span>
                     </div>
                   </td>
