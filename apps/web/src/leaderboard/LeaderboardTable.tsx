@@ -181,6 +181,10 @@ export function LeaderboardTable({
               const retSign = retNum > 0 ? '+' : '';
               const retColor = retNum > 0 ? 'ok' : retNum < 0 ? 'bad' : '';
 
+              const ddNum = entry.metrics.maxDrawdown;
+              const ddSign = ddNum > 0 ? '-' : '';
+              const ddColor = ddNum > 0 ? 'bad' : '';
+
               const recipeSummary = entry.spec.members
                 .map((m) => `${getStrategyName(m.id)} (${(m.weight * 100).toFixed(0)}%)`)
                 .join(' + ');
@@ -220,7 +224,7 @@ export function LeaderboardTable({
                     {retSign}{(retNum * 100).toFixed(2)}%
                   </td>
                   <td>{(entry.metrics.winRate * 100).toFixed(1)}%</td>
-                  <td className="bad">-{(entry.metrics.maxDrawdown * 100).toFixed(2)}%</td>
+                  <td className={ddColor}>{ddSign}{(ddNum * 100).toFixed(2)}%</td>
                   <td>
                     {entry.metrics.sharpeRatio !== undefined
                       ? entry.metrics.sharpeRatio.toFixed(2)

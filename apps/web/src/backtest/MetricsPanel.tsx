@@ -25,6 +25,10 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
     ? sr >= 2.0 ? 'Rất tốt (>2.0)' : sr >= 1.0 ? 'Tốt (1.0–2.0)' : sr > 0 ? 'Trung bình (0–1.0)' : 'Kém (<0)'
     : '';
 
+  const dd = metrics.maxDrawdown;
+  const ddSign = dd > 0 ? '-' : '';
+  const ddColor = dd > 0 ? 'bad' : '';
+
   return (
     <div className="panel">
       <div className="panel-head">
@@ -65,8 +69,8 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
           <span className="stat-tile-label" title="Drawdown: mức sụt giảm tài khoản lớn nhất từ đỉnh xuống đáy">
             Drawdown tối đa
           </span>
-          <span className="stat-tile-val bad">
-            -{(metrics.maxDrawdown * 100).toFixed(2)}%
+          <span className={`stat-tile-val ${ddColor}`}>
+            {ddSign}{(dd * 100).toFixed(2)}%
           </span>
         </div>
 
