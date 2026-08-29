@@ -137,6 +137,18 @@ export function BacktestScreen() {
 
     if (!strategy) return;
 
+    // Validate parameters against defined min/max bounds before running
+    for (const spec of strategy.params) {
+      const val = params[spec.name] ?? spec.default;
+      if (typeof val !== 'number' || Number.isNaN(val) || val < spec.min || val > spec.max) {
+        setState({
+          kind: 'error',
+          message: `Tham số "${spec.name}" phải là số hợp lệ trong khoảng [${spec.min} .. ${spec.max}].`,
+        });
+        return;
+      }
+    }
+
     const payloadSpec: CandidateSpec = {
       rule: 'weighted',
       threshold: 0.5,

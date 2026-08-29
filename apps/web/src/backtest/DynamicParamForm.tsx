@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ParamSpec, StrategyParams } from '@csl/contracts';
 
 interface DynamicParamFormProps {
@@ -72,11 +73,17 @@ export function DynamicParamForm({
   values,
   onChange,
 }: DynamicParamFormProps) {
+  const [inputStrings, setInputStrings] = useState<Record<string, string>>({});
+
   if (params.length === 0) {
     return <p className="source">(Strategy này không có tham số nào để tinh chỉnh)</p>;
   }
 
   const handleChange = (name: string, rawVal: string, spec: ParamSpec) => {
+    setInputStrings((prev) => ({ ...prev, [name]: rawVal }));
+    if (rawVal === '') {
+      return;
+    }
     const num = spec.type === 'int' ? parseInt(rawVal, 10) : parseFloat(rawVal);
     if (!Number.isNaN(num)) {
       onChange({
@@ -86,10 +93,49 @@ export function DynamicParamForm({
     }
   };
 
+  const handleBlur = (name: string, spec: ParamSpec) => {
+    const rawVal = inputStrings[name];
+    if (rawVal === undefined) return;
+
+    if (rawVal === '') {
+      const resetVal = spec.default;
+      setInputStrings((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+      onChange({ ...values, [name]: resetVal });
+      return;
+    }
+
+    const num = spec.type === 'int' ? parseInt(rawVal, 10) : parseFloat(rawVal);
+    if (Number.isNaN(num)) {
+      const resetVal = spec.default;
+      setInputStrings((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+      onChange({ ...values, [name]: resetVal });
+    } else {
+      const clamped = Math.max(spec.min, Math.min(spec.max, num));
+      setInputStrings((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+      onChange({ ...values, [name]: clamped });
+    }
+  };
+
   return (
     <div className="dynamic-params-grid">
       {params.map((param) => {
-        const currentVal = values[param.name] ?? param.default;
+        const rawString = inputStrings[param.name];
+        const currentVal = rawString !== undefined ? rawString : (values[param.name] ?? param.default);
+        const numVal = typeof currentVal === 'number' ? currentVal : parseFloat(String(currentVal));
+        const isOutOfRange = !Number.isNaN(numVal) && (numVal < param.min || numVal > param.max);
+
         const meta = PARAM_DICTIONARY[param.name];
         const labelText = meta?.label ?? param.name;
         const unitText = meta?.unit ? ` (${meta.unit})` : '';
@@ -114,14 +160,23 @@ export function DynamicParamForm({
                 id={`param-${param.name}`}
                 type="number"
                 className="pair-select"
-                style={{ width: '100%' }}
+                style={{
+                  width: '100%',
+                  borderColor: isOutOfRange ? 'var(--bad)' : undefined,
+                }}
                 min={param.min}
                 max={param.max}
                 step={param.step}
                 value={currentVal}
                 onChange={(e) => handleChange(param.name, e.target.value, param)}
+                onBlur={() => handleBlur(param.name, param)}
               />
             </div>
+            {isOutOfRange && (
+              <span className="bad" style={{ fontSize: '0.72rem', display: 'block', marginTop: '0.2rem' }}>
+                ⚠ Giá trị hợp lệ từ {param.min} đến {param.max}
+              </span>
+            )}
           </div>
         );
       })}
