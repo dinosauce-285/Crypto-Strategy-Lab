@@ -5,7 +5,7 @@
   "scripts": {
     "prepare": "node ../../scripts/setup-githooks.js || true",
     "dev": "nest start --watch",
-    "worker": "nest start --watch --entryFile search/worker.main",
+    "worker": "nest start --watch --entryFile search/worker.main --path tsconfig.worker.json",
     "build": "nest build",
     "start": "node dist/main",
     "lint": "eslint \"src/**/*.ts\" --fix",

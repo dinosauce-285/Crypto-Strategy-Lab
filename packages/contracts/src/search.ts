@@ -17,6 +17,17 @@ export interface RunBound {
   noImprovementLimit?: number;
 }
 
+/** One registered strategy version that is allowed to enter one search run. */
+export interface StrategyRef {
+  id: string;
+  version: number;
+}
+
+/** The registry entries that are allowed to enter one search run. */
+export interface SearchSpace {
+  strategyRefs: StrategyRef[];
+}
+
 export const RUN_STATES = ['running', 'paused', 'ended'] as const;
 export type RunState = (typeof RUN_STATES)[number];
 
@@ -40,6 +51,9 @@ export interface RunBest {
   totalReturn: number;
 }
 
+export const SEARCH_MODES = ['random', 'domain-guided'] as const;
+export type SearchMode = (typeof SEARCH_MODES)[number];
+
 /**
  * The five questions of section 32.7, in the order they are asked: is it running, how
  * many were tried, how long does a backtest take, how many failed, who is top.
@@ -62,6 +76,8 @@ export interface RunCounters {
 export interface RunStatus {
   runId: string;
   datasetId: string;
+  strategyRefs: StrategyRef[];
+  mode: SearchMode;
   state: RunState;
   bound: RunBound;
   startedAt: number;
@@ -70,9 +86,16 @@ export interface RunStatus {
   counters: RunCounters;
 }
 
+export interface SearchHistoryEntry {
+  spec: CandidateSpec;
+  specHash: string;
+  score: number;
+}
+
 /** What the generator is handed — `0013`. A bounded view, not every candidate ever tested. */
 export interface RunHistory {
   tried: number;
+  candidates: SearchHistoryEntry[];
   best?: RunBest;
 }
 

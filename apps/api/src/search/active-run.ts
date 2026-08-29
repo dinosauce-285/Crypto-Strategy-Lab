@@ -1,6 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import type { RunBound, RunCounters, RunEndReason, RunHistory, RunStatus, RunState } from '@csl/contracts';
+import type {
+  CandidateSpec,
+  RunBound,
+  RunCounters,
+  RunEndReason,
+  RunHistory,
+  RunState,
+  RunStatus,
+  SearchHistoryEntry,
+  SearchMode,
+  StrategyRef,
+} from '@csl/contracts';
 import type { JobOutcome } from './job-outcome';
+
+const HISTORY_LIMIT = 25;
+
+interface PendingCandidate {
+  spec: CandidateSpec;
+  specHash: string;
+}
 
 /**
  * One run and everything it knows about itself. It is deliberately not a database row:
@@ -17,8 +35,8 @@ export class ActiveRun {
   endedAt?: number;
   endReason?: RunEndReason;
 
-  /** jobId to specHash, so a job that starts can be named on the bus without asking Redis. */
-  readonly pending = new Map<string, string>();
+  /** jobId to candidate, so queue events can be named without asking Redis. */
+  readonly pending = new Map<string, PendingCandidate>();
 
   private tried = 0;
   private failed = 0;
@@ -26,13 +44,16 @@ export class ActiveRun {
   private durationTotalMs = 0;
   private durationCount = 0;
   private best?: RunCounters['best'];
+  private top: SearchHistoryEntry[] = [];
 
   constructor(
     readonly datasetId: string,
+    readonly strategyRefs: readonly StrategyRef[],
     readonly bound: RunBound,
+    readonly mode: SearchMode,
   ) {}
 
-  recordFinished(outcome: JobOutcome): void {
+  recordFinished(outcome: JobOutcome, spec?: CandidateSpec): void {
     this.tried += 1;
     if (outcome.status === 'duplicate') {
       this.duplicates += 1;
@@ -42,6 +63,9 @@ export class ActiveRun {
     this.durationTotalMs += outcome.durationMs;
     this.durationCount += 1;
     const totalReturn = outcome.metrics?.totalReturn;
+    if (spec && typeof totalReturn === 'number') {
+      this.recordHistory({ spec, specHash: outcome.specHash, score: totalReturn });
+    }
     if (outcome.experimentId && typeof totalReturn === 'number' && this.beats(totalReturn)) {
       this.best = { experimentId: outcome.experimentId, specHash: outcome.specHash, totalReturn };
       this.sinceImprovement = 0;
@@ -75,13 +99,15 @@ export class ActiveRun {
   }
 
   history(): RunHistory {
-    return { tried: this.tried, best: this.best };
+    return { tried: this.tried, candidates: this.top, best: this.best };
   }
 
   status(): RunStatus {
     return {
       runId: this.runId,
       datasetId: this.datasetId,
+      strategyRefs: this.strategyRefs.map((ref) => ({ ...ref })),
+      mode: this.mode,
       state: this.state,
       bound: this.bound,
       startedAt: this.startedAt,
@@ -93,5 +119,9 @@ export class ActiveRun {
 
   private beats(totalReturn: number): boolean {
     return this.best === undefined || totalReturn > this.best.totalReturn;
+  }
+
+  private recordHistory(entry: SearchHistoryEntry): void {
+    this.top = [...this.top, entry].sort((a, b) => b.score - a.score).slice(0, HISTORY_LIMIT);
   }
 }

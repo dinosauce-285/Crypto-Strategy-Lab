@@ -10,14 +10,16 @@ for it twice.
 
 ### Requirement: A watcher receives live trade prices for a pair
 
-The system SHALL publish the latest trade price of a pair to that pair's price topic as
-the exchange reports it, carrying the price and the time it was observed.
+The system SHALL publish the latest trade of a pair to that pair's price topic as the
+exchange reports it, carrying the price, the volume traded, the observation time, and
+which side of the trade was the taker's (buy or sell).
 
 #### Scenario: Price moves while a client watches
 
 - **WHEN** a client subscribes to the price topic of `BTCUSDT`
 - **AND** the exchange reports a trade
-- **THEN** the client receives a price message carrying the pair, the price and the observation time
+- **THEN** the client receives a price message carrying the pair, the price, the volume,
+  the taker's side, and the observation time
 
 #### Scenario: A watcher of another pair is unaffected
 
@@ -83,7 +85,9 @@ appear in a delivered message.
 A screen watching a pair and timeframe SHALL show the latest price and the candles that
 have closed since it connected, updating in place. It SHALL show a distinct state while
 connecting, when nothing has arrived yet, and when the stream cannot be reached, and the
-error state SHALL say what to do about it.
+error state SHALL say what to do about it. The candles shown when a watch begins SHALL
+be read live from the exchange rather than from prior storage, so the screen no longer
+depends on that pair and timeframe having been watched before.
 
 #### Scenario: The market moves
 
@@ -100,3 +104,10 @@ error state SHALL say what to do about it.
 
 - **WHEN** the client is subscribed and no price or candle has arrived
 - **THEN** the screen shows an empty state saying it is waiting for the market rather than a blank panel
+
+#### Scenario: The exchange cannot be reached for the initial history
+
+- **WHEN** a client watches a pair and timeframe for the first time
+- **AND** the exchange cannot be reached to serve the recent-candle history
+- **THEN** the screen shows an error state naming what failed and how to retry
+- **AND** no stale or partial history from prior storage is shown in its place

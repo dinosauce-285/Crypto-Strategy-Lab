@@ -64,6 +64,19 @@ code that assumes it.
 - [0030](0030-apps-api-gets-jest-for-unit-tests.md) — apps/api gets Jest for unit tests
 - [0031](0031-news-collector-multi-provider-architecture.md) — news collector multi-provider architecture and sentiment decoupling
 - [0032](0032-server-owned-reconnect-and-gap-backfill.md) — server-owned reconnect and gap backfill
+- [0033](0033-strategies-are-registered-explicitly.md) — strategies are registered explicitly
+- [0034](0034-backtest-execution-rules-for-entry-price-trading-fees-and-wa.md) — backtest execution rules for entry price trading fees and warmup periods
+- [0035](0035-metric-evaluation-formulas-for-profit-calculation-modes-draw.md) — metric evaluation formulas for profit calculation modes, drawdown tracking, and statistical metrics
+- [0036](0036-overall-score-formula-and-trade-count-damping-for-leaderboar.md) — overall score formula and trade count damping for leaderboard
+- [0037](0037-domain-guided-search-uses-group-composition-and-top-history.md) — domain-guided search uses group composition and a top-result history
+- [0038](0038-search-runs-carry-strategy-universe.md) — search runs carry selected strategy versions
+- [0039](0039-news-sentiment-strategy-and-causal-aggregation.md) — news sentiment strategy plugs into the strategy registry with causal aggregation
+- [0040](0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md) — realtime-watched candles are read live from the exchange, not persisted
+- [0041](0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md) — dataset creation fetches and stores its own candle range from the exchange, paginated
+- [0042](0042-the-search-worker-evaluates-and-records-experiments-through.md) — the search worker evaluates and records experiments through EvaluatorPort, not its own repository
+- [0043](0043-backtest-screen-supports-full-candidate-specification-inspec.md) — backtest screen supports full candidate specification inspection and auto execution
+
+
 
 A record is written when a decision is actually made. Nothing is pre-created and
 left waiting to be filled in — an empty shell is worse than no file, because it
@@ -92,7 +105,3 @@ marked directly.
 All three details that sat inside settled records are now answered inside them: the
 canonical form and the rounding before hashing in `0009`, and both the validator's end of
 the queue and the fate of a malformed specification in `0007`.
-
-The brief also expects a record covering the strategy plugin mechanism. `0001` names
-the registry as a Nest provider and `0012` gives it what to read, but section 12 asks
-the question directly and deserves its own answer.

@@ -7,7 +7,7 @@ interface TimeframeSelectProps {
 
 export function TimeframeSelect({ value, onChange }: TimeframeSelectProps) {
   return (
-    <div className="seg" role="group" aria-label="Timeframe">
+    <div className="seg" role="group" aria-label="Khung thời gian">
       {TIMEFRAMES.map((t) => (
         <button key={t} type="button" aria-pressed={t === value} onClick={() => onChange(t)}>
           {t}

@@ -58,6 +58,7 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 .screen-main, .screen-side { display: flex; flex-direction: column; gap: 0.65rem; }
 
 .controls-row { display: flex; align-items: center; gap: 0.5rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.15rem; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -100,6 +101,8 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0 0.5rem;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .seg { display: flex; gap: 0.25rem; }
@@ -145,6 +148,18 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
 .chart-frame { position: relative; }
+.chart-stale { opacity: 0.45; transition: opacity 0.2s; }
+.chart-stale-banner {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  text-align: right;
+  pointer-events: none;
+}
 .chart-label {
   position: absolute;
   top: 0.5rem;
@@ -158,6 +173,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem;
   pointer-events: none;
+}
+.chart-label-selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {
@@ -374,3 +393,267 @@ tbody tr:last-child td { border-bottom: 0; }
 .stat-tile-label { font-size: 0.72rem; color: var(--muted); }
 .stat-tile-val { font-size: 1rem; font-weight: 600; color: var(--ink); }
 
+/* --- modal & backtest controls (T14) --- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 37, 31, 0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: min(32rem, calc(100vw - 2rem));
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(42, 37, 31, 0.08);
+}
+
+.dataset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rules-section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dynamic-params-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.param-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dataset-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-dropdown-wrap {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-dropdown-trigger {
+  width: 100%;
+  height: var(--control-h);
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.custom-dropdown-trigger:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.custom-dropdown-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(42, 37, 31, 0.08);
+  max-height: 16rem;
+  overflow-y: auto;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+}
+
+.custom-dropdown-item {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  transition: background 0.1s ease;
+}
+
+.custom-dropdown-item:hover {
+  background: var(--line);
+}
+
+.custom-dropdown-item[aria-selected="true"] {
+  background: var(--line);
+  font-weight: 600;
+}
+
+/* --- search control screen (T20) --- */
+
+.search-control-panel,
+.search-space-panel,
+.search-progress-panel,
+.search-state-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+}
+
+.search-state-panel {
+  min-height: 16rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem;
+}
+
+.strategy-choice {
+  min-height: 4rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem;
+  cursor: pointer;
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+.strategy-choice[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.strategy-choice input {
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+}
+
+.strategy-choice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.strategy-choice-title {
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.running-dataset,
+.search-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.running-dataset strong,
+.search-recipe strong {
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.progress-meter {
+  height: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.progress-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.empty-progress {
+  min-height: 13rem;
+  justify-content: center;
+}
+
+.start-search-btn {
+  width: 100%;
+  justify-content: center;
+}

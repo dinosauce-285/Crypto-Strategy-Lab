@@ -6,8 +6,11 @@ import { HealthModule } from './health/health.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { MarketModule } from './market/market.module';
 import { SearchModule } from './search/search.module';
+import { StrategyModule } from './strategy/strategy.module';
 import { NewsModule } from './news/news.module';
 import { SentimentModule } from './sentiment/sentiment.module';
+import { EvaluationModule } from './evaluation/evaluation.module';
+import { RankingModule } from './ranking/ranking.module';
 
 /**
  * Module boundaries are the architecture (see AGENTS.md). A module can only reach
@@ -25,9 +28,12 @@ import { SentimentModule } from './sentiment/sentiment.module';
     HealthModule,
     RealtimeModule,
     MarketModule,
+    StrategyModule,
     SearchModule,
     NewsModule,
     SentimentModule,
+    EvaluationModule,
+    RankingModule,
   ],
 })
 export class AppModule {}

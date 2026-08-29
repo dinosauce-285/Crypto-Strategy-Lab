@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sổ Tay Sử Dụng</title>
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem('user-guide-theme');
+    var theme = (saved === 'light' || saved === 'dark')
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#EEF1EE; --surface:#FFFFFF; --surface-2:#E3E9E3;
+    --ink:#182220; --ink-soft:#4B5854; --ink-faint:#7C8A85;
+    --line:#D2DAD2; --line-soft:#E2E7E1;
+    --accent:#2F6F6B; --accent-ink:#1E4B48; --accent-tint:#DEEBEA;
+    --mark:#B5652D; --mark-tint:#F2E3D4;
+    --ok:#2F7D46; --ok-bg:#E1F0E3;
+    --warn:#A9741F; --warn-bg:#F4E9D2;
+    --critical:#A8433A; --critical-bg:#F5E2E0;
+    --shadow: 0 1px 2px rgba(24,34,32,.06), 0 8px 24px -12px rgba(24,34,32,.12);
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+      --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+      --line:#28332F; --line-soft:#202B27;
+      --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+      --mark:#E0954F; --mark-tint:#2A2016;
+      --ok:#7BD08C; --ok-bg:#16261A;
+      --warn:#E3B65E; --warn-bg:#2C2413;
+      --critical:#E88E80; --critical-bg:#2E1B18;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1414; --surface:#161E1D; --surface-2:#1D2625;
+    --ink:#E7ECE9; --ink-soft:#A2B2AC; --ink-faint:#6E7C77;
+    --line:#28332F; --line-soft:#202B27;
+    --accent:#7BC9C0; --accent-ink:#BFE7E1; --accent-tint:#152524;
+    --mark:#E0954F; --mark-tint:#2A2016;
+    --ok:#7BD08C; --ok-bg:#16261A;
+    --warn:#E3B65E; --warn-bg:#2C2413;
+    --critical:#E88E80; --critical-bg:#2E1B18;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent-tint); color:var(--accent-ink); }
+  a{ color:var(--accent-ink); text-decoration-color:var(--accent); text-underline-offset:2px; }
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; border-radius:3px;
+  }
+  code, .mono{ font-family:var(--mono); }
+
+  header.cover{
+    padding:56px 32px 40px; border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(1100px 260px at 12% -30%, var(--accent-tint), transparent 60%),
+      var(--surface);
+  }
+  .cover-inner{ max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--mark); }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(34px,5vw,54px);
+    line-height:1.05; margin:0 0 14px; text-wrap:balance; letter-spacing:-.01em;
+  }
+  .dek{ font-size:17.5px; color:var(--ink-soft); max-width:66ch; margin:0 0 26px; text-wrap:pretty; }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:10px 28px; font-family:var(--mono); font-size:12.5px;
+    color:var(--ink-faint);
+  }
+  .meta-row b{ color:var(--ink-soft); font-weight:500; }
+
+  .shell{
+    max-width:1180px; margin:0 auto; padding:36px 32px 90px;
+    display:grid; grid-template-columns:230px 1fr; gap:44px; align-items:start;
+  }
+  nav.toc{
+    position:sticky; top:24px; display:flex; flex-direction:column; gap:2px;
+    border-left:1px solid var(--line); padding-left:16px;
+  }
+  nav.toc .toc-h{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-faint); margin-bottom:10px;
+  }
+  nav.toc a{
+    font-size:13px; color:var(--ink-soft); text-decoration:none; padding:5px 0;
+    border-left:2px solid transparent; margin-left:-17px; padding-left:15px;
+  }
+  nav.toc a:hover{ color:var(--ink); border-left-color:var(--line); }
+  nav.toc a.sep{ margin-top:10px; padding-top:14px; border-top:1px solid var(--line-soft); }
+
+  main{ min-width:0; }
+  section.block{ margin-bottom:52px; scroll-margin-top:20px; }
+  .block-h{
+    font-family:var(--serif); font-weight:600; font-size:23px; margin:0 0 6px; letter-spacing:-.01em;
+  }
+  .block-sub{ color:var(--ink-soft); font-size:14.5px; margin:0 0 20px; max-width:70ch; }
+
+  /* ---------- screen sections ---------- */
+  .screen{
+    border:1px solid var(--line); border-radius:14px; background:var(--surface);
+    box-shadow:var(--shadow); padding:28px 30px; margin-bottom:28px; scroll-margin-top:20px;
+  }
+  .screen-head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:4px; }
+  .screen-num{ font-family:var(--mono); font-size:13px; color:var(--mark); }
+  .screen-title{ font-family:var(--serif); font-weight:600; font-size:21px; letter-spacing:-.005em; }
+  .screen-path{ font-family:var(--mono); font-size:12px; color:var(--ink-faint); }
+  .screen-purpose{ color:var(--ink-soft); font-size:14.5px; margin:8px 0 20px; max-width:76ch; }
+
+  .screen h4{
+    font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-faint); margin:22px 0 10px; font-weight:500;
+  }
+  .screen h4:first-of-type{ margin-top:0; }
+
+  ol.steps{ margin:0; padding-left:0; list-style:none; counter-reset:step; display:flex; flex-direction:column; gap:10px; }
+  ol.steps li{
+    counter-increment:step; position:relative; padding-left:34px; font-size:14.5px; color:var(--ink-soft); max-width:76ch;
+  }
+  ol.steps li::before{
+    content:counter(step); position:absolute; left:0; top:-1px;
+    width:22px; height:22px; border-radius:50%; background:var(--accent-tint); color:var(--accent-ink);
+    font-family:var(--mono); font-size:11.5px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps b{ color:var(--ink); font-weight:600; }
+
+  dl.ui-ref{ margin:0; display:flex; flex-direction:column; gap:9px; }
+  dl.ui-ref > div{ display:grid; grid-template-columns:minmax(140px,220px) 1fr; gap:14px; align-items:baseline; }
+  dl.ui-ref dt{
+    font-family:var(--mono); font-size:12.5px; color:var(--accent-ink); background:var(--accent-tint);
+    padding:2px 8px; border-radius:5px; width:fit-content; white-space:nowrap;
+  }
+  dl.ui-ref dd{ margin:0; font-size:14px; color:var(--ink-soft); }
+
+  .tip, .warn-box{
+    margin-top:14px; padding:12px 14px; border-left:2px solid var(--accent);
+    background:var(--accent-tint); border-radius:0 6px 6px 0; font-size:14px; color:var(--ink);
+    max-width:78ch;
+  }
+  .tip b, .warn-box b{ font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; display:block; margin-bottom:4px; color:var(--accent-ink); }
+  .warn-box{ border-left-color:var(--critical); background:var(--critical-bg); }
+  .warn-box b{ color:var(--critical); }
+
+  .callout{
+    border:1px solid var(--mark); border-radius:12px; padding:22px 24px; background:var(--mark-tint);
+    box-shadow:var(--shadow); margin-bottom:20px;
+  }
+  .callout-h{ display:flex; align-items:center; gap:10px; font-weight:600; font-size:15.5px; margin-bottom:8px; }
+  .callout p{ margin:0 0 8px; color:var(--ink-soft); font-size:14.5px; max-width:78ch; }
+  .callout p:last-child{ margin-bottom:0; }
+
+  .callout.critical{ border-color:var(--critical); background:var(--critical-bg); }
+
+  code{ background:var(--surface-2); padding:1px 5px; border-radius:4px; font-size:.92em; }
+
+  footer{
+    max-width:1180px; margin:0 auto; padding:0 32px 60px; color:var(--ink-faint); font-size:12.5px;
+    font-family:var(--mono);
+  }
+
+  @media (max-width: 880px){
+    .shell{ grid-template-columns:1fr; }
+    nav.toc{ position:static; border-left:none; padding-left:0; flex-direction:row; flex-wrap:wrap; gap:4px 14px; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:8px; }
+    nav.toc .toc-h{ width:100%; }
+    nav.toc a{ margin-left:0; padding-left:0; border-left:none; }
+    nav.toc a.sep{ margin-top:0; padding-top:0; border-top:none; }
+    dl.ui-ref > div{ grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion: reduce){ *{ scroll-behavior:auto !important; } }
+  html{ scroll-behavior:smooth; }
+
+  .theme-toggle{
+    position:fixed; top:20px; right:24px; z-index:50;
+    width:40px; height:40px; border-radius:50%; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow);
+    color:var(--ink-soft); cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .theme-toggle:hover{ color:var(--ink); border-color:var(--accent); }
+  .theme-toggle:active{ transform:scale(.94); }
+  .theme-toggle svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .theme-toggle .i-moon{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-sun{ display:none; }
+  :root[data-theme="dark"] .theme-toggle .i-moon{ display:block; }
+  @media (prefers-reduced-motion: reduce){ .theme-toggle{ transition:none; } }
+  @media (max-width: 520px){ .theme-toggle{ top:14px; right:14px; width:36px; height:36px; } }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="cover-inner">
+    <div class="eyebrow"><span class="dot"></span>Hướng dẫn sử dụng · Crypto Strategy Lab</div>
+    <h1>Sổ Tay Sử Dụng</h1>
+    <p class="dek">Hướng dẫn từng bước cho cả 5 màn hình của ứng dụng: Realtime, Backtest, Search, Leaderboard và News Crawler. Nhãn trên giao diện được giữ nguyên tiếng Anh (đúng như hiển thị thật) kèm giải thích tiếng Việt bên cạnh.</p>
+    <div class="meta-row">
+      <span><b>Ứng dụng</b> Crypto Strategy Lab</span>
+      <span><b>Nhánh</b> dev @ d3ae1a3</span>
+      <span><b>Web</b> http://localhost:5173</span>
+      <span><b>API</b> http://localhost:3001/api</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-h">Mục lục</div>
+    <a href="#tongquan">Tổng quan</a>
+    <a href="#tienquyet">Điều kiện tiên quyết</a>
+    <a href="#realtime" class="sep">01 · Realtime</a>
+    <a href="#backtest">02 · Backtest</a>
+    <a href="#search">03 · Search</a>
+    <a href="#leaderboard">04 · Leaderboard</a>
+    <a href="#news">05 · News Crawler</a>
+    <a href="#dataset" class="sep">Mẫu dùng chung: Dataset</a>
+    <a href="#biet">Vấn đề đã biết</a>
+  </nav>
+
+  <main>
+
+    <section class="block" id="tongquan">
+      <h2 class="block-h">Tổng quan</h2>
+      <p class="block-sub">Crypto Strategy Lab là nền tảng để kết hợp nhiều chiến lược phân tích kỹ thuật (Strategy), backtest chúng trên dữ liệu lịch sử, và tự động tìm ra tổ hợp chiến lược tốt nhất. Ứng dụng có 5 tab, truy cập qua thanh điều hướng trên cùng:</p>
+      <dl class="ui-ref">
+        <div><dt>Realtime</dt><dd>Xem biểu đồ giá trực tiếp, tối đa 4 khung thời gian cùng lúc cho một cặp giao dịch.</dd></div>
+        <div><dt>Backtest</dt><dd>Chạy thử một chiến lược trên dữ liệu lịch sử và xem chi tiết kết quả.</dd></div>
+        <div><dt>Search</dt><dd>Tự động sinh và thử hàng loạt tổ hợp chiến lược, xếp hạng theo hiệu quả.</dd></div>
+        <div><dt>Leaderboard</dt><dd>Bảng xếp hạng các kết quả backtest đã hoàn tất, theo từng bộ dữ liệu.</dd></div>
+        <div><dt>News Crawler</dt><dd>Thu thập tin tức crypto và phân tích cảm xúc (sentiment) bằng AI.</dd></div>
+      </dl>
+    </section>
+
+    <section class="block" id="tienquyet">
+      <h2 class="block-h">Điều kiện tiên quyết — đọc trước khi dùng Backtest / Search / Leaderboard</h2>
+      <div class="callout">
+        <div class="callout-h">⚠ Phải mở tab Realtime và "xem" một cặp/khung thời gian trước</div>
+        <p>Dữ liệu nến lịch sử trong hệ thống <b>chỉ</b> được nạp vào khi tab <b>Realtime</b> mở một cặp giao dịch (Pair) và khung thời gian (Timeframe) nào đó — lúc đó hệ thống mới tự động tải khoảng 1.000 cây nến gần nhất cho cặp/khung thời gian đó. Việc tạo Dataset bằng khoảng ngày tự chọn (From Date / To Date) <b>không</b> tự gọi sang Binance để lấy thêm dữ liệu — nó chỉ đọc những gì đã có sẵn trong database.</p>
+        <p>Vì vậy, trước khi tạo Dataset để Backtest, Search hoặc xem Leaderboard, hãy mở tab <b>Realtime</b>, chọn Pair bạn cần, chờ vài giây để cả 4 ô biểu đồ hiện dữ liệu — timeframe nào đã hiện dữ liệu trên Realtime thì mới nên chọn timeframe đó khi tạo Dataset. Nếu bỏ qua bước này, Dataset tạo ra ngoài khoảng đã được nạp sẽ trả về dữ liệu trống hoặc thiếu, và Backtest/Search sẽ không có gì để chạy.</p>
+      </div>
+    </section>
+
+    <!-- ============ 01 REALTIME ============ -->
+    <div class="screen" id="realtime">
+      <div class="screen-head">
+        <span class="screen-num">01</span>
+        <span class="screen-title">Realtime — "Realtime Chart - Multi-timeframe"</span>
+      </div>
+      <div class="screen-path">/realtime</div>
+      <p class="screen-purpose">Xem biểu đồ giá trực tiếp cho một cặp giao dịch, hiển thị cùng lúc 4 khung thời gian độc lập trên một lưới 2×2. Đây cũng là nơi duy nhất nạp dữ liệu lịch sử vào hệ thống (xem mục Điều kiện tiên quyết ở trên).</p>
+
+      <h4>Cách sử dụng</h4>
+      <ol class="steps">
+        <li>Chọn cặp giao dịch ở ô <b>Pair</b> phía trên (BTCUSDT / ETHUSDT / SOLUSDT). Cả 4 biểu đồ sẽ tự động cập nhật theo cặp mới.</li>
+        <li>Bấm vào một trong 4 ô biểu đồ để chọn nó (ô được chọn có viền nổi bật) — mặc định 4 ô là 5m / 15m / 1h / 4h.</li>
+        <li>Dùng dãy nút <b>Timeframe</b> (1m 5m 15m 1h 4h 1d) để đổi khung thời gian — thao tác này chỉ áp dụng cho ô đang được chọn ở bước trên, 3 ô còn lại giữ nguyên.</li>
+        <li>Không cần bấm nút nào để bắt đầu — biểu đồ tự kết nối và chạy realtime ngay khi ô được hiển thị.</li>
+      </ol>
+
+      <h4>Các thành phần khác trên màn hình</h4>
+      <dl class="ui-ref">
+        <div><dt>Recent ticks</dt><dd>Bảng tick giao dịch trực tiếp (thời gian / giá / khối lượng / Buy-Sell), lệnh mua tô xanh, lệnh bán tô đỏ.</dd></div>
+        <div><dt>Annotations</dt><dd>Panel này hiện tại luôn hiển thị placeholder tĩnh, chưa thực sự vẽ tín hiệu Buy/Sell lên đây — muốn xem tín hiệu mua/bán thật, hãy sang tab <b>Backtest</b>.</dd></div>
+        <div><dt>System check</dt><dd>Kiểm tra nhanh tình trạng API / Postgres / Event bus / gói contracts dùng chung khi tải trang — chỉ chạy một lần, muốn chạy lại thì reload trang.</dd></div>
+      </dl>
+    </div>
+
+    <!-- ============ 02 BACKTEST ============ -->
+    <div class="screen" id="backtest">
+      <div class="screen-head">
+        <span class="screen-num">02</span>
+        <span class="screen-title">Backtest — "Strategy Backtest"</span>
+      </div>
+      <div class="screen-path">/backtest</div>
+      <p class="screen-purpose">Chạy thử một chiến lược (Strategy) trên một bộ dữ liệu lịch sử (Dataset) đã chọn, rồi xem chi tiết: biểu đồ nến kèm điểm vào/ra lệnh, bảng danh sách giao dịch, và các chỉ số đánh giá hiệu quả.</p>
+
+      <h4>Cách chạy một backtest</h4>
+      <ol class="steps">
+        <li>Ở panel <b>Dataset Setup</b> bên phải, chọn một Dataset có sẵn trong danh sách xổ xuống (hiển thị dạng <code>CẶP · KHUNG_THỜI_GIAN (từ ngày - đến ngày)</code>), hoặc bấm <b>+ New Dataset</b> để tạo mới (xem mục "Mẫu dùng chung: Dataset" bên dưới).</li>
+        <li>Ở panel <b>Strategy Configuration</b>, chọn một chiến lược trong danh sách xổ xuống (hiển thị dạng <code>Tên (id)</code>).</li>
+        <li>Nếu chiến lược có tham số cấu hình được, mục <b>Parameters (N)</b> sẽ hiện ra — mỗi tham số là một ô nhập số, kèm khoảng giá trị hợp lệ <code>[min .. max]</code> ngay bên cạnh nhãn.</li>
+        <li>Bấm nút <b>▶ Run Backtest</b> (nút chỉ bật khi đã chọn đủ Dataset và Strategy). Nút sẽ đổi chữ thành <b>Simulating…</b> trong lúc chạy.</li>
+        <li>Kết quả hiện ra ở cột giữa: biểu đồ nến có vẽ điểm vào/ra lệnh và các chỉ báo, cùng bảng <b>Executed Trades (N)</b> bên dưới. Bấm vào một dòng trong bảng để làm nổi bật và di chuyển biểu đồ tới đúng khoảng entry/exit của giao dịch đó (gợi ý hiện sẵn trên bảng: "Click row to highlight entry/exit on chart").</li>
+      </ol>
+
+      <h4>Đọc kết quả — panel Performance Evaluation</h4>
+      <dl class="ui-ref">
+        <div><dt>Total Return</dt><dd>Tổng lợi nhuận theo phần trăm trên toàn bộ khoảng backtest.</dd></div>
+        <div><dt>Profit / Loss</dt><dd>Lãi/lỗ tuyệt đối (không phải phần trăm).</dd></div>
+        <div><dt>Win Rate</dt><dd>Tỷ lệ phần trăm giao dịch có lãi trên tổng số giao dịch.</dd></div>
+        <div><dt>Max Drawdown</dt><dd>Mức sụt giảm tối đa từ đỉnh xuống đáy trong toàn bộ quá trình — càng gần 0 càng ổn định.</dd></div>
+        <div><dt>Trade Count</dt><dd>Tổng số giao dịch được mô phỏng.</dd></div>
+        <div><dt>Profit Factor</dt><dd>Tỷ lệ giữa tổng lãi và tổng lỗ.</dd></div>
+        <div><dt>Sharpe Ratio</dt><dd>Chỉ số đo lợi nhuận điều chỉnh theo rủi ro — giữ nguyên thuật ngữ tài chính chuẩn, càng cao càng tốt.</dd></div>
+      </dl>
+
+      <div class="tip">
+        <b>Lưu ý</b>
+        Nếu backtest không có giao dịch nào, bảng Trades sẽ hiện "No trades generated during this backtest window." — thường do khoảng ngày của Dataset quá hẹp hoặc chiến lược không sinh tín hiệu nào trong khoảng đó, không phải lỗi hệ thống.
+      </div>
+    </div>
+
+    <!-- ============ 03 SEARCH ============ -->
+    <div class="screen" id="search">
+      <div class="screen-head">
+        <span class="screen-num">03</span>
+        <span class="screen-title">Search — "Search Control"</span>
+      </div>
+      <div class="screen-path">/search</div>
+      <p class="screen-purpose">Vòng lặp tìm kiếm tổ hợp chiến lược tự động: chọn một tập chiến lược, hệ thống tự sinh hàng loạt tổ hợp (candidate), lần lượt backtest từng cái, và báo tiến độ theo thời gian thực.</p>
+
+      <div class="callout critical">
+        <div class="callout-h">⚠ Tính năng này hiện đang lỗi — xem BUG-01 trong Sổ Cái Lỗi</div>
+        <p>Ở phiên bản hiện tại (dev @ d3ae1a3), <b>mọi candidate luôn kết thúc ở trạng thái "Failed"</b> — không có candidate nào thành công, mục "Current best" sẽ không bao giờ xuất hiện, và run sẽ luôn dừng ở dòng <code>Ended because: candidates</code> ngay khi chạm số lượng candidate tối đa. Nguyên nhân là một lỗi wiring ở backend (worker chưa được kết nối với module đánh giá kết quả T13) — không phải do bạn cấu hình sai. Chi tiết kỹ thuật đầy đủ nằm trong <code>docs/bug-ledger.vi.html</code>, mục BUG-01.</p>
+      </div>
+
+      <h4>Cách bắt đầu một search run</h4>
+      <ol class="steps">
+        <li>Ở panel <b>Search Space</b>, tick chọn các chiến lược muốn đưa vào không gian tìm kiếm (mỗi ô hiện <code>tên chiến lược</code> kèm <code>nhóm / phiên bản / warmup</code>). Số lượng đã chọn hiện ở góc dưới dạng badge "N selected".</li>
+        <li>Ở panel <b>Dataset</b> bên phải, chọn Dataset (giống hệt cách chọn ở tab Backtest, hoặc bấm + New Dataset để tạo mới).</li>
+        <li>Ở panel <b>Run Bound</b>, chọn chế độ tìm kiếm ở ô <b>Mode</b>: <code>Domain guided</code> (mặc định — nhóm chiến lược theo Trend/Momentum/Volatility/Structure/Information rồi ghép có chủ đích) hoặc <code>Random</code> (ghép ngẫu nhiên hoàn toàn).</li>
+        <li>Nhập <b>Max candidates</b> — số lượng tổ hợp tối đa sẽ thử trước khi tự dừng (mặc định 125, cho phép 1–10.000).</li>
+        <li>Bấm <b>START SEARCH</b> (nút đổi thành "Starting..." trong lúc khởi động; chỉ bật khi đã chọn Dataset và ít nhất một chiến lược, và chưa có run nào khác đang chạy).</li>
+      </ol>
+
+      <h4>Đọc panel Run Progress</h4>
+      <dl class="ui-ref">
+        <div><dt>status badge</dt><dd>Trạng thái run hiện tại — nguyên văn <code>running</code> / <code>paused</code> / <code>ended</code>.</dd></div>
+        <div><dt>thanh tiến độ</dt><dd>Số candidate đã thử trên tổng Max candidates.</dd></div>
+        <div><dt>Candidates tested</dt><dd>Số tổ hợp đã backtest xong (thành công hoặc thất bại).</dd></div>
+        <div><dt>Queued</dt><dd>Số tổ hợp đang chờ trong hàng đợi.</dd></div>
+        <div><dt>Failed</dt><dd>Số tổ hợp backtest bị lỗi — xem cảnh báo ở trên.</dd></div>
+        <div><dt>Avg backtest</dt><dd>Thời gian trung bình mỗi lượt backtest (mili-giây).</dd></div>
+        <div><dt>Current best</dt><dd>Tổ hợp có kết quả tốt nhất tính đến hiện tại — chỉ xuất hiện khi có ít nhất một candidate thành công.</dd></div>
+        <div><dt>Ended because</dt><dd>Lý do run kết thúc — nguyên văn một trong các giá trị <code>candidates</code> (chạm số lượng tối đa) / <code>duration</code> (hết thời gian) / <code>plateau</code> (không cải thiện sau nhiều lượt) / <code>exhausted</code> (hết tổ hợp có thể sinh) / <code>stopped</code> (bị dừng thủ công).</dd></div>
+      </dl>
+
+      <h4>Điều khiển run đang chạy</h4>
+      <dl class="ui-ref">
+        <div><dt>Pause</dt><dd>Tạm dừng run (hiện khi đang chạy).</dd></div>
+        <div><dt>Resume</dt><dd>Chạy tiếp run đang tạm dừng (hiện khi đang paused).</dd></div>
+        <div><dt>Stop</dt><dd>Dừng hẳn run (hiện bất cứ khi nào run chưa kết thúc).</dd></div>
+      </dl>
+    </div>
+
+    <!-- ============ 04 LEADERBOARD ============ -->
+    <div class="screen" id="leaderboard">
+      <div class="screen-head">
+        <span class="screen-num">04</span>
+        <span class="screen-title">Leaderboard — "Strategy Leaderboard"</span>
+      </div>
+      <div class="screen-path">/leaderboard</div>
+      <p class="screen-purpose">Xem bảng xếp hạng các kết quả backtest đã hoàn tất (Experiment) của một Dataset, sắp xếp theo điểm số tổng hợp hoặc theo từng chỉ số riêng.</p>
+
+      <h4>Cách sử dụng</h4>
+      <ol class="steps">
+        <li>Chọn Dataset ở đầu trang (dùng chung với DatasetPicker của Backtest/Search).</li>
+        <li>Bấm vào tiêu đề bất kỳ cột nào (trừ cột "Candidate Recipe / Strategy") để sắp xếp theo cột đó — bấm lần nữa để đảo chiều tăng/giảm (có mũi tên ▲/▼ chỉ thứ tự hiện tại).</li>
+        <li>Bấm vào một dòng bất kỳ để mở lại kết quả đó ở tab Backtest — trang tự chuyển sang <code>/backtest</code> với đúng Dataset và chiến lược đầu tiên trong tổ hợp đã được điền sẵn (gợi ý trên bảng: "Click any row to inspect in Single-Run Backtest").</li>
+      </ol>
+
+      <h4>Các cột trong bảng</h4>
+      <dl class="ui-ref">
+        <div><dt>Rank</dt><dd>Thứ hạng — hạng #1 có màu nổi bật riêng.</dd></div>
+        <div><dt>Candidate Recipe</dt><dd>Công thức tổ hợp, ví dụ <code>ma (50%) + rsi (50%)</code>, kèm dòng phụ ghi mã hash và cách kết hợp (ví dụ <code>weighted (0.5)</code>).</dd></div>
+        <div><dt>Score</dt><dd>Điểm tổng hợp — công thức tính nằm trong ADR 0036.</dd></div>
+        <div><dt>Return / Win Rate / Max DD / Sharpe / Trades</dt><dd>Giống các chỉ số đã giải thích ở mục Backtest phía trên.</dd></div>
+      </dl>
+
+      <div class="tip">
+        <b>Lưu ý</b>
+        Bảng tự cập nhật ngay khi có một kết quả backtest mới cho đúng Dataset đang xem — không cần bấm refresh hay reload trang.
+      </div>
+    </div>
+
+    <!-- ============ 05 NEWS ============ -->
+    <div class="screen" id="news">
+      <div class="screen-head">
+        <span class="screen-num">05</span>
+        <span class="screen-title">News Crawler — "News Crawler &amp; Sentiment Analysis"</span>
+      </div>
+      <div class="screen-path">/news</div>
+      <p class="screen-purpose">Thu thập tin tức liên quan đến crypto và chạy phân tích cảm xúc (sentiment) bằng AI trên các bài đã thu thập. Màn hình này không phụ thuộc vào bước "xem" pair ở tab Realtime — dùng được ngay.</p>
+
+      <h4>Cách thu thập và phân tích tin tức</h4>
+      <ol class="steps">
+        <li>Chọn đồng coin muốn lọc ở dãy nút phía trên (<code>ALL BTC ETH SOL BNB XRP</code>) và nguồn tin ở ô <b>Source</b> (<code>All sources</code> / <code>CryptoCompare</code> / <code>RSS feeds</code>).</li>
+        <li>Bấm <b>Crawl news</b> để thu thập tin mới nhất (tối đa 20 bài mỗi lần, lọc theo coin/nguồn đã chọn). Nút đổi thành "Crawling…" trong lúc chạy.</li>
+        <li>Bấm <b>Run AI sentiment</b> để chấm điểm cảm xúc cho tối đa 50 bài chưa được chấm gần nhất (áp dụng trên toàn bộ tin, không lọc theo coin/nguồn đang chọn). Nút đổi thành "Analyzing…" trong lúc chạy.</li>
+        <li>Nếu một trong hai thao tác trên gặp lỗi, trình duyệt sẽ hiện một hộp thoại <b>alert</b> gốc của trình duyệt với thông báo lỗi — đây không phải là toast trong trang, hãy đóng hộp thoại rồi thử lại.</li>
+      </ol>
+
+      <h4>Đọc kết quả</h4>
+      <dl class="ui-ref">
+        <div><dt>Input News Feed</dt><dd>Danh sách bài viết — mỗi thẻ hiện nguồn, thời gian đăng, coin liên quan, nhãn cảm xúc (<code>POSITIVE</code>/<code>NEGATIVE</code>/<code>NEUTRAL</code> kèm điểm số, hoặc <code>UNSCORED</code> nếu chưa chấm), tiêu đề (bấm để mở bài gốc ở tab mới) và đoạn trích nội dung.</dd></div>
+        <div><dt>Sentiment Analytics</dt><dd>Thanh tỉ lệ 3 màu Positive/Neutral/Negative (di chuột vào từng đoạn để xem số lượng chính xác), cùng 4 ô số liệu: điểm trung bình, số bài đã chấm, số bài Positive/Negative, số bài Neutral.</dd></div>
+        <div><dt>Strategy Integration</dt><dd>Thẻ thông tin tĩnh giải thích ngưỡng dùng trong NewsSentimentStrategy: tín hiệu Long khi điểm &gt; +0.70, tín hiệu Short khi điểm &lt; -0.70.</dd></div>
+      </dl>
+    </div>
+
+    <section class="block" id="dataset">
+      <h2 class="block-h">Mẫu dùng chung: tạo Dataset mới</h2>
+      <p class="block-sub">Nút <b>+ New Dataset</b> xuất hiện giống hệt nhau ở cả ba tab Backtest, Search và Leaderboard — mở cùng một form, giải thích một lần ở đây.</p>
+      <dl class="ui-ref">
+        <div><dt>Pair</dt><dd>Cặp giao dịch.</dd></div>
+        <div><dt>Timeframe</dt><dd>Khung thời gian của nến.</dd></div>
+        <div><dt>From Date / To Date</dt><dd>Khoảng ngày lấy dữ liệu — phải nằm trong khoảng đã được nạp ở tab Realtime (xem mục Điều kiện tiên quyết); From phải nhỏ hơn To.</dd></div>
+        <div><dt>Entry Price Timing</dt><dd><code>Next Open (Realistic)</code>: vào lệnh ở giá mở cửa cây nến kế tiếp — sát thực tế hơn. <code>Signal Close (Theoretical)</code>: vào lệnh ngay ở giá đóng cửa cây nến phát tín hiệu — lý tưởng hoá.</dd></div>
+        <div><dt>Fee Rate (Fraction)</dt><dd>Phí giao dịch theo tỷ lệ phân số, ví dụ nhập <code>0.001</code> nghĩa là 0.1%.</dd></div>
+        <div><dt>Warmup Candles</dt><dd>Số cây nến "khởi động" bỏ qua đầu chuỗi dữ liệu để các chỉ báo (ví dụ MA50) có đủ dữ liệu tính toán trước khi bắt đầu backtest thật (0–500).</dd></div>
+        <div><dt>Profit Mode</dt><dd><code>Compound (Geometric)</code>: lãi/lỗ dồn gộp lãi kép qua từng lệnh. <code>Simple (Linear Sum)</code>: cộng dồn tuyến tính từng lệnh.</dd></div>
+        <div><dt>Drawdown Mode</dt><dd><code>Trade Close (Closed Equity)</code>: chỉ tính sụt giảm tại thời điểm đóng lệnh. <code>Per Candle (Intra-trade Wicks)</code>: tính cả sụt giảm trong lúc lệnh còn mở, theo từng cây nến.</dd></div>
+      </dl>
+      <p style="margin-top:14px; font-size:14.5px; color:var(--ink-soft);">Bấm <b>Create &amp; Select Dataset</b> để tạo và chọn luôn Dataset vừa tạo (nút đổi thành "Creating…" trong lúc xử lý).</p>
+    </section>
+
+    <section class="block" id="biet">
+      <h2 class="block-h">Vấn đề đã biết</h2>
+      <p class="block-sub">Xem danh sách đầy đủ, có bằng chứng kỹ thuật và hướng sửa đề xuất, tại <code>docs/bug-ledger.vi.html</code>. Tóm tắt nhanh:</p>
+      <dl class="ui-ref">
+        <div><dt>BUG-01</dt><dd>Nghiêm trọng — Search luôn báo mọi candidate "Failed" do worker chưa được kết nối với module đánh giá kết quả (T13). Tính năng Search hiện chưa dùng được.</dd></div>
+        <div><dt>BUG-02</dt><dd>Nhẹ — dòng "Ended because: ..." trên tab Search hiển thị nguyên văn mã trạng thái tiếng Anh (candidates/duration/plateau/exhausted/stopped) thay vì một câu dễ hiểu.</dd></div>
+      </dl>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Biên soạn dựa trên việc đọc trực tiếp mã nguồn của apps/web (từng màn hình, từng nhãn nút, từng thông điệp trạng thái) đối chiếu với ứng dụng đang chạy thật ở dev @ d3ae1a3.
+</footer>
+
+<button id="themeToggle" class="theme-toggle" type="button" title="Đổi giao diện sáng/tối">
+  <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+  <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/></svg>
+</button>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function label() {
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    btn.setAttribute('aria-label', isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+  }
+  label();
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('user-guide-theme', next); } catch (e) {}
+    label();
+  });
+})();
+</script>
+</body>
+</html>

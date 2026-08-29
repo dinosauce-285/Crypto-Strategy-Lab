@@ -1,5 +1,11 @@
-import type { NewsItem } from '@csl/contracts';
-import { clock } from '../market/format';
+import type { NewsItem, SentimentLabel } from '@csl/contracts';
+import { clock, date } from '../market/format';
+
+const SENTIMENT_LABELS: Record<SentimentLabel, string> = {
+  POSITIVE: 'TÍCH CỰC',
+  NEUTRAL: 'TRUNG LẬP',
+  NEGATIVE: 'TIÊU CỰC',
+};
 
 export interface NewsFeedProps {
   items: NewsItem[];
@@ -10,8 +16,7 @@ export interface NewsFeedProps {
 }
 
 function formatDate(epochMs: number): string {
-  const date = new Date(epochMs);
-  return `${date.toLocaleDateString()} ${clock(epochMs)}`;
+  return `${date(epochMs)} ${clock(epochMs)}`;
 }
 
 function formatScore(score: number): string {
@@ -29,7 +34,7 @@ export function NewsFeed({
   if (isLoading && items.length === 0) {
     return (
       <div className="panel">
-        <p className="state">Loading crypto news…</p>
+        <p className="state">Đang tải tin tức crypto…</p>
       </div>
     );
   }
@@ -38,10 +43,10 @@ export function NewsFeed({
     return (
       <div className="panel">
         <p className="state bad">
-          <strong>Failed to load news.</strong> {error}
+          <strong>Không tải được tin tức.</strong> {error}
         </p>
         <button type="button" className="btn-action" onClick={onRetry}>
-          Retry
+          Thử lại
         </button>
       </div>
     );
@@ -51,10 +56,11 @@ export function NewsFeed({
     return (
       <div className="panel">
         <div className="panel-head">
-          <h2>Input News Feed</h2>
+          <h2>Nguồn tin đầu vào</h2>
         </div>
         <p className="state">
-          No news articles collected yet. Click <strong>Crawl news</strong> to fetch latest articles from RSS feeds and CryptoCompare.
+          Chưa thu thập bài viết nào. Nhấn <strong>Thu thập tin tức</strong> để lấy bài viết
+          mới nhất từ RSS feed và CryptoCompare.
         </p>
         <div>
           <button
@@ -62,7 +68,7 @@ export function NewsFeed({
             className="btn-action btn-primary"
             onClick={onCollectPrompt}
           >
-            Crawl news now
+            Thu thập tin tức ngay
           </button>
         </div>
       </div>
@@ -72,8 +78,8 @@ export function NewsFeed({
   return (
     <div className="panel">
       <div className="panel-head">
-        <h2>Input News Feed</h2>
-        <span className="source">{items.length} articles</span>
+        <h2>Nguồn tin đầu vào</h2>
+        <span className="source">{items.length} bài viết</span>
       </div>
 
       <div className="panel" style={{ gap: '0.65rem' }}>
@@ -103,10 +109,10 @@ export function NewsFeed({
                         : 'badge badge-neu'
                   }
                 >
-                  {item.sentiment.label} {formatScore(item.sentiment.score)}
+                  {SENTIMENT_LABELS[item.sentiment.label]} {formatScore(item.sentiment.score)}
                 </span>
               ) : (
-                <span className="badge badge-neu">UNSCORED</span>
+                <span className="badge badge-neu">CHƯA CHẤM ĐIỂM</span>
               )}
             </div>
 
