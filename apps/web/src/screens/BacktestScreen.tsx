@@ -137,6 +137,18 @@ export function BacktestScreen() {
 
     if (!strategy) return;
 
+    // Validate parameters against defined min/max bounds before running
+    for (const spec of strategy.params) {
+      const val = params[spec.name] ?? spec.default;
+      if (typeof val !== 'number' || Number.isNaN(val) || val < spec.min || val > spec.max) {
+        setState({
+          kind: 'error',
+          message: `Tham số "${spec.name}" phải là số hợp lệ trong khoảng [${spec.min} .. ${spec.max}].`,
+        });
+        return;
+      }
+    }
+
     const payloadSpec: CandidateSpec = {
       rule: 'weighted',
       threshold: 0.5,
@@ -229,10 +241,10 @@ export function BacktestScreen() {
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (
-                    {state.result.candles.length} candles)
+                    {state.result.candles.length} nến)
                   </h2>
-                  <span className="source">
-                    Experiment ID: <code>{state.result.experimentId ?? 'tạm thời'}</code>
+                  <span className="source badge badge-neu">
+                    Mô phỏng hoàn tất
                   </span>
                 </div>
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { CandidateSpec, LeaderboardEntry, LeaderboardQuery, Metrics } from '@csl/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeOverallScore, SCORE_FORMULA_VERSION } from './score.calculator';
@@ -13,6 +13,13 @@ export class RankingService extends RankingPort {
   async getLeaderboard(query: LeaderboardQuery): Promise<LeaderboardEntry[]> {
     if (!query.datasetId) {
       return [];
+    }
+
+    const dataset = await this.prisma.dataset.findUnique({
+      where: { id: query.datasetId },
+    });
+    if (!dataset) {
+      throw new NotFoundException(`Dataset "${query.datasetId}" not found`);
     }
 
     const rows = await this.prisma.experiment.findMany({

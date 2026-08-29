@@ -43,14 +43,15 @@ export function computeTotalReturn(trades: readonly Trade[], profitMode: ProfitM
 }
 
 /**
- * Computes exact cumulative quote currency profit/loss as a decimal string.
+ * Computes cumulative linear trade return (fractional sum of all trade returns) as a decimal string.
+ * Since position sizing is not specified, this represents total uncompounded strategy return.
  */
 export function computeProfitLoss(trades: readonly Trade[]): string {
   if (trades.length === 0) return '0';
 
   let total = 0;
   for (const trade of trades) {
-    total += Number(trade.profit);
+    total += calculateTradeReturn(trade);
   }
   // Remove floating-point artifacts while preserving exact precision
   const rounded = Number(total.toFixed(8));

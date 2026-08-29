@@ -399,6 +399,7 @@ tbody tr:last-child td { border-bottom: 0; }
   position: fixed;
   inset: 0;
   background: rgba(42, 37, 31, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;

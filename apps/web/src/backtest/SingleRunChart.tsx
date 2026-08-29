@@ -241,12 +241,15 @@ export function SingleRunChart({
       }
     }
 
-    // 2. Build trade markers
+    // 2. Build trade markers (avoid cluttering when many trades exist)
     const markers: SeriesMarker<Time>[] = [];
+    const showAllText = trades.length <= 10 && !selectedTrade;
+
     for (const trade of trades) {
       const entryTime = Math.floor(trade.entryTime / 1000) as UTCTimestamp;
       const exitTime = Math.floor(trade.exitTime / 1000) as UTCTimestamp;
       const isHighlighted = selectedTrade?.seq === trade.seq;
+      const showText = isHighlighted || showAllText;
 
       // Entry marker
       markers.push({
@@ -254,7 +257,7 @@ export function SingleRunChart({
         position: trade.side === 'BUY' ? 'belowBar' : 'aboveBar',
         color: isHighlighted ? token('--accent') : trade.side === 'BUY' ? token('--ok') : token('--bad'),
         shape: trade.side === 'BUY' ? 'arrowUp' : 'arrowDown',
-        text: `${sideLabel(trade.side)} #${trade.seq}`,
+        text: showText ? `${sideLabel(trade.side)} #${trade.seq}` : undefined,
         size: isHighlighted ? 2 : 1,
       });
 
@@ -264,7 +267,7 @@ export function SingleRunChart({
         position: trade.side === 'BUY' ? 'aboveBar' : 'belowBar',
         color: isHighlighted ? token('--accent') : token('--muted'),
         shape: isHighlighted ? 'circle' : 'square',
-        text: `Thoát #${trade.seq}`,
+        text: showText ? `Thoát #${trade.seq}` : undefined,
         size: isHighlighted ? 2 : 1,
       });
     }
