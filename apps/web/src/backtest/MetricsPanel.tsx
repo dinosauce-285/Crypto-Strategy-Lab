@@ -106,7 +106,7 @@ export function MetricsPanel({ metrics }: MetricsPanelProps) {
             Sharpe Ratio
           </span>
           <span className={`stat-tile-val ${srColor}`}>
-            {sr !== undefined ? sr.toFixed(3) : '—'}
+            {sr !== undefined ? sr.toFixed(2) : '—'}
           </span>
           {srText && (
             <span className="source" style={{ fontSize: '0.68rem', lineHeight: '1.2' }}>
