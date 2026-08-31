@@ -1,4 +1,5 @@
 import type {
+  CandidateSpec,
   Dataset,
   RunEndReason,
   RunState,
@@ -14,6 +15,7 @@ const END_REASON_LABELS: Record<RunEndReason, string> = {
   plateau: 'Không cải thiện thêm trong một khoảng thời gian',
   exhausted: 'Không còn candidate nào để tạo thêm',
   stopped: 'Đã dừng thủ công',
+  abandoned: 'Tạm dừng quá lâu, đã tự kết thúc',
 };
 
 const RUN_STATE_LABELS: Record<RunState, string> = {
@@ -45,8 +47,12 @@ export function SearchProgressPanel({
 }: SearchProgressPanelProps) {
   if (!status) {
     return (
-      <div className="panel search-progress-panel empty-progress">
-        <p className="state">Hiện không có lượt tìm kiếm nào đang chạy.</p>
+      <div className="panel search-progress-panel empty-progress grows">
+        <p className="state">
+          Hiện không có lượt tìm kiếm nào đang chạy. Chọn strategy ở trên, đặt giới hạn ở bên
+          phải, rồi bấm <strong>Bắt đầu Search</strong> — tiến trình và ứng viên đang chạy sẽ
+          hiện ở đây.
+        </p>
         {requestError && <p className="state bad">{requestError}</p>}
       </div>
     );
@@ -61,11 +67,13 @@ export function SearchProgressPanel({
   const progress = budget ? Math.min(100, (tested / budget) * 100) : 0;
 
   return (
-    <div className="panel search-progress-panel">
+    <div className="panel search-progress-panel grows">
       <div className="panel-head">
         <h2>Tiến trình chạy</h2>
         <span className={`badge ${status.state === 'running' ? 'badge-pos' : 'badge-neu'}`}>
-          {RUN_STATE_LABELS[status.state]}
+          {status.state === 'running' && status.current
+            ? 'Đang backtest…'
+            : RUN_STATE_LABELS[status.state]}
         </span>
       </div>
 
@@ -97,6 +105,17 @@ export function SearchProgressPanel({
               : '-'
           }
         />
+      </div>
+
+      <div className="search-recipe">
+        <span className="stat-tile-label">Đang backtest</span>
+        {status.current ? (
+          <strong>{candidateLabel(status.current.spec, strategies)}</strong>
+        ) : (
+          <span className="state">
+            {status.state === 'running' ? 'Đang lấy ứng viên tiếp theo…' : '—'}
+          </span>
+        )}
       </div>
 
       <div className="search-recipe">
@@ -148,6 +167,18 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function datasetLabel(dataset: Dataset): string {
   return `${dataset.pair} / ${dataset.timeframe} / ${date(dataset.from)} - ${date(dataset.to)}`;
+}
+
+/** Section 46 step 4 writes this as `MA20 + RSI14 + SR` — a name plus what it was tuned to. */
+function candidateLabel(spec: CandidateSpec, strategies: StrategyMeta[]): string {
+  return spec.members
+    .map((member) => {
+      const meta = strategies.find((s) => s.id === member.id && s.version === member.version);
+      const params = Object.values(member.params);
+      const tuning = params.length > 0 ? ` ${params.join('/')}` : '';
+      return `${meta?.name ?? member.id}${tuning}`;
+    })
+    .join(' + ');
 }
 
 function strategyLabel(ref: StrategyRef, strategies: StrategyMeta[]): string {

@@ -4,11 +4,14 @@ import { Queue, QueueEvents } from 'bullmq';
 import { Redis } from 'ioredis';
 import type { BacktestJob } from '@csl/contracts';
 import type { JobOutcome } from './job-outcome';
+import { DomainError } from '../http/domain-error';
 
 export const BACKTEST_QUEUE = 'backtest';
 export const BACKTEST_JOB = 'candidate';
 
-export class QueueUnavailableError extends Error {
+export class QueueUnavailableError extends DomainError {
+  readonly status = 503;
+
   constructor() {
     super('the backtest queue is unreachable — is Redis running on REDIS_URL?');
   }

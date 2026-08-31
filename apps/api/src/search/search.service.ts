@@ -6,16 +6,19 @@ import {
   searchRunTopic,
   type RunBound,
   type RunEndReason,
+  type RunState,
   type RunStatus,
   type SearchMode,
   type StrategyRef,
 } from '@csl/contracts';
+import { DomainError } from '../http/domain-error';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { ActiveRun } from './active-run';
 import { BacktestQueue } from './backtest-queue';
+import { DatasetRepository } from './dataset.repository';
 import type { JobOutcome } from './job-outcome';
 import { CandidateSource } from './ports/candidate-source.port';
-import { reachedBound } from './run-bounds';
+import { leaseExpired, reachedBound } from './run-bounds';
 import { specHash } from './spec-hash';
 
 const TICK_MS = 500;
@@ -31,6 +34,7 @@ export class SearchService implements OnModuleDestroy {
     private readonly queue: BacktestQueue,
     private readonly channel: ChannelPublisher,
     private readonly events: EventEmitter2,
+    private readonly datasets: DatasetRepository,
     @Optional() private readonly source?: CandidateSource,
   ) {
     this.queue.onStarted((jobId) => this.onStarted(jobId));
@@ -49,6 +53,7 @@ export class SearchService implements OnModuleDestroy {
     mode: SearchMode,
   ): Promise<RunStatus> {
     if (this.run && this.run.state !== 'ended') throw new RunAlreadyActiveError();
+    if (!(await this.datasets.findById(datasetId))) throw new DatasetNotFoundError(datasetId);
     await this.queue.clearOrphans();
     this.source?.reset(mode, strategyRefs);
     const run = new ActiveRun(datasetId, strategyRefs, bound, mode);
@@ -60,16 +65,16 @@ export class SearchService implements OnModuleDestroy {
   }
 
   async pause(): Promise<RunStatus> {
-    const run = this.running();
+    const run = this.inState('running');
     await this.queue.pause();
-    run.state = 'paused';
+    run.pause(Date.now());
     return this.publish(run);
   }
 
   async resume(): Promise<RunStatus> {
-    const run = this.current();
+    const run = this.inState('paused');
     await this.queue.resume();
-    run.state = 'running';
+    run.resume(Date.now());
     return this.publish(run);
   }
 
@@ -91,15 +96,26 @@ export class SearchService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * A paused run is asked about its lease and nothing else — every other bound is a budget,
+   * and a budget is not spent while paused (ADR 0045).
+   */
   private async advance(run: ActiveRun): Promise<void> {
     run.queued = await this.queue.waiting();
-    if (run.state === 'running') await this.fill(run);
+    const now = Date.now();
 
+    if (run.state === 'paused') {
+      if (leaseExpired(run.currentPauseMs(now))) await this.close(run, 'abandoned');
+      return;
+    }
+
+    await this.fill(run);
     const reason = reachedBound({
       bound: run.bound,
       counters: run.counters(),
       startedAt: run.startedAt,
-      now: Date.now(),
+      now,
+      pausedMs: run.pausedMs(now),
       sinceImprovement: run.sinceImprovement,
       sourceExhausted: run.sourceExhausted,
     });
@@ -149,10 +165,13 @@ export class SearchService implements OnModuleDestroy {
   private onStarted(jobId: string): void {
     const run = this.run;
     if (!run) return;
+    const pending = run.pending.get(jobId);
+    if (pending) run.recordStarted(jobId, { spec: pending.spec, specHash: pending.specHash });
     this.events.emit(EVENTS.BacktestStarted, {
-      specHash: run.pending.get(jobId)?.specHash ?? jobId,
+      specHash: pending?.specHash ?? jobId,
       datasetId: run.datasetId,
     });
+    void this.publish(run);
   }
 
   private onFinished(jobId: string, outcome: JobOutcome): void {
@@ -161,6 +180,7 @@ export class SearchService implements OnModuleDestroy {
     const pending = run.pending.get(jobId);
     if (!pending) return;
     run.pending.delete(jobId);
+    run.recordSettled(jobId);
     run.recordFinished(outcome, pending.spec);
     if (outcome.experimentId && outcome.metrics) {
       this.events.emit(EVENTS.BacktestCompleted, {
@@ -182,6 +202,7 @@ export class SearchService implements OnModuleDestroy {
     if (!run) return;
     if (!run.pending.has(jobId)) return;
     run.pending.delete(jobId);
+    run.recordSettled(jobId);
     run.recordFailed();
     this.logger.warn(`candidate failed permanently: ${reason}`);
     void this.publish(run);
@@ -220,21 +241,45 @@ export class SearchService implements OnModuleDestroy {
     return this.run;
   }
 
-  private running(): ActiveRun {
+  /**
+   * "No run" and "the run is in the other state" are different answers to different
+   * mistakes; one 404 for both told a caller that a run it can see does not exist.
+   */
+  private inState(want: RunState): ActiveRun {
     const run = this.current();
-    if (run.state !== 'running') throw new NoActiveRunError();
+    if (run.state !== want) throw new RunNotInStateError(run.state, want);
     return run;
   }
 }
 
-export class NoActiveRunError extends Error {
+export class NoActiveRunError extends DomainError {
+  readonly status = 404;
+
   constructor() {
     super('no run is active');
   }
 }
 
-export class RunAlreadyActiveError extends Error {
+export class RunNotInStateError extends DomainError {
+  readonly status = 409;
+
+  constructor(actual: RunState, wanted: RunState) {
+    super(`the run is ${actual}, not ${wanted}`);
+  }
+}
+
+export class RunAlreadyActiveError extends DomainError {
+  readonly status = 409;
+
   constructor() {
     super('a run is already active — stop it before starting another');
+  }
+}
+
+export class DatasetNotFoundError extends DomainError {
+  readonly status = 404;
+
+  constructor(datasetId: string) {
+    super(`Dataset "${datasetId}" not found`);
   }
 }

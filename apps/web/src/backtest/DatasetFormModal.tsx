@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Dataset, Timeframe } from '@csl/contracts';
+import { TIMEFRAMES, type Dataset, type Timeframe } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { PAIRS } from '../market/PairSelect';
-
-const TIMEFRAMES: Timeframe[] = ['1m', '5m', '15m', '1h', '4h', '1d'];
 
 interface DatasetFormModalProps {
   onClose: () => void;
@@ -129,17 +128,11 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
         },
       };
 
-      const res = await fetch('/api/datasets', {
+      const created = await apiFetch<Dataset>('/api/datasets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        throw new Error(`Tạo dataset thất bại: Lỗi HTTP ${res.status}`);
-      }
-
-      const created: Dataset = await res.json();
       onCreated(created);
       onClose();
     } catch (err) {

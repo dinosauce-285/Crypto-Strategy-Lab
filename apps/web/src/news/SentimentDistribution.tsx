@@ -13,6 +13,10 @@ export interface SentimentDistributionProps {
   error: string | null;
 }
 
+function segment(offsetPct: number, widthPct: number): string {
+  return `translateX(${offsetPct}%) scaleX(${widthPct / 100})`;
+}
+
 export function SentimentDistribution({
   coin,
   stats,
@@ -70,17 +74,17 @@ export function SentimentDistribution({
             <div className="sentiment-bar" aria-label="Phân bố sentiment">
               <div
                 className="sentiment-bar-seg seg-pos"
-                style={{ width: `${posPct}%` }}
+                style={{ transform: segment(0, posPct) }}
                 title={`Tích cực: ${posPct}% (${posCount})`}
               />
               <div
                 className="sentiment-bar-seg seg-neu"
-                style={{ width: `${neuPct}%` }}
+                style={{ transform: segment(posPct, neuPct) }}
                 title={`Trung lập: ${neuPct}% (${neuCount})`}
               />
               <div
                 className="sentiment-bar-seg seg-neg"
-                style={{ width: `${negPct}%` }}
+                style={{ transform: segment(posPct + neuPct, negPct) }}
                 title={`Tiêu cực: ${negPct}% (${negCount})`}
               />
             </div>

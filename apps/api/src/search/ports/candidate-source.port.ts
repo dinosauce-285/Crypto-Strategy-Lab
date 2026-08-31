@@ -1,4 +1,5 @@
 import type { CandidateSpec, RunHistory, SearchMode, StrategyRef } from '@csl/contracts';
+import { DomainError } from '../../http/domain-error';
 
 /**
  * Where candidates come from — T17. It is handed the history of the run so far and
@@ -12,4 +13,6 @@ export abstract class CandidateSource {
   abstract next(history: RunHistory, count: number): Promise<CandidateSpec[]>;
 }
 
-export class InvalidSearchSpaceError extends Error {}
+export class InvalidSearchSpaceError extends DomainError {
+  readonly status = 400;
+}

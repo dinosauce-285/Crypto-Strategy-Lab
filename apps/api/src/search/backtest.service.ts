@@ -9,6 +9,7 @@ import { StrategyFactory } from './ports/strategy-factory.port';
 import { BacktestRunner } from './ports/backtest-runner.port';
 import { DatasetRepository } from './dataset.repository';
 import { validateSpec } from './spec-validator';
+import { validateDataset } from './dataset-validator';
 import type { SingleRunRequestDto, SingleRunResponseDto } from './dto/single-run.dto';
 import { specHash } from './spec-hash';
 
@@ -69,7 +70,7 @@ export class BacktestService {
         throw new NotFoundException(`Dataset "${request.datasetId}" not found`);
       }
     } else if (request.dataset) {
-      dataset = await this.createDatasetWithHistory(request.dataset);
+      dataset = await this.createDatasetWithHistory(validateDataset(request.dataset));
     } else {
       throw new BadRequestException('Either datasetId or dataset definition must be provided');
     }

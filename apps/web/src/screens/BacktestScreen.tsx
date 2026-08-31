@@ -8,6 +8,7 @@ import {
   type StrategyParams,
   type Timeframe,
 } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { DatasetPicker } from '../backtest/DatasetPicker';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
@@ -74,7 +75,7 @@ export function BacktestScreen() {
     setSelectedTrade(null);
 
     try {
-      const res = await fetch('/api/backtest/run', {
+      const body = await apiFetch<SingleRunResult>('/api/backtest/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,12 +83,6 @@ export function BacktestScreen() {
           spec: targetSpec,
         }),
       });
-
-      if (!res.ok) {
-        throw new Error(`Chạy backtest thất bại: Lỗi HTTP ${res.status}`);
-      }
-
-      const body: SingleRunResult = await res.json();
       setState({ kind: 'ready', result: body });
     } catch (err) {
       setState({ kind: 'error', message: (err as Error).message });
@@ -175,7 +170,7 @@ export function BacktestScreen() {
         <div className="screen-main">
           {state.kind === 'idle' && (
             <div
-              className="panel"
+              className="panel grows"
               style={{
                 minHeight: '360px',
                 border: '1px dashed var(--line)',
@@ -195,7 +190,7 @@ export function BacktestScreen() {
 
           {state.kind === 'loading' && (
             <div
-              className="panel"
+              className="panel grows"
               style={{
                 minHeight: '360px',
                 border: '1px solid var(--line)',
@@ -213,7 +208,7 @@ export function BacktestScreen() {
 
           {state.kind === 'error' && (
             <div
-              className="panel"
+              className="panel grows"
               style={{
                 minHeight: '360px',
                 border: '1px solid var(--line)',
@@ -237,7 +232,7 @@ export function BacktestScreen() {
 
           {state.kind === 'ready' && (
             <>
-              <div className="panel">
+              <div className="panel grows">
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (

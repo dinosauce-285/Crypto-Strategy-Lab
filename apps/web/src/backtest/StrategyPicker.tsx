@@ -121,6 +121,7 @@ export function StrategyPicker({
               style={{ width: '100%', minWidth: 0 }}
               disabled={loading || strategies.length === 0}
               value={selectedStrategy?.id ?? ''}
+              title={selectedStrategy?.name}
               onChange={(e) => handleStrategyChange(e.target.value)}
             >
               {loading ? (

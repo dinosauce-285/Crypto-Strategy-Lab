@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import {
   MERGE_RULES,
   type CandidateMember,
@@ -6,11 +5,10 @@ import {
   type MergeRule,
   type StrategyParams,
 } from '@csl/contracts';
+import { DomainError } from '../http/domain-error';
 
-export class InvalidSpecError extends BadRequestException {
-  constructor(reason: string) {
-    super(reason);
-  }
+export class InvalidSpecError extends DomainError {
+  readonly status = 400;
 }
 
 const GRID = 0.1;

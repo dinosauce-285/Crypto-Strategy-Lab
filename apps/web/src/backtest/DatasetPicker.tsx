@@ -65,6 +65,11 @@ export function DatasetPicker({
     }
   };
 
+  // The column is narrower than the label, so the full text lives on the control's title.
+  const selectedLabel = selectedDataset
+    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${formatDatasetRange(selectedDataset.from, selectedDataset.to)})`
+    : undefined;
+
   return (
     <div className="dataset-picker-wrap">
       <div
@@ -97,6 +102,7 @@ export function DatasetPicker({
         onChange={handleChange}
         disabled={disabled || loading || datasets.length === 0}
         aria-label="Chọn dataset"
+        title={selectedLabel}
         style={{ width: '100%' }}
       >
         {datasets.length === 0 && (

@@ -1,19 +1,8 @@
-import {
-  BadRequestException,
-  Body,
-  ConflictException,
-  Controller,
-  Get,
-  NotFoundException,
-  Post,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, NotFoundException, Post } from '@nestjs/common';
 import type { RunStatus } from '@csl/contracts';
-import { QueueUnavailableError } from './backtest-queue';
 import { parseStartRun } from './dto/start-run.dto';
-import { InvalidSearchSpaceError } from './ports/candidate-source.port';
 import { isBounded } from './run-bounds';
-import { NoActiveRunError, RunAlreadyActiveError, SearchService } from './search.service';
+import { SearchService } from './search.service';
 
 @Controller('search')
 export class SearchController {
@@ -27,34 +16,27 @@ export class SearchController {
         'a run needs maxCandidates, maxDurationMs, or both — see docs/decisions/0021',
       );
     }
-    try {
-      return await this.search.start(
-        request.datasetId,
-        request.strategyRefs,
-        request.bound,
-        request.mode,
-      );
-    } catch (error) {
-      if (error instanceof RunAlreadyActiveError) throw new ConflictException(error.message);
-      if (error instanceof QueueUnavailableError) throw new ServiceUnavailableException(error.message);
-      if (error instanceof InvalidSearchSpaceError) throw new BadRequestException(error.message);
-      throw error;
-    }
+    return this.search.start(
+      request.datasetId,
+      request.strategyRefs,
+      request.bound,
+      request.mode,
+    );
   }
 
   @Post('runs/pause')
   pause(): Promise<RunStatus> {
-    return this.guard(() => this.search.pause());
+    return this.search.pause();
   }
 
   @Post('runs/resume')
   resume(): Promise<RunStatus> {
-    return this.guard(() => this.search.resume());
+    return this.search.resume();
   }
 
   @Post('runs/stop')
   stop(): Promise<RunStatus> {
-    return this.guard(() => this.search.stop());
+    return this.search.stop();
   }
 
   @Get('runs/current')
@@ -69,15 +51,6 @@ export class SearchController {
       return parseStartRun(body);
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : 'invalid request');
-    }
-  }
-
-  private async guard(action: () => Promise<RunStatus>): Promise<RunStatus> {
-    try {
-      return await action();
-    } catch (error) {
-      if (error instanceof NoActiveRunError) throw new NotFoundException(error.message);
-      throw error;
     }
   }
 }

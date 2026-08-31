@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { DomainErrorFilter } from './http/domain-error.filter';
 import { ChannelIoAdapter } from './realtime/channel-io.adapter';
 
 async function bootstrap() {
@@ -13,6 +14,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   app.enableCors({ origin: webOrigin });
+  app.useGlobalFilters(new DomainErrorFilter());
   app.useWebSocketAdapter(new ChannelIoAdapter(app, webOrigin));
 
   const port = config.get<number>('API_PORT', 3001);

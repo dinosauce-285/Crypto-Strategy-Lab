@@ -14,6 +14,7 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
+import { apiFetch } from '../api/request';
 import { useChannelStatus, useTopic } from '../channel/use-topic';
 import { clock } from './format';
 
@@ -30,7 +31,9 @@ const DEFAULT_WINDOW: Record<Timeframe, number> = {
   '1m': 120, // ~2 hours
   '5m': 96, // ~8 hours
   '15m': 96, // ~1 day
+  '30m': 96, // ~2 days
   '1h': 120, // ~5 days
+  '2h': 120, // ~10 days
   '4h': 90, // ~15 days
   '1d': 90, // ~3 months
 };
@@ -50,9 +53,7 @@ const inFlightHistory = new Map<string, Promise<{ candles: Candle[] }>>();
 function fetchHistory(url: string): Promise<{ candles: Candle[] }> {
   const pending = inFlightHistory.get(url);
   if (pending) return pending;
-  const request = fetch(url)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
-    .finally(() => inFlightHistory.delete(url));
+  const request = apiFetch<{ candles: Candle[] }>(url).finally(() => inFlightHistory.delete(url));
   inFlightHistory.set(url, request);
   return request;
 }

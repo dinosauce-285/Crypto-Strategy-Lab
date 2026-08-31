@@ -1,3 +1,4 @@
+import { BOUND_CEILINGS } from '../run-bounds';
 import { parseStartRun } from './start-run.dto';
 
 describe('parseStartRun', () => {
@@ -61,5 +62,27 @@ describe('parseStartRun', () => {
       { id: 'ma', version: 1 },
       { id: 'ma', version: 2 },
     ]);
+  });
+});
+
+describe('parseStartRun bound ceilings', () => {
+  const run = (bound: Record<string, unknown>) =>
+    parseStartRun({ datasetId: 'dataset-1', strategyRefs: [{ id: 'ma', version: 1 }], bound });
+
+  it.each(['maxCandidates', 'maxDurationMs', 'noImprovementLimit'])(
+    'refuses %s of 1e308, which is bounded only on paper',
+    (field) => {
+      expect(() => run({ [field]: 1e308 })).toThrow(`${field} must not exceed`);
+    },
+  );
+
+  it('accepts a bound sitting exactly on the ceiling', () => {
+    expect(run({ maxCandidates: BOUND_CEILINGS.maxCandidates }).bound.maxCandidates).toBe(
+      BOUND_CEILINGS.maxCandidates,
+    );
+  });
+
+  it('still refuses zero and still refuses a missing bound object', () => {
+    expect(() => run({ maxCandidates: 0 })).toThrow('a bound must be a positive number');
   });
 });

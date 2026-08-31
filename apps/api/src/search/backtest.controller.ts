@@ -23,8 +23,7 @@ export class BacktestController {
 
   @Post('datasets')
   createDataset(@Body() body: unknown): Promise<Dataset> {
-    const validated = validateDataset(body);
-    return this.backtestService.createDataset(validated);
+    return this.backtestService.createDataset(validateDataset(body));
   }
 
   @Post('backtest/run')
