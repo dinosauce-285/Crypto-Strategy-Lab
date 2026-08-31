@@ -14,6 +14,7 @@ export interface NewsFeedProps {
   error: string | null;
   onRetry: () => void;
   onCollectPrompt: () => void;
+  isCollecting?: boolean;
 }
 
 function formatDate(epochMs: number): string {
@@ -32,6 +33,7 @@ export function NewsFeed({
   error,
   onRetry,
   onCollectPrompt,
+  isCollecting = false,
 }: NewsFeedProps) {
   if (isLoading && items.length === 0) {
     return (
@@ -69,8 +71,9 @@ export function NewsFeed({
             type="button"
             className="btn-action btn-primary"
             onClick={onCollectPrompt}
+            disabled={isCollecting}
           >
-            Thu thập tin tức ngay
+            {isCollecting ? 'Đang thu thập…' : 'Thu thập tin tức ngay'}
           </button>
         </div>
       </div>

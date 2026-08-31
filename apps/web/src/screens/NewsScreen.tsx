@@ -147,6 +147,7 @@ export function NewsScreen() {
             error={newsError}
             onRetry={fetchNews}
             onCollectPrompt={handleCollect}
+            isCollecting={isCollecting}
           />
         </div>
 
