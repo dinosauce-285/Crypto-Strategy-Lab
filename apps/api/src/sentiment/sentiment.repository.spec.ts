@@ -7,6 +7,7 @@ describe('SentimentRepository', () => {
   let repository: SentimentRepository;
   let mockPrisma: {
     news: {
+      findUnique: jest.Mock;
       findMany: jest.Mock;
       update: jest.Mock;
       groupBy: jest.Mock;
@@ -62,6 +63,7 @@ describe('SentimentRepository', () => {
   beforeEach(() => {
     mockPrisma = {
       news: {
+        findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
         groupBy: jest.fn(),
@@ -157,6 +159,30 @@ describe('SentimentRepository', () => {
 
       const item = fromRow(partialRow);
       expect(item.sentiment).toBeUndefined();
+    });
+  });
+
+  describe('findById', () => {
+    it('returns NewsItem when article is found by id', async () => {
+      mockPrisma.news.findUnique.mockResolvedValue(mockDbRow);
+
+      const result = await repository.findById('news-1');
+
+      expect(mockPrisma.news.findUnique).toHaveBeenCalledWith({
+        where: { id: 'news-1' },
+      });
+      expect(result).toEqual(sampleNewsItem);
+    });
+
+    it('returns null when article is not found', async () => {
+      mockPrisma.news.findUnique.mockResolvedValue(null);
+
+      const result = await repository.findById('non-existent');
+
+      expect(mockPrisma.news.findUnique).toHaveBeenCalledWith({
+        where: { id: 'non-existent' },
+      });
+      expect(result).toBeNull();
     });
   });
 

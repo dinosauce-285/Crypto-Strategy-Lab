@@ -16,6 +16,7 @@ class MockSentimentProvider extends SentimentProviderPort {
 describe('SentimentService', () => {
   let service: SentimentService;
   let mockRepository: {
+    findById: jest.Mock;
     findUnscored: jest.Mock;
     updateSentiment: jest.Mock;
     updateSentimentBatch: jest.Mock;
@@ -62,6 +63,7 @@ describe('SentimentService', () => {
 
   beforeEach(() => {
     mockRepository = {
+      findById: jest.fn(),
       findUnscored: jest.fn(),
       updateSentiment: jest.fn(),
       updateSentimentBatch: jest.fn(),
@@ -184,7 +186,7 @@ describe('SentimentService', () => {
 
   describe('analyzeArticle', () => {
     it('analyzes a single unscored article, updates repository, emits event and returns updated item', async () => {
-      mockRepository.findUnscored.mockResolvedValue([sampleUnscoredItem1]);
+      mockRepository.findById.mockResolvedValue(sampleUnscoredItem1);
       mockProvider.analyzeMock.mockResolvedValue(sampleSentimentPositive);
       const updatedItem: NewsItem = {
         ...sampleUnscoredItem1,
@@ -194,7 +196,7 @@ describe('SentimentService', () => {
 
       const result = await service.analyzeArticle('news-1');
 
-      expect(mockRepository.findUnscored).toHaveBeenCalledWith(1, ['news-1']);
+      expect(mockRepository.findById).toHaveBeenCalledWith('news-1');
       expect(mockProvider.analyzeMock).toHaveBeenCalledWith(
         'Bitcoin Surges to New High\n\nMassive bullish rally across crypto markets.',
       );
@@ -206,12 +208,28 @@ describe('SentimentService', () => {
       expect(result).toEqual(updatedItem);
     });
 
-    it('returns null when article is not found in unscored items', async () => {
-      mockRepository.findUnscored.mockResolvedValue([]);
+    it('returns existing item directly without re-analyzing when article is already scored', async () => {
+      const alreadyScoredItem: NewsItem = {
+        ...sampleUnscoredItem1,
+        sentiment: sampleSentimentPositive,
+      };
+      mockRepository.findById.mockResolvedValue(alreadyScoredItem);
+
+      const result = await service.analyzeArticle('news-1');
+
+      expect(mockRepository.findById).toHaveBeenCalledWith('news-1');
+      expect(mockProvider.analyzeMock).not.toHaveBeenCalled();
+      expect(mockRepository.updateSentiment).not.toHaveBeenCalled();
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+      expect(result).toEqual(alreadyScoredItem);
+    });
+
+    it('returns null when article is not found', async () => {
+      mockRepository.findById.mockResolvedValue(null);
 
       const result = await service.analyzeArticle('non-existent');
 
-      expect(mockRepository.findUnscored).toHaveBeenCalledWith(1, ['non-existent']);
+      expect(mockRepository.findById).toHaveBeenCalledWith('non-existent');
       expect(mockProvider.analyzeMock).not.toHaveBeenCalled();
       expect(mockRepository.updateSentiment).not.toHaveBeenCalled();
       expect(mockEventEmitter.emit).not.toHaveBeenCalled();
@@ -219,7 +237,7 @@ describe('SentimentService', () => {
     });
 
     it('returns null when repository update returns null', async () => {
-      mockRepository.findUnscored.mockResolvedValue([sampleUnscoredItem1]);
+      mockRepository.findById.mockResolvedValue(sampleUnscoredItem1);
       mockProvider.analyzeMock.mockResolvedValue(sampleSentimentPositive);
       mockRepository.updateSentiment.mockResolvedValue(null);
 
@@ -231,7 +249,7 @@ describe('SentimentService', () => {
     });
 
     it('rethrows error when provider fails during analyzeArticle', async () => {
-      mockRepository.findUnscored.mockResolvedValue([sampleUnscoredItem1]);
+      mockRepository.findById.mockResolvedValue(sampleUnscoredItem1);
       mockProvider.analyzeMock.mockRejectedValue(new Error('API key invalid'));
 
       await expect(service.analyzeArticle('news-1')).rejects.toThrow('API key invalid');
