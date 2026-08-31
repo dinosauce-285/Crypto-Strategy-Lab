@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import type { NewsItem, SentimentLabel } from '@csl/contracts';
 import { clock, date } from '../market/format';
+
+const DEFAULT_VISIBLE_COUNT = 10;
+const MAX_VISIBLE_COIN_PILLS = 3;
 
 const SENTIMENT_LABELS: Record<SentimentLabel, string> = {
   POSITIVE: 'TÍCH CỰC',
@@ -35,6 +39,8 @@ export function NewsFeed({
   onCollectPrompt,
   isCollecting = false,
 }: NewsFeedProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (isLoading && items.length === 0) {
     return (
       <div className="panel">
@@ -80,6 +86,8 @@ export function NewsFeed({
     );
   }
 
+  const displayedItems = isExpanded ? items : items.slice(0, DEFAULT_VISIBLE_COUNT);
+
   return (
     <div className="panel">
       <div className="panel-head">
@@ -98,52 +106,80 @@ export function NewsFeed({
       )}
 
       <div className="panel" style={{ gap: '0.65rem' }}>
-        {items.map((item) => (
-          <article key={item.id} className="news-card">
-            <div className="news-card-head">
-              <div className="news-meta">
-                <span className="source" style={{ fontWeight: 600 }}>
-                  {item.source}
-                </span>
-                <span>•</span>
-                <span>{formatDate(item.publishedAt)}</span>
-                {item.relatedCoins.map((coin) => (
-                  <span key={coin} className="coin-pill">
-                    {coin}
+        {displayedItems.map((item) => {
+          const visibleCoins = item.relatedCoins.slice(0, MAX_VISIBLE_COIN_PILLS);
+          const hiddenCoinsCount = item.relatedCoins.length - MAX_VISIBLE_COIN_PILLS;
+
+          return (
+            <article key={item.id} className="news-card">
+              <div className="news-card-head">
+                <div className="news-meta">
+                  <span className="source" style={{ fontWeight: 600 }}>
+                    {item.source}
                   </span>
-                ))}
+                  <span>•</span>
+                  <span>{formatDate(item.publishedAt)}</span>
+                  {visibleCoins.map((coin) => (
+                    <span key={coin} className="coin-pill">
+                      {coin}
+                    </span>
+                  ))}
+                  {hiddenCoinsCount > 0 && (
+                    <span
+                      className="coin-pill"
+                      style={{ color: 'var(--muted)' }}
+                      title={item.relatedCoins.join(', ')}
+                    >
+                      +{hiddenCoinsCount}
+                    </span>
+                  )}
+                </div>
+
+                {item.sentiment ? (
+                  <span
+                    className={
+                      item.sentiment.label === 'POSITIVE'
+                        ? 'badge badge-pos'
+                        : item.sentiment.label === 'NEGATIVE'
+                          ? 'badge badge-neg'
+                          : 'badge badge-neu'
+                    }
+                  >
+                    {SENTIMENT_LABELS[item.sentiment.label]} {formatScore(item.sentiment.score)}
+                  </span>
+                ) : (
+                  <span className="badge badge-neu">CHƯA CHẤM ĐIỂM</span>
+                )}
               </div>
 
-              {item.sentiment ? (
-                <span
-                  className={
-                    item.sentiment.label === 'POSITIVE'
-                      ? 'badge badge-pos'
-                      : item.sentiment.label === 'NEGATIVE'
-                        ? 'badge badge-neg'
-                        : 'badge badge-neu'
-                  }
-                >
-                  {SENTIMENT_LABELS[item.sentiment.label]} {formatScore(item.sentiment.score)}
-                </span>
-              ) : (
-                <span className="badge badge-neu">CHƯA CHẤM ĐIỂM</span>
-              )}
-            </div>
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="news-title"
+              >
+                {item.title} ↗
+              </a>
 
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="news-title"
-            >
-              {item.title} ↗
-            </a>
-
-            {item.content && <p className="news-content">{item.content}</p>}
-          </article>
-        ))}
+              {item.content && <p className="news-content">{item.content}</p>}
+            </article>
+          );
+        })}
       </div>
+
+      {items.length > DEFAULT_VISIBLE_COUNT && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.25rem' }}>
+          <button
+            type="button"
+            className="btn-action"
+            onClick={() => setIsExpanded((prev) => !prev)}
+          >
+            {isExpanded
+              ? 'Thu gọn danh sách'
+              : `Xem tất cả tin tức (${items.length} bài viết)`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
