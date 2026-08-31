@@ -2,15 +2,18 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import type {
   BacktestJob,
   CandidateSpec,
+  Dataset,
   RunHistory,
   SearchMode,
   StrategyRef,
 } from '@csl/contracts';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { BacktestQueue } from './backtest-queue';
+import { DatasetRepository } from './dataset.repository';
 import type { JobOutcome } from './job-outcome';
 import { CandidateSource } from './ports/candidate-source.port';
-import { SearchService } from './search.service';
+import { MAX_PAUSE_MS } from './run-bounds';
+import { DatasetNotFoundError, NoActiveRunError, SearchService } from './search.service';
 
 type FinishedHandler = (jobId: string, outcome: JobOutcome) => void;
 type FailedHandler = (jobId: string, reason: string) => void;
@@ -56,6 +59,14 @@ class FakeChannel extends ChannelPublisher {
   publish(): void {}
 }
 
+class FakeDatasets implements Partial<DatasetRepository> {
+  constructor(private readonly known: readonly string[]) {}
+
+  async findById(id: string): Promise<Dataset | null> {
+    return this.known.includes(id) ? dataset(id) : null;
+  }
+}
+
 class OneCandidateSource extends CandidateSource {
   private emitted = false;
 
@@ -92,6 +103,7 @@ describe('SearchService queue events', () => {
       queue as unknown as BacktestQueue,
       new FakeChannel(),
       new EventEmitter2(),
+      new FakeDatasets(['dataset-new']) as unknown as DatasetRepository,
       new OneCandidateSource(),
     );
 
@@ -108,6 +120,120 @@ describe('SearchService queue events', () => {
     service.onModuleDestroy();
   });
 });
+
+describe('SearchService pause lease', () => {
+  const build = () =>
+    new SearchService(
+      new FakeQueue() as unknown as BacktestQueue,
+      new FakeChannel(),
+      new EventEmitter2(),
+      new FakeDatasets(['dataset-1']) as unknown as DatasetRepository,
+      new OneCandidateSource(),
+    );
+
+  const aTick = () => new Promise((resolve) => setTimeout(resolve, 700));
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('does not end a paused run whose wall clock has passed its budget', async () => {
+    const service = build();
+    await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxDurationMs: 40 }, 'random');
+    await service.pause();
+
+    await aTick();
+
+    const status = service.status();
+    expect(status?.state).toBe('paused');
+    expect(status?.endReason).toBeUndefined();
+    await service.stop();
+    service.onModuleDestroy();
+  });
+
+  it('ends a run left paused past its lease, and says so', async () => {
+    const service = build();
+    await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
+    await service.pause();
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + MAX_PAUSE_MS + 1);
+
+    await aTick();
+
+    const status = service.status();
+    expect(status?.state).toBe('ended');
+    expect(status?.endReason).toBe('abandoned');
+    service.onModuleDestroy();
+  });
+});
+
+describe('SearchService run-state errors', () => {
+  const build = () =>
+    new SearchService(
+      new FakeQueue() as unknown as BacktestQueue,
+      new FakeChannel(),
+      new EventEmitter2(),
+      new FakeDatasets(['dataset-1']) as unknown as DatasetRepository,
+      new OneCandidateSource(),
+    );
+
+  it('says a paused run is paused, rather than claiming no run exists', async () => {
+    const service = build();
+    await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
+    await service.pause();
+
+    await expect(service.pause()).rejects.toThrow('the run is paused, not running');
+    await service.stop();
+    service.onModuleDestroy();
+  });
+
+  it('says a running run is running when asked to resume it', async () => {
+    const service = build();
+    await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
+
+    await expect(service.resume()).rejects.toThrow('the run is running, not paused');
+    await service.stop();
+    service.onModuleDestroy();
+  });
+
+  it('still reports no run at all as a 404-shaped error', async () => {
+    const service = build();
+    await expect(service.pause()).rejects.toBeInstanceOf(NoActiveRunError);
+    service.onModuleDestroy();
+  });
+});
+
+describe('SearchService dataset guard', () => {
+  it('refuses to start on a dataset that does not exist, instead of running a doomed loop', async () => {
+    const service = new SearchService(
+      new FakeQueue() as unknown as BacktestQueue,
+      new FakeChannel(),
+      new EventEmitter2(),
+      new FakeDatasets([]) as unknown as DatasetRepository,
+      new OneCandidateSource(),
+    );
+
+    await expect(
+      service.start('missing', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random'),
+    ).rejects.toBeInstanceOf(DatasetNotFoundError);
+    expect(service.status()).toBeNull();
+    service.onModuleDestroy();
+  });
+});
+
+function dataset(id: string): Dataset {
+  return {
+    id,
+    pair: 'BTCUSDT',
+    timeframe: '1m',
+    from: 0,
+    to: 1,
+    rules: {
+      entryPrice: 'signal-close',
+      feeRate: '0.001',
+      warmupCandles: 0,
+      profitMode: 'simple',
+      drawdownMode: 'trade-close',
+    },
+  };
+}
 
 function spec(): CandidateSpec {
   return {

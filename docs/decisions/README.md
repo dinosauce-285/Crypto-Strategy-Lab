@@ -74,6 +74,10 @@ code that assumes it.
 - [0040](0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md) — realtime-watched candles are read live from the exchange, not persisted
 - [0041](0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md) — dataset creation fetches and stores its own candle range from the exchange, paginated
 - [0042](0042-the-search-worker-evaluates-and-records-experiments-through.md) — the search worker evaluates and records experiments through EvaluatorPort, not its own repository
+- [0043](0043-domain-errors-carry-their-http-status-and-a-global-filter-ma.md) — domain errors carry their HTTP status and a global filter maps them
+- [0044](0044-a-paused-run-stops-spending-its-budget-and-holds-a-lease-ins.md) — a paused run stops spending its budget and holds a lease instead
+- [0045](0045-the-timeframe-set-follows-section-3-and-adds-30m-and-2h.md) — the timeframe set covers every example in the brief
+- [0046](0046-a-run-reports-the-candidate-being-tested-right-now.md) — a run reports the candidate being tested right now
 
 
 

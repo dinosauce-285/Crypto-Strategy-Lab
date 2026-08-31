@@ -1,4 +1,5 @@
 import { SEARCH_MODES, type RunBound, type SearchMode, type StrategyRef } from '@csl/contracts';
+import { BOUND_CEILINGS } from '../run-bounds';
 
 export interface StartRunDto {
   datasetId: string;
@@ -7,10 +8,14 @@ export interface StartRunDto {
   mode: SearchMode;
 }
 
-const optionalPositive = (value: unknown): number | undefined => {
+const optionalPositive = (value: unknown, name: keyof typeof BOUND_CEILINGS): number | undefined => {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     throw new TypeError('a bound must be a positive number');
+  }
+  const ceiling = BOUND_CEILINGS[name];
+  if (value > ceiling) {
+    throw new TypeError(`${name} must not exceed ${ceiling} — see docs/decisions/0021`);
   }
   return value;
 };
@@ -60,9 +65,9 @@ export function parseStartRun(body: unknown): StartRunDto {
     strategyRefs: parseStrategyRefs(source.strategyRefs),
     mode: parseMode(source.mode),
     bound: {
-      maxCandidates: optionalPositive(bound.maxCandidates),
-      maxDurationMs: optionalPositive(bound.maxDurationMs),
-      noImprovementLimit: optionalPositive(bound.noImprovementLimit),
+      maxCandidates: optionalPositive(bound.maxCandidates, 'maxCandidates'),
+      maxDurationMs: optionalPositive(bound.maxDurationMs, 'maxDurationMs'),
+      noImprovementLimit: optionalPositive(bound.noImprovementLimit, 'noImprovementLimit'),
     },
   };
 }

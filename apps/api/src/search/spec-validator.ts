@@ -5,8 +5,11 @@ import {
   type MergeRule,
   type StrategyParams,
 } from '@csl/contracts';
+import { DomainError } from '../http/domain-error';
 
-export class InvalidSpecError extends Error {}
+export class InvalidSpecError extends DomainError {
+  readonly status = 400;
+}
 
 const GRID = 0.1;
 

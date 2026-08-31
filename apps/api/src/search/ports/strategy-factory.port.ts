@@ -1,4 +1,5 @@
 import type { CandidateSpec, DataRequest, Signal, StrategyContext } from '@csl/contracts';
+import { DomainError } from '../../http/domain-error';
 
 /**
  * Turns a specification back into something runnable — T11's registry. A specification
@@ -16,7 +17,9 @@ export interface RunnableStrategy {
   analyze(context: StrategyContext): Signal;
 }
 
-export class UnknownStrategyError extends Error {
+export class UnknownStrategyError extends DomainError {
+  readonly status = 400;
+
   constructor(readonly strategyId: string) {
     super(`strategy "${strategyId}" is not registered`);
   }

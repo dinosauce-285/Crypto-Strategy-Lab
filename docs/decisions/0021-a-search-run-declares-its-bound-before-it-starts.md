@@ -80,6 +80,13 @@ morning may end immediately. That is deliberate and it will surprise someone: ex
 paused time would mean a paused run has no bound at all, which is the thing this record
 exists to prevent, dressed as a convenience.
 
+> **Narrowed by `0044`.** The danger above is real and is still guarded, but this paragraph
+> only weighed charging for paused time against not charging for it, and missed the third
+> option of bounding the pause itself. `maxDurationMs` now measures active time, and a
+> paused run holds a lease it can outlive only by ending. The paragraph stands as the
+> reasoning that made the guarantee non-negotiable; `0044` keeps the guarantee and pays for
+> it differently.
+
 Five reasons a run can end is more vocabulary than a boolean, and it is vocabulary that
 crosses the wire. Something downstream will eventually branch on the string, and at that
 point the set is a contract that cannot be quietly extended.
