@@ -294,6 +294,8 @@ tbody tr:last-child td { border-bottom: 0; }
   padding: 0.1rem 0.4rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-pos {
