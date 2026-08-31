@@ -82,6 +82,12 @@ export function NewsFeed({
         <span className="source">{items.length} bài viết</span>
       </div>
 
+      {error && (
+        <p className="state bad">
+          <strong>Không tải được tin tức.</strong> {error}
+        </p>
+      )}
+
       <div className="panel" style={{ gap: '0.65rem' }}>
         {items.map((item) => (
           <article key={item.id} className="news-card">

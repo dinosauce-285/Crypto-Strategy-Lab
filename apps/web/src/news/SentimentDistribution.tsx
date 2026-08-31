@@ -63,6 +63,12 @@ export function SentimentDistribution({
         <h2>Phân tích Sentiment ({coin})</h2>
       </div>
 
+      {error && (
+        <p className="state bad">
+          <strong>Không tải được số liệu thống kê.</strong> {error}
+        </p>
+      )}
+
       {total === 0 ? (
         <p className="state">
           Chưa có dữ liệu sentiment cho <strong>{coin}</strong>. Hãy chạy phân tích
