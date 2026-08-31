@@ -16,6 +16,13 @@ function isRecordNotFoundError(error: unknown): boolean {
 export class SentimentRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findById(id: string): Promise<NewsItem | null> {
+    const row = await this.prisma.news.findUnique({
+      where: { id },
+    });
+    return row ? fromRow(row) : null;
+  }
+
   async findUnscored(limit?: number, ids?: string[]): Promise<NewsItem[]> {
     if (ids !== undefined && ids.length === 0) {
       return [];

@@ -65,12 +65,15 @@ export class SentimentService {
   }
 
   async analyzeArticle(id: string): Promise<NewsItem | null> {
-    const items = await this.repository.findUnscored(1, [id]);
-    if (items.length === 0) {
+    const item = await this.repository.findById(id);
+    if (!item) {
       return null;
     }
 
-    const item = items[0];
+    if (item.sentiment) {
+      return item;
+    }
+
     const text = formatNewsText(item);
     const sentiment = await this.provider.analyze(text);
     const updated = await this.repository.updateSentiment(id, sentiment);

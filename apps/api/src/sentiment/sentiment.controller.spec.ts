@@ -55,7 +55,7 @@ describe('SentimentController', () => {
       await expect(controller.analyzeArticle('   ')).rejects.toThrow(BadRequestException);
     });
 
-    it('throws NotFoundException when article is not found or already analyzed', async () => {
+    it('throws NotFoundException when article is not found', async () => {
       mockSentimentService.analyzeArticle.mockResolvedValue(null);
 
       await expect(controller.analyzeArticle('missing-id')).rejects.toThrow(NotFoundException);
