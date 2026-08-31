@@ -101,7 +101,7 @@ export function Navbar() {
     <nav className="navbar">
       <div>
         <p className="navbar-title">Crypto Strategy Lab</p>
-        <p className="sub">server chủ động đẩy dữ liệu, màn hình không cần hỏi lại lần hai.</p>
+        <p className="sub">Theo dõi, kiểm thử và xếp hạng chiến lược giao dịch crypto.</p>
       </div>
       <ul className="navbar-tabs">
         {TABS.map(({ to, label, icon: Icon }) => (

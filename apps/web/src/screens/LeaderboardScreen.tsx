@@ -7,6 +7,7 @@ import {
   type LeaderboardSortField,
   type SortDirection,
 } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { DatasetPicker } from '../backtest/DatasetPicker';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
@@ -35,12 +36,11 @@ export function LeaderboardScreen() {
     setState({ kind: 'loading' });
     const controller = new AbortController();
 
-    fetch(
+    apiFetch<LeaderboardEntry[]>(
       `/api/leaderboard?datasetId=${selectedDataset.id}&sortBy=${sortBy}&direction=${direction}&limit=10`,
       { signal: controller.signal },
     )
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
-      .then((data: LeaderboardEntry[]) => {
+      .then((data) => {
         setState({ kind: 'ready', entries: data });
       })
       .catch((err: Error) => {
@@ -107,7 +107,7 @@ export function LeaderboardScreen() {
         {/* Leaderboard Table / 4 States */}
         {state.kind === 'loading' && (
           <div
-            className="panel"
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px solid var(--line)',
@@ -125,7 +125,7 @@ export function LeaderboardScreen() {
 
         {state.kind === 'error' && (
           <div
-            className="panel"
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px solid var(--line)',
@@ -153,7 +153,7 @@ export function LeaderboardScreen() {
 
         {state.kind === 'ready' && state.entries.length === 0 && (
           <div
-            className="panel"
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px dashed var(--line)',

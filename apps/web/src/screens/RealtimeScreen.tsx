@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TIMEFRAMES, type Timeframe } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { PairSelect, PAIRS } from '../market/PairSelect';
 import { Dashboard } from '../market/Dashboard';
@@ -35,9 +36,8 @@ export function RealtimeScreen() {
   };
 
   useEffect(() => {
-    fetch('/api/health')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
-      .then((health: Health) => setCheck({ kind: 'ready', health, at: Date.now() }))
+    apiFetch<Health>('/api/health')
+      .then((health) => setCheck({ kind: 'ready', health, at: Date.now() }))
       .catch((e: Error) => setCheck({ kind: 'error', message: e.message }));
   }, []);
 

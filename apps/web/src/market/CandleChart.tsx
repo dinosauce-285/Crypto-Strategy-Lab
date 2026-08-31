@@ -13,6 +13,7 @@ import {
   type ISeriesApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
+import { apiFetch } from '../api/request';
 import { useTopic } from '../channel/use-topic';
 
 interface CandleChartProps {
@@ -28,7 +29,9 @@ const DEFAULT_WINDOW: Record<Timeframe, number> = {
   '1m': 120, // ~2 hours
   '5m': 96, // ~8 hours
   '15m': 96, // ~1 day
+  '30m': 96, // ~2 days
   '1h': 120, // ~5 days
+  '2h': 120, // ~10 days
   '4h': 90, // ~15 days
   '1d': 90, // ~3 months
 };
@@ -120,11 +123,10 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
     setState({ kind: 'loading' });
     candlesRef.current = [];
     const controller = new AbortController();
-    fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`, {
+    apiFetch<{ candles: Candle[] }>(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`, {
       signal: controller.signal,
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
-      .then((body: { candles: Candle[] }) => setState({ kind: 'ready', candles: body.candles }))
+      .then((body) => setState({ kind: 'ready', candles: body.candles }))
       .catch((e: Error) => {
         if (e.name === 'AbortError') return;
         setState({ kind: 'error', message: e.message });

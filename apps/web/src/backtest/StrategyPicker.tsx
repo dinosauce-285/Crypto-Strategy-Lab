@@ -69,11 +69,12 @@ export function StrategyPicker({
           style={{ width: '100%', minWidth: 0 }}
           disabled={loading || strategies.length === 0}
           value={selectedStrategy?.id ?? ''}
+          title={selectedStrategy ? `${selectedStrategy.name} (${selectedStrategy.id})` : undefined}
           onChange={(e) => handleStrategyChange(e.target.value)}
         >
           {strategies.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name} ({s.id})
+              {s.name}
             </option>
           ))}
         </select>

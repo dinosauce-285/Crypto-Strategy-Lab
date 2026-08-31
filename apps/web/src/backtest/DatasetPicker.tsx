@@ -82,10 +82,9 @@ export function DatasetPicker({
           onClick={() => setIsOpen((prev) => !prev)}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          title={selectedLabel}
         >
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {selectedLabel}
-          </span>
+          <span>{selectedLabel}</span>
           <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--muted)' }}>
             {isOpen ? '▲' : '▼'}
           </span>
@@ -95,6 +94,7 @@ export function DatasetPicker({
           <div className="custom-dropdown-menu" role="listbox">
             {datasets.map((d) => {
               const isSelected = selectedDataset?.id === d.id;
+              const label = `${d.pair} · ${d.timeframe} (${new Date(d.from).toLocaleDateString()} - ${new Date(d.to).toLocaleDateString()})`;
               return (
                 <button
                   key={d.id}
@@ -103,14 +103,13 @@ export function DatasetPicker({
                   aria-selected={isSelected}
                   className="custom-dropdown-item"
                   disabled={disabled}
+                  title={label}
                   onClick={() => {
                     onSelectDataset(d);
                     setIsOpen(false);
                   }}
                 >
-                  <span>
-                    {d.pair} · {d.timeframe} ({new Date(d.from).toLocaleDateString()} - {new Date(d.to).toLocaleDateString()})
-                  </span>
+                  <span>{label}</span>
                   {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
                 </button>
               );

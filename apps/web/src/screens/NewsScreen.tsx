@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { NewsItem } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { NewsControls } from '../news/NewsControls';
 import { NewsFeed } from '../news/NewsFeed';
@@ -26,9 +27,8 @@ export function NewsScreen() {
     const params = new URLSearchParams({ limit: '50' });
     if (coin !== 'ALL') params.append('coin', coin);
 
-    fetch(`/api/news?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
-      .then((data: { items: NewsItem[]; total: number }) => {
+    apiFetch<{ items: NewsItem[]; total: number }>(`/api/news?${params.toString()}`)
+      .then((data) => {
         let list = data.items;
         if (source !== 'ALL') {
           list = list.filter((item) =>
@@ -51,9 +51,8 @@ export function NewsScreen() {
     const params = new URLSearchParams();
     if (coin !== 'ALL') params.append('coin', coin);
 
-    fetch(`/api/sentiment/stats?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
-      .then((data: SentimentStats) => {
+    apiFetch<SentimentStats>(`/api/sentiment/stats?${params.toString()}`)
+      .then((data) => {
         setStats(data);
         setIsLoadingStats(false);
       })
@@ -74,12 +73,11 @@ export function NewsScreen() {
     if (coin !== 'ALL') body.coins = [coin];
     if (source !== 'ALL') body.source = source;
 
-    fetch('/api/news/collect', {
+    apiFetch('/api/news/collect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then(() => {
         setIsCollecting(false);
         fetchNews();
@@ -93,12 +91,11 @@ export function NewsScreen() {
 
   const handleAnalyze = () => {
     setIsAnalyzing(true);
-    fetch('/api/sentiment/batch', {
+    apiFetch('/api/sentiment/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ limit: 50 }),
     })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`Lỗi HTTP ${res.status}`))))
       .then(() => {
         setIsAnalyzing(false);
         fetchNews();

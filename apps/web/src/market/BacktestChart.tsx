@@ -6,6 +6,7 @@ import {
   type IChartApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
+import { apiFetch } from '../api/request';
 
 interface BacktestChartProps {
   pair: string;
@@ -19,7 +20,9 @@ const DEFAULT_RANGE_MS: Record<Timeframe, number> = {
   '1m': 2 * 60 * 60 * 1000, // 2 hours
   '5m': 8 * 60 * 60 * 1000, // 8 hours
   '15m': 24 * 60 * 60 * 1000, // 1 day
+  '30m': 2 * 24 * 60 * 60 * 1000, // 2 days
   '1h': 5 * 24 * 60 * 60 * 1000, // 5 days
+  '2h': 10 * 24 * 60 * 60 * 1000, // 10 days
   '4h': 15 * 24 * 60 * 60 * 1000, // 15 days
   '1d': 90 * 24 * 60 * 60 * 1000, // 3 months
 };
@@ -89,11 +92,11 @@ export function BacktestChart({ pair, timeframe }: BacktestChartProps) {
     const controller = new AbortController();
     const to = Date.now();
     const from = to - DEFAULT_RANGE_MS[timeframe];
-    fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}&from=${from}&to=${to}`, {
-      signal: controller.signal,
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Lỗi HTTP ${r.status}`))))
-      .then((body: { candles: Candle[] }) => {
+    apiFetch<{ candles: Candle[] }>(
+      `/api/market/candles?pair=${pair}&timeframe=${timeframe}&from=${from}&to=${to}`,
+      { signal: controller.signal },
+    )
+      .then((body) => {
         candlesRef.current = body.candles;
         setState({ kind: 'ready', candles: body.candles });
       })

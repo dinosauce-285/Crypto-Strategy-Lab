@@ -15,7 +15,7 @@ interface DashboardProps {
  */
 export function Dashboard({ pair, timeframes, selected, onSelect }: DashboardProps) {
   return (
-    <section className="dashboard-grid">
+    <section className="dashboard-grid grows">
       {timeframes.map((timeframe, i) => (
         // Index key is intentional: the array is always exactly 4 cells whose value
         // changes in place, never reordered/added/removed — so each cell's CandleChart

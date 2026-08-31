@@ -319,17 +319,7 @@ wall, and the row it leaves is where the failed-job count on screen comes from.
 ## Where the drawing and the code disagree
 
 An architecture document that only describes the intended shape is worth less than one
-that says where the build has not caught up. Two seams are open today.
-
-**The queued path has no evaluator.** `BacktestProcessor` asks for a `RunEvaluator`
-(declared in `search/ports/`), and nothing provides one. The evaluator that exists is
-`EvaluatorPort` in `evaluation/`, with a different and wider shape, wired only into the
-single-run path. The port is injected as optional, so the mismatch does not fail at boot —
-it fails once per job, permanently, and every candidate a search run queues is recorded as
-a failed experiment. The single-run screen works because it takes the other path entirely.
-
-Two ports describing one job is the actual defect; picking one is a decision that owes a
-record.
+that says where the build has not caught up. One seam is open today.
 
 **The leaderboard is pushed from one path only.** `LeaderboardController` listens for
 `experiment.completed`, a name that is not among the nine events of the contract and is
@@ -337,5 +327,12 @@ emitted only by the single-run service. A search run emits `backtest.completed` 
 `strategy.evaluated` instead, so the leaderboard does not move while a run is going —
 exactly when it should move most.
 
-Both are wiring, not design. The design in this document is what the modules already
-declare; these are the two wires that were never connected between them.
+It is wiring, not design. The design in this document is what the modules already declare;
+this is a wire that was never connected between them.
+
+A second seam used to sit here: the queued path asked for a `RunEvaluator` declared in
+`search/ports/` while the only evaluator that existed was `EvaluatorPort` in `evaluation/`,
+so every queued candidate failed. Two ports describing one job was the defect, and it was
+closed by deleting the duplicate — `BacktestWorkerModule` imports `EvaluationModule` and
+`BacktestProcessor` takes `EvaluatorPort` like the single-run path does. The reasoning is
+in `docs/decisions/0042`.

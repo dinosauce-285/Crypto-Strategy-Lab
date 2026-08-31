@@ -27,13 +27,13 @@ export function LeaderboardTable({
   };
 
   return (
-    <div className="panel">
+    <div className="panel grows">
       <div className="panel-head">
         <h2>Xếp hạng Strategy (Top {entries.length})</h2>
         <span className="source">Nhấn vào một dòng để xem chi tiết ở Single-Run Backtest</span>
       </div>
 
-      <div className="candles" style={{ overflowX: 'auto' }}>
+      <div className="candles grows" style={{ overflow: 'auto' }}>
         <table>
           <thead>
             <tr>

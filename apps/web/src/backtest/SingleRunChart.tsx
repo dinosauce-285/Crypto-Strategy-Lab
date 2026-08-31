@@ -192,5 +192,5 @@ export function SingleRunChart({
     }
   }, [selectedTrade]);
 
-  return <div ref={initChart} className="chart" style={{ height: '360px' }} />;
+  return <div ref={initChart} className="chart" />;
 }
