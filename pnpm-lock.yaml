@@ -117,6 +117,9 @@ importers:
       '@csl/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@fontsource/ibm-plex-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       lightweight-charts:
         specifier: ^5.2.1
         version: 5.2.1
@@ -759,6 +762,9 @@ packages:
     resolution: {integrity: sha512-yKV8mFz+J5+epLugvcSt7B+mBkkCSycOB6euLJmW6JL+2jhL+Um0JZ6zuGIdXcbsd3jU2+YQfeDz2EVwft++LA==}
     engines: {node: '>=20.19.0'}
     hasBin: true
+
+  '@fontsource/ibm-plex-mono@5.3.0':
+    resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2438,6 +2444,7 @@ packages:
   eslint@9.39.5:
     resolution: {integrity: sha512-DgZS62aPLXKlnxILS/AYCoRvHaZeXceIzlXPkkGGzJWSow1aEk0lbTlxUSlyjC8jcaKxAdOnTDz+o1JFSBsyjw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -4739,6 +4746,8 @@ snapshots:
       zod: 4.4.3
     transitivePeerDependencies:
       - '@types/node'
+
+  '@fontsource/ibm-plex-mono@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
