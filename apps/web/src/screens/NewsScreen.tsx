@@ -10,6 +10,7 @@ export function NewsScreen() {
   const [coin, setCoin] = useState('ALL');
   const [source, setSource] = useState('ALL');
   const [items, setItems] = useState<NewsItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<SentimentStats | null>(null);
 
   const [isLoadingNews, setIsLoadingNews] = useState(true);
@@ -25,16 +26,12 @@ export function NewsScreen() {
 
     const params = new URLSearchParams({ limit: '50' });
     if (coin !== 'ALL') params.append('coin', coin);
+    if (source !== 'ALL') params.append('source', source);
 
     apiFetch<{ items: NewsItem[]; total: number }>(`/api/news?${params.toString()}`)
       .then((data) => {
-        let list = data.items;
-        if (source !== 'ALL') {
-          list = list.filter((item) =>
-            item.source.toLowerCase().includes(source.toLowerCase()),
-          );
-        }
-        setItems(list);
+        setItems(data.items);
+        setTotal(data.total);
         setIsLoadingNews(false);
       })
       .catch((err: Error) => {
@@ -127,6 +124,7 @@ export function NewsScreen() {
 
           <NewsFeed
             items={items}
+            total={total}
             isLoading={isLoadingNews}
             error={newsError}
             onRetry={fetchNews}

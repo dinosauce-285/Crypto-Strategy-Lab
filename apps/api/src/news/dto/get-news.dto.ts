@@ -2,6 +2,7 @@ import type { NewsItem } from '@csl/contracts';
 
 export interface GetNewsQueryDto {
   coin?: string;
+  source?: string;
   from?: number;
   to?: number;
   limit?: number;
