@@ -1,6 +1,6 @@
 import type { RunBound, RunCounters, RunEndReason } from '@csl/contracts';
 
-/** A pause nobody returns from ends the run rather than holding it forever — ADR 0044. */
+/** A pause nobody returns from ends the run rather than holding it forever — ADR 0045. */
 export const MAX_PAUSE_MS = 30 * 60 * 1000;
 
 /**

@@ -7,6 +7,7 @@ import type {
   StrategyMeta,
   StrategyRef,
 } from '@csl/contracts';
+import { date } from '../market/format';
 
 const END_REASON_LABELS: Record<RunEndReason, string> = {
   candidates: 'Đã đạt số lượng candidate tối đa',
@@ -48,8 +49,9 @@ export function SearchProgressPanel({
     return (
       <div className="panel search-progress-panel empty-progress grows">
         <p className="state">
-          Chưa có lượt search nào đang chạy. Chọn strategy ở trên, đặt giới hạn ở bên phải,
-          rồi bấm <strong>Bắt đầu Search</strong> — tiến trình và ứng viên đang chạy sẽ hiện ở đây.
+          Hiện không có lượt tìm kiếm nào đang chạy. Chọn strategy ở trên, đặt giới hạn ở bên
+          phải, rồi bấm <strong>Bắt đầu Search</strong> — tiến trình và ứng viên đang chạy sẽ
+          hiện ở đây.
         </p>
         {requestError && <p className="state bad">{requestError}</p>}
       </div>
@@ -77,10 +79,17 @@ export function SearchProgressPanel({
 
       <div className="running-dataset">
         <span className="stat-tile-label">Dataset đang chạy</span>
-        <strong>{runningDataset ? datasetLabel(runningDataset) : status.datasetId}</strong>
+        <strong>{runningDataset ? datasetLabel(runningDataset) : 'Đang tải thông tin dataset…'}</strong>
       </div>
 
-      <div className="progress-meter" aria-label="Tiến trình search">
+      <div
+        className="progress-meter"
+        role="progressbar"
+        aria-label="Tiến trình tìm kiếm"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress)}
+      >
         <span style={{ width: `${progress}%` }} />
       </div>
 
@@ -118,8 +127,7 @@ export function SearchProgressPanel({
         <div className="search-recipe">
           <span className="stat-tile-label">Kết quả tốt nhất hiện tại</span>
           <strong>
-            Lợi nhuận {formatPercent(status.counters.best.totalReturn)} /{' '}
-            {status.counters.best.specHash.slice(0, 8)}
+            Lợi nhuận {formatPercent(status.counters.best.totalReturn)}
           </strong>
         </div>
       )}
@@ -158,9 +166,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function datasetLabel(dataset: Dataset): string {
-  return `${dataset.pair} / ${dataset.timeframe} / ${new Date(
-    dataset.from,
-  ).toLocaleDateString()} - ${new Date(dataset.to).toLocaleDateString()}`;
+  return `${dataset.pair} / ${dataset.timeframe} / ${date(dataset.from)} - ${date(dataset.to)}`;
 }
 
 /** Section 46 step 4 writes this as `MA20 + RSI14 + SR` — a name plus what it was tuned to. */

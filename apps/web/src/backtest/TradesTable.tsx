@@ -1,4 +1,5 @@
 import type { Trade } from '@csl/contracts';
+import { sideLabel, tradeTime } from '../market/format';
 
 interface TradeRow extends Trade {
   seq: number;
@@ -51,11 +52,25 @@ export function TradesTable({
               const isSelected = selectedSeq === trade.seq;
               const profitNum = Number(trade.profit);
               const pnlClass = profitNum > 0 ? 'ok' : profitNum < 0 ? 'bad' : '';
+              const profitSign = profitNum > 0 ? '+' : '';
+              const formattedProfit = Number.isFinite(profitNum)
+                ? `${profitSign}${(profitNum * 100).toFixed(2)}%`
+                : '0.00%';
 
               return (
                 <tr
                   key={trade.seq}
+                  tabIndex={0}
+                  role="button"
+                  aria-pressed={isSelected}
+                  aria-label={`Lệnh số ${trade.seq}`}
                   onClick={() => onSelectTrade(trade)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onSelectTrade(trade);
+                    }
+                  }}
                   style={{
                     cursor: 'pointer',
                     background: isSelected ? 'var(--line)' : undefined,
@@ -66,16 +81,15 @@ export function TradesTable({
                     <span
                       className={`badge ${trade.side === 'BUY' ? 'badge-pos' : 'badge-neg'}`}
                     >
-                      {trade.side}
+                      {sideLabel(trade.side)}
                     </span>
                   </td>
-                  <td>{new Date(trade.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{tradeTime(trade.entryTime)}</td>
                   <td>{trade.entryPrice}</td>
-                  <td>{new Date(trade.exitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td>{tradeTime(trade.exitTime)}</td>
                   <td>{trade.exitPrice}</td>
                   <td className={pnlClass} style={{ fontWeight: 600 }}>
-                    {profitNum > 0 ? '+' : ''}
-                    {trade.profit}
+                    {formattedProfit}
                   </td>
                 </tr>
               );

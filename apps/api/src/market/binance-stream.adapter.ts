@@ -37,6 +37,8 @@ const DEFAULT_REST_URL = 'https://api.binance.com';
 const DEFAULT_MAX_RETRIES = 10;
 const DEFAULT_INITIAL_BACKOFF_MS = 1000;
 const DEFAULT_MAX_BACKOFF_MS = 10000;
+const DEFAULT_HEALTHY_TIMEOUT_MS = 5000;
+const DEFAULT_WATCHDOG_TIMEOUT_MS = 30000;
 
 @Injectable()
 export class BinanceStreamAdapter extends ExchangeStreamPort {
@@ -57,6 +59,14 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
       'BINANCE_MAX_BACKOFF_MS',
       DEFAULT_MAX_BACKOFF_MS,
     );
+    const healthyTimeout = this.config.get<number>(
+      'BINANCE_HEALTHY_TIMEOUT_MS',
+      DEFAULT_HEALTHY_TIMEOUT_MS,
+    );
+    const watchdogTimeout = this.config.get<number>(
+      'BINANCE_WATCHDOG_TIMEOUT_MS',
+      DEFAULT_WATCHDOG_TIMEOUT_MS,
+    );
 
     const symbol = pair.toLowerCase();
     const activeStreams = new Set<string>([`${symbol}@trade`]);
@@ -66,40 +76,74 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
     let retries = 0;
     let explicitClose = false;
     let reconnectTimer: NodeJS.Timeout | null = null;
+    let healthyTimer: NodeJS.Timeout | null = null;
+    let watchdogTimer: NodeJS.Timeout | null = null;
+
+    const resetWatchdog = () => {
+      if (watchdogTimer) clearTimeout(watchdogTimer);
+      if (explicitClose) return;
+      watchdogTimer = setTimeout(() => {
+        this.logger.warn(
+          `${pair} watchdog detected silent dead connection (no data for ${watchdogTimeout}ms)`,
+        );
+        try {
+          socket?.close();
+        } catch {
+          // ignore
+        }
+        handleDrop();
+      }, watchdogTimeout);
+    };
 
     const send = (method: 'SUBSCRIBE' | 'UNSUBSCRIBE', streams: string[]) => {
       if (!socket || socket.readyState !== WebSocket.OPEN || streams.length === 0) return;
       socket.send(JSON.stringify({ method, params: streams, id: nextId++ }));
     };
 
+    const handleDrop = () => {
+      if (explicitClose) return;
+
+      if (healthyTimer) {
+        clearTimeout(healthyTimer);
+        healthyTimer = null;
+      }
+      if (watchdogTimer) {
+        clearTimeout(watchdogTimer);
+        watchdogTimer = null;
+      }
+
+      if (retries < maxRetries) {
+        retries++;
+        handlers.status?.('reconnecting');
+        const baseDelay = Math.min(maxBackoff, initialBackoff * 2 ** (retries - 1));
+        const jitter = baseDelay * (0.8 + 0.4 * Math.random());
+        this.logger.warn(
+          `${pair} dropped, reconnecting attempt ${retries}/${maxRetries} in ${Math.round(jitter)}ms`,
+        );
+        reconnectTimer = setTimeout(connect, jitter);
+      } else {
+        handlers.status?.('failed');
+        this.logger.error(`${pair} upstream recovery failed after ${maxRetries} retries`);
+      }
+    };
+
     const connect = () => {
       if (explicitClose) return;
 
       socket = new WebSocket(wsUrl);
-      let isDropHandled = false;
-
-      const handleDrop = () => {
-        if (isDropHandled || explicitClose) return;
-        isDropHandled = true;
-
-        if (retries < maxRetries) {
-          retries++;
-          handlers.status?.('reconnecting');
-          const baseDelay = Math.min(maxBackoff, initialBackoff * 2 ** (retries - 1));
-          const jitter = baseDelay * (0.8 + 0.4 * Math.random());
-          this.logger.warn(
-            `${pair} dropped, reconnecting attempt ${retries}/${maxRetries} in ${Math.round(jitter)}ms`,
-          );
-          reconnectTimer = setTimeout(connect, jitter);
-        } else {
-          handlers.status?.('failed');
-          this.logger.error(`${pair} upstream recovery failed after ${maxRetries} retries`);
-        }
-      };
 
       socket.addEventListener('open', () => {
         const wasReconnecting = retries > 0;
-        retries = 0;
+
+        // Only reset retries once the connection has proven stable
+        if (healthyTimer) clearTimeout(healthyTimer);
+        healthyTimer = setTimeout(() => {
+          retries = 0;
+          healthyTimer = null;
+        }, healthyTimeout);
+
+        resetWatchdog();
+
         const streams = Array.from(activeStreams);
         if (streams.length > 0) {
           socket?.send(JSON.stringify({ method: 'SUBSCRIBE', params: streams, id: nextId++ }));
@@ -111,6 +155,7 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
       });
 
       socket.addEventListener('message', (event) => {
+        resetWatchdog();
         const frame = parse(String(event.data));
         if (!frame) return;
         if (frame.e === 'trade') {
@@ -156,6 +201,8 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
       close: () => {
         explicitClose = true;
         if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (healthyTimer) clearTimeout(healthyTimer);
+        if (watchdogTimer) clearTimeout(watchdogTimer);
         socket?.close();
       },
     };
@@ -173,28 +220,57 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
     }
     url.searchParams.set('limit', String(limit));
 
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch candles from Binance REST: ${response.status} ${response.statusText}`,
-      );
+    const maxHttpRetries = 3;
+    let attempt = 0;
+
+    while (attempt < maxHttpRetries) {
+      attempt++;
+      try {
+        const response = await fetch(url.toString());
+        if (response.status === 429 || response.status === 418) {
+          const retryAfterHeader = response.headers?.get('Retry-After');
+          const retryAfterSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 0;
+          const waitMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+            ? retryAfterSec * 1000
+            : 1000 * 2 ** (attempt - 1);
+          this.logger.warn(
+            `Binance REST 429 rate limit hit for ${query.pair} ${query.timeframe}. Backing off for ${waitMs}ms (attempt ${attempt}/${maxHttpRetries})`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch candles from Binance REST: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const raw = (await response.json()) as (string | number)[][];
+        const now = Date.now();
+        return raw
+          .filter((kline) => (kline[6] !== undefined ? Number(kline[6]) <= now : true))
+          .map((kline) => ({
+            pair: query.pair.toUpperCase(),
+            timeframe: query.timeframe,
+            openTime: Number(kline[0]),
+            open: String(kline[1]),
+            high: String(kline[2]),
+            low: String(kline[3]),
+            close: String(kline[4]),
+            volume: String(kline[5]),
+            closed: true,
+          }));
+      } catch (err) {
+        if (attempt >= maxHttpRetries) throw err;
+        const backoffMs = 500 * 2 ** (attempt - 1);
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+      }
     }
 
-    const raw = (await response.json()) as (string | number)[][];
-    const now = Date.now();
-    return raw
-      .filter((kline) => (kline[6] !== undefined ? Number(kline[6]) <= now : true))
-      .map((kline) => ({
-        pair: query.pair.toUpperCase(),
-        timeframe: query.timeframe,
-        openTime: Number(kline[0]),
-        open: String(kline[1]),
-        high: String(kline[2]),
-        low: String(kline[3]),
-        close: String(kline[4]),
-        volume: String(kline[5]),
-        closed: true,
-      }));
+    throw new Error(
+      `Exceeded max retries fetching candles from Binance REST for ${query.pair} ${query.timeframe}`,
+    );
   }
 }
 

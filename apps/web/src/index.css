@@ -80,6 +80,7 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 
 /* Wraps before it shrinks — eight timeframes plus a pair select outrun a narrow column. */
 .controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.15rem; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -175,6 +176,18 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
 .chart-frame { position: relative; display: flex; flex-direction: column; }
+.chart-stale { opacity: 0.45; transition: opacity 0.2s; }
+.chart-stale-banner {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  text-align: right;
+  pointer-events: none;
+}
 .chart-label {
   position: absolute;
   top: 0.5rem;
@@ -188,6 +201,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem;
   pointer-events: none;
+}
+.chart-label-selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {
@@ -414,6 +431,7 @@ tbody tr:last-child td { border-bottom: 0; }
   position: fixed;
   inset: 0;
   background: rgba(42, 37, 31, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;

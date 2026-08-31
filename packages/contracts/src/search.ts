@@ -7,7 +7,7 @@ import type { CandidateSpec, CandidateMember } from './candidate';
  */
 export interface RunBound {
   maxCandidates?: number;
-  /** Active time: milliseconds spent paused are subtracted before this is checked — `0044`. */
+  /** Active time: milliseconds spent paused are subtracted before this is checked — `0045`. */
   maxDurationMs?: number;
   /**
    * Consecutive finished candidates allowed to fail to beat the best so far. Optional
@@ -36,7 +36,7 @@ export type RunState = (typeof RUN_STATES)[number];
  * that died, and section 32.7 asks whether the loop is running.
  *
  * `abandoned` is a run left paused past its lease — nobody's decision, unlike `stopped`
- * (ADR 0044).
+ * (ADR 0045).
  */
 export const RUN_END_REASONS = [
   'candidates',

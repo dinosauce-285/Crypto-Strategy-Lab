@@ -112,7 +112,7 @@ export class ActiveRun {
     this.state = 'running';
   }
 
-  /** Milliseconds this run has not been spending its budget — ADR 0044. */
+  /** Milliseconds this run has not been spending its budget — ADR 0045. */
   pausedMs(now: number): number {
     return this.pausedTotalMs + this.pausedFor(now);
   }

@@ -3,10 +3,12 @@ import type {
   BacktestJob,
   CandidateSpec,
   Dataset,
+  EventPayload,
   RunHistory,
   SearchMode,
   StrategyRef,
 } from '@csl/contracts';
+import { EVENTS as EVENT_NAMES } from '@csl/contracts';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { BacktestQueue } from './backtest-queue';
 import { DatasetRepository } from './dataset.repository';
@@ -97,6 +99,30 @@ const outcome = (datasetId: string): JobOutcome => ({
 });
 
 describe('SearchService queue events', () => {
+  it('emits StrategyGenerated for candidates accepted into the queue', async () => {
+    const queue = new FakeQueue();
+    const events = new EventEmitter2();
+    const emit = jest.spyOn(events, 'emit');
+    const service = new SearchService(
+      queue as unknown as BacktestQueue,
+      new FakeChannel(),
+      events,
+      new FakeDatasets(['dataset-new']) as unknown as DatasetRepository,
+      new OneCandidateSource(),
+    );
+    const candidate = spec();
+
+    await service.start('dataset-new', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
+
+    expect(emit).toHaveBeenCalledWith(EVENT_NAMES.StrategyGenerated, {
+      spec: candidate,
+      specHash: expect.any(String),
+      datasetId: 'dataset-new',
+    } satisfies EventPayload<typeof EVENT_NAMES.StrategyGenerated>);
+    await service.stop();
+    service.onModuleDestroy();
+  });
+
   it('ignores completed and failed events that are not pending on the current run', async () => {
     const queue = new FakeQueue();
     const service = new SearchService(

@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { leaderboardTopic, MESSAGES, type LeaderboardEntry } from '@csl/contracts';
+import { EVENTS, leaderboardTopic, MESSAGES, type LeaderboardEntry } from '@csl/contracts';
 import { RankingPort } from './ports/ranking.port';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
 import { parseLeaderboardQuery } from './dto/leaderboard-query.dto';
@@ -24,7 +24,9 @@ export class LeaderboardController {
     );
   }
 
-  @OnEvent('experiment.completed')
+  @OnEvent(EVENTS.StrategyEvaluated)
+  @OnEvent(EVENTS.LeaderboardUpdated)
+  @OnEvent(EVENTS.BacktestCompleted)
   handleExperimentCompleted(event: { datasetId: string; experimentId?: string }) {
     if (event?.datasetId) {
       const topic = leaderboardTopic(event.datasetId);

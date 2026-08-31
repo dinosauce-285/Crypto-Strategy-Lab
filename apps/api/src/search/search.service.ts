@@ -98,7 +98,7 @@ export class SearchService implements OnModuleDestroy {
 
   /**
    * A paused run is asked about its lease and nothing else — every other bound is a budget,
-   * and a budget is not spent while paused (ADR 0044).
+   * and a budget is not spent while paused (ADR 0045).
    */
   private async advance(run: ActiveRun): Promise<void> {
     run.queued = await this.queue.waiting();
@@ -135,8 +135,14 @@ export class SearchService implements OnModuleDestroy {
         return;
       }
       for (const spec of specs.slice(0, room)) {
+        const hash = specHash(spec);
         const jobId = await this.queue.add({ spec, datasetId: run.datasetId });
-        run.pending.set(jobId, { spec, specHash: specHash(spec) });
+        run.pending.set(jobId, { spec, specHash: hash });
+        this.events.emit(EVENTS.StrategyGenerated, {
+          spec,
+          specHash: hash,
+          datasetId: run.datasetId,
+        });
         run.queued += 1;
       }
       room = this.room(run);

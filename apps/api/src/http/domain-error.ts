@@ -1,5 +1,5 @@
 /**
- * An error a caller can provoke, carrying the status it deserves — ADR 0043.
+ * An error a caller can provoke, carrying the status it deserves — ADR 0044.
  * A fault that is ours stays an ordinary Error and is answered with a 500.
  */
 export abstract class DomainError extends Error {

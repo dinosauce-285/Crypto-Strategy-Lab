@@ -58,8 +58,9 @@ describe('BacktestService', () => {
   beforeEach(() => {
     mockDatasets = {
       findById: jest.fn().mockResolvedValue(sampleDataset),
-      create: jest.fn().mockResolvedValue(sampleDataset),
+      create: jest.fn().mockResolvedValue({ dataset: sampleDataset, created: true }),
       list: jest.fn().mockResolvedValue([sampleDataset]),
+      delete: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<DatasetRepository>;
 
     mockCandles = {
@@ -144,6 +145,39 @@ describe('BacktestService', () => {
     );
   });
 
+  it('deletes the newly-created dataset when the candle backfill fails', async () => {
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('leaves a pre-existing dataset in place when the backfill fails on a re-request', async () => {
+    mockDatasets.create.mockResolvedValue({ dataset: sampleDataset, created: false });
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).not.toHaveBeenCalled();
+  });
+
   it('runs a single backtest and returns full result payload', async () => {
     const result = await service.runSingle({
       datasetId: 'dataset-123',
@@ -157,5 +191,70 @@ describe('BacktestService', () => {
     expect(result.candles).toHaveLength(1);
     expect(mockRunner.run).toHaveBeenCalled();
     expect(mockEvaluator.evaluateAndRecord).toHaveBeenCalled();
+  });
+
+  it('computes indicators using the actual parameters of the strategy members', async () => {
+    const maSpec: CandidateSpec = {
+      rule: 'weighted',
+      threshold: 0.5,
+      members: [
+        {
+          id: 'ma',
+          version: 1,
+          params: { fastPeriod: 10, slowPeriod: 50 },
+          paramsHash: 'hash-ma-10-50',
+          weight: 1.0,
+        },
+      ],
+    };
+
+    const result = await service.runSingle({
+      datasetId: 'dataset-123',
+      spec: maSpec,
+    });
+
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 10 } },
+    );
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 50 } },
+    );
+    expect(result.indicators['ma.fast']).toBeDefined();
+    expect(result.indicators['ma.slow']).toBeDefined();
+    expect(result.indicators['ma.10']).toBeDefined();
+    expect(result.indicators['ma.50']).toBeDefined();
+    expect(result.indicators['sr.support']).toBeDefined();
+    expect(result.indicators['sr.resistance']).toBeDefined();
+  });
+
+  it('rejects dataset creation and deletes created row when dataset range has no candles', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('contains no market candle data');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('rejects runSingle when dataset has no candle data for the range', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.runSingle({
+        datasetId: 'dataset-123',
+        spec: sampleSpec,
+      }),
+    ).rejects.toThrow('contains no market candle data');
   });
 });

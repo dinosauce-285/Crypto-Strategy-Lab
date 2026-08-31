@@ -11,28 +11,28 @@ describe('parseLeaderboardQuery', () => {
   });
 
   it('rejects a missing datasetId', () => {
-    expect(() => parseLeaderboardQuery({})).toThrow('datasetId is required');
+    expect(() => parseLeaderboardQuery({})).toThrow('"datasetId" is required');
   });
 
   it('rejects an unknown sort field', () => {
     expect(() => parseLeaderboardQuery({ datasetId: 'd', sortBy: 'profit' })).toThrow(
-      'sortBy must be one of',
+      'Invalid sortBy parameter "profit"',
     );
   });
 
   it('rejects an unknown direction', () => {
     expect(() => parseLeaderboardQuery({ datasetId: 'd', direction: 'sideways' })).toThrow(
-      'direction must be one of',
+      'Invalid direction parameter "sideways"',
     );
   });
 
-  it.each(['0', '-1', 'abc'])('rejects a limit of %s', (limit) => {
+  it.each(['0', '-1', 'abc', '51'])('rejects a limit of %s', (limit) => {
     expect(() => parseLeaderboardQuery({ datasetId: 'd', limit })).toThrow(
-      'limit must be a positive integer',
+      'must be an integer between 1 and 50',
     );
   });
 
-  it('clamps a limit above the ceiling instead of refusing it', () => {
-    expect(parseLeaderboardQuery({ datasetId: 'd', limit: '10000' }).limit).toBe(500);
+  it('accepts a limit sitting on the ceiling', () => {
+    expect(parseLeaderboardQuery({ datasetId: 'd', limit: '50' }).limit).toBe(50);
   });
 });

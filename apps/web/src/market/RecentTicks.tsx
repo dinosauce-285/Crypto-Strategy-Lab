@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MESSAGES, marketPriceTopic, type ServerMessage } from '@csl/contracts';
 import { useChannelStatus, useTopic } from '../channel/use-topic';
-import { clock, decimal } from './format';
+import { clock, decimal, sideLabel } from './format';
 
 const KEEP = 5;
 
@@ -74,7 +74,7 @@ export function RecentTicks({ pair }: RecentTicksProps) {
                   <td>{decimal(tick.price)}</td>
                   <td>{decimal(tick.volume)}</td>
                   <td className={tick.side === 'buy' ? 'ok' : 'bad'}>
-                    {tick.side === 'buy' ? 'Buy' : 'Sell'}
+                    {sideLabel(tick.side)}
                   </td>
                 </tr>
               ))}

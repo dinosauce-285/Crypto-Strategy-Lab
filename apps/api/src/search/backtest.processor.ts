@@ -71,6 +71,10 @@ export class BacktestProcessor {
         to: dataset.to,
       });
 
+      if (candleSeries.length === 0) {
+        throw new Error(`Dataset "${datasetId}" contains no candle data for backtesting`);
+      }
+
       const { metrics, experimentId } = await evaluator.evaluateAndRecord({
         datasetId,
         spec,

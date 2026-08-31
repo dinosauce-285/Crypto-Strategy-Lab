@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
+import { formatDatasetRange } from '../market/format';
 
 interface DatasetPickerProps {
   selectedDataset: Dataset | null;
@@ -7,6 +8,21 @@ interface DatasetPickerProps {
   onOpenCreateModal: () => void;
   disabled?: boolean;
 }
+
+const ENTRY_PRICE_LABELS: Record<'next-open' | 'signal-close', string> = {
+  'next-open': 'Mở nến kế tiếp',
+  'signal-close': 'Đóng nến tín hiệu',
+};
+
+const PROFIT_MODE_LABELS: Record<'simple' | 'compound', string> = {
+  compound: 'Lãi kép',
+  simple: 'Cộng dồn đơn giản',
+};
+
+const DRAWDOWN_MODE_LABELS: Record<'trade-close' | 'per-candle', string> = {
+  'trade-close': 'Drawdown khi đóng lệnh',
+  'per-candle': 'Drawdown theo từng nến',
+};
 
 export function DatasetPicker({
   selectedDataset,
@@ -16,12 +32,18 @@ export function DatasetPicker({
 }: DatasetPickerProps) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch('/api/datasets')
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Lỗi kết nối máy chủ (HTTP ${res.status})`);
+        }
+        return res.json();
+      })
       .then((data: Dataset[]) => {
         setDatasets(data);
         if (data.length > 0 && !selectedDataset) {
@@ -29,38 +51,37 @@ export function DatasetPicker({
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((err: Error) => {
+        setError(err.message || 'Không thể kết nối đến máy chủ.');
+        setLoading(false);
+      });
   }, [onSelectDataset, selectedDataset]);
 
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    const found = datasets.find((d) => d.id === selectedId);
+    if (found) {
+      onSelectDataset(found);
+    }
+  };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
+  // The column is narrower than the label, so the full text lives on the control's title.
   const selectedLabel = selectedDataset
-    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${new Date(selectedDataset.from).toLocaleDateString()} - ${new Date(selectedDataset.to).toLocaleDateString()})`
-    : loading
-      ? 'Đang tải dataset…'
-      : '(Chưa có dataset nào)';
+    ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${formatDatasetRange(selectedDataset.from, selectedDataset.to)})`
+    : undefined;
 
   return (
     <div className="dataset-picker-wrap">
-      <div className="dataset-picker-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-        <label className="stat-tile-label">
+      <div
+        className="dataset-picker-header"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '0.35rem',
+        }}
+      >
+        <label className="stat-tile-label" htmlFor="dataset-select">
           Dataset đang dùng
         </label>
         <button
@@ -74,55 +95,54 @@ export function DatasetPicker({
         </button>
       </div>
 
-      <div className="custom-dropdown-wrap" ref={dropdownRef}>
-        <button
-          type="button"
-          className="custom-dropdown-trigger"
-          disabled={disabled || loading || datasets.length === 0}
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          title={selectedLabel}
-        >
-          <span>{selectedLabel}</span>
-          <span style={{ fontSize: '0.65rem', marginLeft: '0.5rem', color: 'var(--muted)' }}>
-            {isOpen ? '▲' : '▼'}
-          </span>
-        </button>
-
-        {isOpen && (
-          <div className="custom-dropdown-menu" role="listbox">
-            {datasets.map((d) => {
-              const isSelected = selectedDataset?.id === d.id;
-              const label = `${d.pair} · ${d.timeframe} (${new Date(d.from).toLocaleDateString()} - ${new Date(d.to).toLocaleDateString()})`;
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  className="custom-dropdown-item"
-                  disabled={disabled}
-                  title={label}
-                  onClick={() => {
-                    onSelectDataset(d);
-                    setIsOpen(false);
-                  }}
-                >
-                  <span>{label}</span>
-                  {isSelected && <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>✓</span>}
-                </button>
-              );
-            })}
-          </div>
+      <select
+        id="dataset-select"
+        className="pair-select"
+        value={selectedDataset?.id ?? ''}
+        onChange={handleChange}
+        disabled={disabled || loading || datasets.length === 0}
+        aria-label="Chọn dataset"
+        title={selectedLabel}
+        style={{ width: '100%' }}
+      >
+        {datasets.length === 0 && (
+          <option value="" disabled>
+            {loading ? 'Đang tải dataset…' : error ? `Lỗi: ${error}` : '(Chưa có dataset nào)'}
+          </option>
         )}
-      </div>
+        {datasets.map((d) => {
+          const feePct = Number(d.rules?.feeRate ?? 0) * 100;
+          const formattedFee = Number.isFinite(feePct) ? `${Number(feePct.toFixed(4))}%` : '0%';
+          const entryLabel = ENTRY_PRICE_LABELS[d.rules?.entryPrice] ?? d.rules?.entryPrice ?? '';
+          const profitLabel = PROFIT_MODE_LABELS[d.rules?.profitMode] ?? d.rules?.profitMode ?? '';
 
-      {selectedDataset && (
-        <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-          <strong>Quy tắc:</strong> {selectedDataset.rules.entryPrice} · phí {Number(selectedDataset.rules.feeRate) * 100}% · warmup {selectedDataset.rules.warmupCandles} · {selectedDataset.rules.profitMode} · {selectedDataset.rules.drawdownMode}
+          return (
+            <option key={d.id} value={d.id}>
+              {d.pair} · {d.timeframe} ({formatDatasetRange(d.from, d.to)}) — {entryLabel} · phí {formattedFee} · {profitLabel}
+            </option>
+          );
+        })}
+      </select>
+
+      {error && (
+        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--bad)' }}>
+          ⚠ {error}
         </div>
       )}
+
+      {selectedDataset && (() => {
+        const feePct = Number(selectedDataset.rules.feeRate) * 100;
+        const formattedFee = Number.isFinite(feePct) ? `${Number(feePct.toFixed(4))}%` : '0%';
+        const entryLabel = ENTRY_PRICE_LABELS[selectedDataset.rules.entryPrice] ?? selectedDataset.rules.entryPrice;
+        const profitLabel = PROFIT_MODE_LABELS[selectedDataset.rules.profitMode] ?? selectedDataset.rules.profitMode;
+        const ddLabel = DRAWDOWN_MODE_LABELS[selectedDataset.rules.drawdownMode] ?? selectedDataset.rules.drawdownMode;
+
+        return (
+          <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
+            <strong>Quy tắc:</strong> {entryLabel} · phí {formattedFee} · warmup {selectedDataset.rules.warmupCandles} nến · {profitLabel} · {ddLabel}
+          </div>
+        );
+      })()}
     </div>
   );
 }
