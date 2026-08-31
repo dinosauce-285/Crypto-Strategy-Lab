@@ -89,11 +89,11 @@ function SearchIcon() {
 }
 
 const TABS = [
-  { to: '/realtime', label: 'Realtime', icon: RealtimeIcon },
-  { to: '/backtest', label: 'Backtest', icon: BacktestIcon },
-  { to: '/search', label: 'Search', icon: SearchIcon },
-  { to: '/leaderboard', label: 'Leaderboard', icon: LeaderboardIcon },
-  { to: '/news', label: 'News Crawler', icon: NewsIcon },
+  { to: '/realtime', label: 'Thời gian thực', icon: RealtimeIcon },
+  { to: '/backtest', label: 'Backtest', icon: BacktestIcon, title: 'Backtest: kiểm thử chiến lược trên dữ liệu lịch sử' },
+  { to: '/search', label: 'Tìm kiếm', icon: SearchIcon },
+  { to: '/leaderboard', label: 'Bảng xếp hạng', icon: LeaderboardIcon },
+  { to: '/news', label: 'Tin tức', icon: NewsIcon },
 ];
 
 export function Navbar() {
@@ -101,12 +101,16 @@ export function Navbar() {
     <nav className="navbar">
       <div>
         <p className="navbar-title">Crypto Strategy Lab</p>
-        <p className="sub">the server pushes, the screen never asks twice.</p>
+        <p className="sub">Theo dõi, kiểm thử và xếp hạng chiến lược giao dịch crypto.</p>
       </div>
       <ul className="navbar-tabs">
-        {TABS.map(({ to, label, icon: Icon }) => (
+        {TABS.map(({ to, label, icon: Icon, title }) => (
           <li key={to}>
-            <NavLink to={to} className={({ isActive }) => (isActive ? 'active' : undefined)}>
+            <NavLink
+              to={to}
+              className={({ isActive }) => (isActive ? 'active' : undefined)}
+              title={title}
+            >
               <Icon />
               {label}
             </NavLink>

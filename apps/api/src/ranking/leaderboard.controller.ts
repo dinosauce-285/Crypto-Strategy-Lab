@@ -1,14 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import {
-  leaderboardTopic,
-  MESSAGES,
-  type LeaderboardEntry,
-  type LeaderboardSortField,
-  type SortDirection,
-} from '@csl/contracts';
+import { EVENTS, leaderboardTopic, MESSAGES, type LeaderboardEntry } from '@csl/contracts';
 import { RankingPort } from './ports/ranking.port';
 import { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
+import { parseLeaderboardQuery } from './dto/leaderboard-query.dto';
 
 @Controller('leaderboard')
 export class LeaderboardController {
@@ -19,21 +14,19 @@ export class LeaderboardController {
 
   @Get()
   async getLeaderboard(
-    @Query('datasetId') datasetId: string,
-    @Query('sortBy') sortBy?: LeaderboardSortField,
-    @Query('direction') direction?: SortDirection,
-    @Query('limit') limitStr?: string,
+    @Query('datasetId') datasetId?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('direction') direction?: string,
+    @Query('limit') limit?: string,
   ): Promise<LeaderboardEntry[]> {
-    const limit = limitStr ? parseInt(limitStr, 10) : undefined;
-    return this.ranking.getLeaderboard({
-      datasetId,
-      sortBy,
-      direction,
-      limit,
-    });
+    return this.ranking.getLeaderboard(
+      parseLeaderboardQuery({ datasetId, sortBy, direction, limit }),
+    );
   }
 
-  @OnEvent('experiment.completed')
+  @OnEvent(EVENTS.StrategyEvaluated)
+  @OnEvent(EVENTS.LeaderboardUpdated)
+  @OnEvent(EVENTS.BacktestCompleted)
   handleExperimentCompleted(event: { datasetId: string; experimentId?: string }) {
     if (event?.datasetId) {
       const topic = leaderboardTopic(event.datasetId);

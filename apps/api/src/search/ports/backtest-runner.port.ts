@@ -1,4 +1,5 @@
 import type { Trade } from '@csl/contracts';
+import { DomainError } from '../../http/domain-error';
 import type { RunnableStrategy } from './strategy-factory.port';
 
 /**
@@ -13,7 +14,9 @@ export abstract class BacktestRunner {
   abstract run(strategy: RunnableStrategy, datasetId: string): Promise<Trade[]>;
 }
 
-export class UnknownDatasetError extends Error {
+export class UnknownDatasetError extends DomainError {
+  readonly status = 404;
+
   constructor(readonly datasetId: string) {
     super(`dataset "${datasetId}" does not exist`);
   }

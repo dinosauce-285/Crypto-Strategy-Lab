@@ -5,6 +5,7 @@ import type {
   RunCounters,
   RunEndReason,
   RunHistory,
+  RunningCandidate,
   RunState,
   RunStatus,
   SearchHistoryEntry,
@@ -35,6 +36,11 @@ export class ActiveRun {
   endedAt?: number;
   endReason?: RunEndReason;
 
+  private pausedTotalMs = 0;
+  private pausedAt?: number;
+  private current?: RunningCandidate;
+  private currentJobId?: string;
+
   /** jobId to candidate, so queue events can be named without asking Redis. */
   readonly pending = new Map<string, PendingCandidate>();
 
@@ -52,6 +58,21 @@ export class ActiveRun {
     readonly bound: RunBound,
     readonly mode: SearchMode,
   ) {}
+
+  /**
+   * Named for the screen, not for the loop — section 46 step 4. With several workers this
+   * holds the latest to start, and it is dropped when that same job comes back.
+   */
+  recordStarted(jobId: string, candidate: RunningCandidate): void {
+    this.currentJobId = jobId;
+    this.current = candidate;
+  }
+
+  recordSettled(jobId: string): void {
+    if (this.currentJobId !== jobId) return;
+    this.currentJobId = undefined;
+    this.current = undefined;
+  }
 
   recordFinished(outcome: JobOutcome, spec?: CandidateSpec): void {
     this.tried += 1;
@@ -80,10 +101,33 @@ export class ActiveRun {
     this.sinceImprovement += 1;
   }
 
+  pause(now: number): void {
+    this.state = 'paused';
+    this.pausedAt = now;
+  }
+
+  resume(now: number): void {
+    this.pausedTotalMs += this.pausedFor(now);
+    this.pausedAt = undefined;
+    this.state = 'running';
+  }
+
+  /** Milliseconds this run has not been spending its budget — ADR 0045. */
+  pausedMs(now: number): number {
+    return this.pausedTotalMs + this.pausedFor(now);
+  }
+
+  /** How long the pause it is in right now has lasted, which is what the lease bounds. */
+  currentPauseMs(now: number): number {
+    return this.pausedFor(now);
+  }
+
   end(reason: RunEndReason): void {
     this.state = 'ended';
     this.endReason = reason;
     this.endedAt = Date.now();
+    this.current = undefined;
+    this.currentJobId = undefined;
   }
 
   counters(): RunCounters {
@@ -113,8 +157,13 @@ export class ActiveRun {
       startedAt: this.startedAt,
       endedAt: this.endedAt,
       endReason: this.endReason,
+      current: this.current,
       counters: this.counters(),
     };
+  }
+
+  private pausedFor(now: number): number {
+    return this.pausedAt === undefined ? 0 : Math.max(0, now - this.pausedAt);
   }
 
   private beats(totalReturn: number): boolean {

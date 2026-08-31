@@ -1,52 +1,37 @@
 import { Injectable } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
-import { EVENTS, type Candle, type Timeframe, type EventPayload } from '@csl/contracts';
+import type { Candle, Timeframe } from '@csl/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../generated/prisma/client';
 
 /**
  * The only place that touches PrismaService for candles (BACKEND_CONSTRAINT.md). A row
  * here is always closed — a forming candle is never stored, so `closed` on the way out
- * is always true.
+ * is always true. Only a Dataset's own fetch writes here now (ADR 0040/0041) — a
+ * realtime watch never does.
  */
+const BATCH_SIZE = 500;
+
 @Injectable()
 export class CandleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  @OnEvent(EVENTS.CandleClosed)
-  async onCandleClosed(payload: EventPayload<typeof EVENTS.CandleClosed>): Promise<void> {
-    await this.upsert(payload.candle);
-  }
-
-  async upsert(candle: Candle): Promise<void> {
-    const row = toRow(candle);
-    await this.prisma.candle.upsert({
-      where: { pair_timeframe_openTime: pick(row) },
-      create: row,
-      update: row,
-    });
-  }
-
+  // Batched so a wide-range Dataset backfill (thousands of candles) never puts enough
+  // upserts in one $transaction to trip Prisma's default 5000ms transaction timeout.
   async upsertMany(candles: Candle[]): Promise<void> {
     if (candles.length === 0) return;
-    await this.prisma.$transaction(
-      candles.map((candle) => {
-        const row = toRow(candle);
-        return this.prisma.candle.upsert({
-          where: { pair_timeframe_openTime: pick(row) },
-          create: row,
-          update: row,
-        });
-      }),
-    );
-  }
-
-  async hasHistory(pair: string, timeframe: Timeframe): Promise<boolean> {
-    const row = await this.prisma.candle.findFirst({
-      where: { pair, timeframe },
-      select: { pair: true },
-    });
-    return row !== null;
+    for (let i = 0; i < candles.length; i += BATCH_SIZE) {
+      const batch = candles.slice(i, i + BATCH_SIZE);
+      await this.prisma.$transaction(
+        batch.map((candle) => {
+          const row = toRow(candle);
+          return this.prisma.candle.upsert({
+            where: { pair_timeframe_openTime: pick(row) },
+            create: row,
+            update: row,
+          });
+        }),
+      );
+    }
   }
 
   async range(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {

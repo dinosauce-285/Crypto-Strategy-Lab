@@ -3,6 +3,7 @@ import type { CandidateSpec, Dataset } from '@csl/contracts';
 import { BacktestService } from './backtest.service';
 import type { DatasetRepository } from './dataset.repository';
 import type { CandleRepository } from '../market/candle.repository';
+import type { CandleBackfillPort } from '../market/ports/candle-backfill.port';
 import type { IndicatorPort } from '../indicator/ports/indicator.port';
 import type { EvaluatorPort } from '../evaluation/ports/evaluator.port';
 import type { StrategyFactory } from './ports/strategy-factory.port';
@@ -12,6 +13,7 @@ describe('BacktestService', () => {
   let service: BacktestService;
   let mockDatasets: jest.Mocked<DatasetRepository>;
   let mockCandles: jest.Mocked<CandleRepository>;
+  let mockBackfill: jest.Mocked<CandleBackfillPort>;
   let mockIndicators: jest.Mocked<IndicatorPort>;
   let mockEvaluator: jest.Mocked<EvaluatorPort>;
   let mockFactory: jest.Mocked<StrategyFactory>;
@@ -56,8 +58,9 @@ describe('BacktestService', () => {
   beforeEach(() => {
     mockDatasets = {
       findById: jest.fn().mockResolvedValue(sampleDataset),
-      create: jest.fn().mockResolvedValue(sampleDataset),
+      create: jest.fn().mockResolvedValue({ dataset: sampleDataset, created: true }),
       list: jest.fn().mockResolvedValue([sampleDataset]),
+      delete: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<DatasetRepository>;
 
     mockCandles = {
@@ -65,6 +68,10 @@ describe('BacktestService', () => {
         { pair: 'BTCUSDT', timeframe: '1h', openTime: 1000, open: '100', high: '105', low: '95', close: '102', volume: '10', closed: true },
       ]),
     } as unknown as jest.Mocked<CandleRepository>;
+
+    mockBackfill = {
+      ensureRange: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<CandleBackfillPort>;
 
     mockIndicators = {
       compute: jest.fn().mockReturnValue([100]),
@@ -105,6 +112,7 @@ describe('BacktestService', () => {
     service = new BacktestService(
       mockDatasets,
       mockCandles,
+      mockBackfill,
       mockIndicators,
       mockEvaluator,
       mockFactory,
@@ -117,6 +125,57 @@ describe('BacktestService', () => {
     const list = await service.listDatasets();
     expect(list).toHaveLength(1);
     expect(list[0].id).toBe('dataset-123');
+  });
+
+  it('creates a dataset and fetches its candle range before returning it', async () => {
+    const created = await service.createDataset({
+      pair: sampleDataset.pair,
+      timeframe: sampleDataset.timeframe,
+      from: sampleDataset.from,
+      to: sampleDataset.to,
+      rules: sampleDataset.rules,
+    });
+
+    expect(created).toEqual(sampleDataset);
+    expect(mockBackfill.ensureRange).toHaveBeenCalledWith(
+      sampleDataset.pair,
+      sampleDataset.timeframe,
+      sampleDataset.from,
+      sampleDataset.to,
+    );
+  });
+
+  it('deletes the newly-created dataset when the candle backfill fails', async () => {
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('leaves a pre-existing dataset in place when the backfill fails on a re-request', async () => {
+    mockDatasets.create.mockResolvedValue({ dataset: sampleDataset, created: false });
+    mockBackfill.ensureRange.mockRejectedValue(new Error('Binance klines request failed: HTTP 500'));
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('Binance klines request failed: HTTP 500');
+
+    expect(mockDatasets.delete).not.toHaveBeenCalled();
   });
 
   it('runs a single backtest and returns full result payload', async () => {
@@ -132,5 +191,70 @@ describe('BacktestService', () => {
     expect(result.candles).toHaveLength(1);
     expect(mockRunner.run).toHaveBeenCalled();
     expect(mockEvaluator.evaluateAndRecord).toHaveBeenCalled();
+  });
+
+  it('computes indicators using the actual parameters of the strategy members', async () => {
+    const maSpec: CandidateSpec = {
+      rule: 'weighted',
+      threshold: 0.5,
+      members: [
+        {
+          id: 'ma',
+          version: 1,
+          params: { fastPeriod: 10, slowPeriod: 50 },
+          paramsHash: 'hash-ma-10-50',
+          weight: 1.0,
+        },
+      ],
+    };
+
+    const result = await service.runSingle({
+      datasetId: 'dataset-123',
+      spec: maSpec,
+    });
+
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 10 } },
+    );
+    expect(mockIndicators.compute).toHaveBeenCalledWith(
+      'dataset-123',
+      expect.any(Array),
+      { source: 'ma', params: { period: 50 } },
+    );
+    expect(result.indicators['ma.fast']).toBeDefined();
+    expect(result.indicators['ma.slow']).toBeDefined();
+    expect(result.indicators['ma.10']).toBeDefined();
+    expect(result.indicators['ma.50']).toBeDefined();
+    expect(result.indicators['sr.support']).toBeDefined();
+    expect(result.indicators['sr.resistance']).toBeDefined();
+  });
+
+  it('rejects dataset creation and deletes created row when dataset range has no candles', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.createDataset({
+        pair: sampleDataset.pair,
+        timeframe: sampleDataset.timeframe,
+        from: sampleDataset.from,
+        to: sampleDataset.to,
+        rules: sampleDataset.rules,
+      }),
+    ).rejects.toThrow('contains no market candle data');
+
+    expect(mockDatasets.delete).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('rejects runSingle when dataset has no candle data for the range', async () => {
+    mockCandles.range.mockResolvedValueOnce([]);
+
+    await expect(
+      service.runSingle({
+        datasetId: 'dataset-123',
+        spec: sampleSpec,
+      }),
+    ).rejects.toThrow('contains no market candle data');
   });
 });

@@ -7,7 +7,7 @@ import type { CandidateSpec, CandidateMember } from './candidate';
  */
 export interface RunBound {
   maxCandidates?: number;
-  /** Wall clock, and time spent paused counts towards it. */
+  /** Active time: milliseconds spent paused are subtracted before this is checked — `0045`. */
   maxDurationMs?: number;
   /**
    * Consecutive finished candidates allowed to fail to beat the best so far. Optional
@@ -34,6 +34,9 @@ export type RunState = (typeof RUN_STATES)[number];
 /**
  * Why a run ended. A run that reports only "not running" cannot be told apart from one
  * that died, and section 32.7 asks whether the loop is running.
+ *
+ * `abandoned` is a run left paused past its lease — nobody's decision, unlike `stopped`
+ * (ADR 0045).
  */
 export const RUN_END_REASONS = [
   'candidates',
@@ -41,6 +44,7 @@ export const RUN_END_REASONS = [
   'plateau',
   'exhausted',
   'stopped',
+  'abandoned',
 ] as const;
 export type RunEndReason = (typeof RUN_END_REASONS)[number];
 
@@ -73,6 +77,15 @@ export interface RunCounters {
   best?: RunBest;
 }
 
+/**
+ * What a worker is testing at this instant — section 46 step 4 asks the screen to name it.
+ * With several workers this is the most recently started of them, not the only one.
+ */
+export interface RunningCandidate {
+  spec: CandidateSpec;
+  specHash: string;
+}
+
 export interface RunStatus {
   runId: string;
   datasetId: string;
@@ -83,6 +96,8 @@ export interface RunStatus {
   startedAt: number;
   endedAt?: number;
   endReason?: RunEndReason;
+  /** Absent between candidates — `state` says whether the run is still going. */
+  current?: RunningCandidate;
   counters: RunCounters;
 }
 

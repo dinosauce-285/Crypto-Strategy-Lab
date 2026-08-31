@@ -31,9 +31,6 @@ interface Watch {
   status: StreamStatus;
 }
 
-/** Binance's REST klines endpoint caps a single request here — ADR 0023. */
-const BACKFILL_LIMIT = 1000;
-
 /**
  * The stream follows the screen: an upstream connection opens on the first watcher of
  * a pair and closes behind the last one (ADR 0020). The channel reports a topic string
@@ -56,6 +53,11 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
 
   async getHistory(pair: string, timeframe: Timeframe, options: CandleRangeOptions): Promise<Candle[]> {
     return this.candles.range(pair, timeframe, options);
+  }
+
+  /** The Realtime tab's initial paint — live from the exchange, never stored (ADR 0040). */
+  async getLiveHistory(pair: string, timeframe: Timeframe, limit: number): Promise<Candle[]> {
+    return this.exchangeHistory.fetchKlines(pair, timeframe, limit);
   }
 
   onModuleInit(): void {
@@ -81,7 +83,7 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
       watch.price = true;
       return;
     }
-    void this.ensureHistoryAndCursor(parsed.pair, parsed.timeframe, watch);
+    void this.seedCursor(parsed.pair, parsed.timeframe, watch);
     watch.timeframes.add(parsed.timeframe);
     watch.stream.addTimeframe(parsed.timeframe);
   }
@@ -135,28 +137,22 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Backfill on first watch (ADR 0023). Runs independently of the live subscription —
-   * a failed fetch is logged and leaves the chart on its empty state until the first
-   * candle closes live, it never blocks `hold`.
+   * A cheap live read, just to give `recoverGaps` somewhere to start from if a
+   * disconnect happens before the first live candle sets the cursor itself. Runs
+   * independently of the live subscription — a failed fetch is logged and leaves the
+   * chart on its empty state until the first candle closes live, it never blocks
+   * `hold` (ADR 0040 — no backfill, no storage, here or ever for a watch).
    */
-  private async ensureHistoryAndCursor(pair: string, timeframe: Timeframe, watch: Watch): Promise<void> {
+  private async seedCursor(pair: string, timeframe: Timeframe, watch: Watch): Promise<void> {
+    if (watch.cursors.has(timeframe)) return;
     try {
-      const hasHistory = await this.candles.hasHistory(pair, timeframe);
-      if (!hasHistory) {
-        const history = await this.exchangeHistory.fetchKlines(pair, timeframe, BACKFILL_LIMIT);
-        await this.candles.upsertMany(history);
-        const latest = history[history.length - 1];
-        if (latest && !watch.cursors.has(timeframe)) {
-          watch.cursors.set(timeframe, latest.openTime);
-        }
-      } else {
-        const latestRows = await this.candles.range(pair, timeframe, { limit: 1 });
-        if (latestRows.length > 0 && !watch.cursors.has(timeframe)) {
-          watch.cursors.set(timeframe, latestRows[0].openTime);
-        }
+      const recent = await this.exchangeHistory.fetchKlines(pair, timeframe, 1);
+      const latest = recent[recent.length - 1];
+      if (latest && !watch.cursors.has(timeframe)) {
+        watch.cursors.set(timeframe, latest.openTime);
       }
     } catch (error) {
-      this.logger.warn(`${pair} ${timeframe} history init failed: ${(error as Error).message}`);
+      this.logger.warn(`${pair} ${timeframe} cursor seed failed: ${(error as Error).message}`);
     }
   }
 
@@ -193,9 +189,10 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
     for (const timeframe of watch.timeframes) {
       let lastCursor = watch.cursors.get(timeframe);
       if (!lastCursor) {
-        const recent = await this.candles.range(pair, timeframe, { limit: 1 });
-        if (recent.length > 0) {
-          lastCursor = recent[0].openTime;
+        const recent = await this.exchangeHistory.fetchKlines(pair, timeframe, 1);
+        const latest = recent[recent.length - 1];
+        if (latest) {
+          lastCursor = latest.openTime;
           watch.cursors.set(timeframe, lastCursor);
         }
       }
@@ -226,6 +223,9 @@ export class MarketService implements OnModuleInit, OnModuleDestroy {
           const lastInChunk = chunk[chunk.length - 1];
           if (chunk.length < 1000 || lastInChunk.openTime <= currentStart) break;
           currentStart = lastInChunk.openTime + 1;
+
+          // Pacing delay between pages to avoid burst load / rate limit
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         const buffered = watch.liveBuffers.get(timeframe) ?? [];

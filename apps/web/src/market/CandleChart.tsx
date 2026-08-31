@@ -9,11 +9,14 @@ import {
 import {
   CandlestickSeries,
   createChart,
+  HistogramSeries,
   type IChartApi,
   type ISeriesApi,
   type UTCTimestamp,
 } from 'lightweight-charts';
-import { useTopic } from '../channel/use-topic';
+import { apiFetch } from '../api/request';
+import { useChannelStatus, useTopic } from '../channel/use-topic';
+import { clock } from './format';
 
 interface CandleChartProps {
   pair: string;
@@ -28,7 +31,9 @@ const DEFAULT_WINDOW: Record<Timeframe, number> = {
   '1m': 120, // ~2 hours
   '5m': 96, // ~8 hours
   '15m': 96, // ~1 day
+  '30m': 96, // ~2 days
   '1h': 120, // ~5 days
+  '2h': 120, // ~10 days
   '4h': 90, // ~15 days
   '1d': 90, // ~3 months
 };
@@ -38,6 +43,21 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; candles: Candle[] };
 
+// Dev-mode StrictMode mounts every effect twice (mount, cleanup, remount) as a safety
+// check. Without this cache each mount would fire its own history fetch, and the first
+// one's cleanup would abort mid-flight — four ERR_ABORTED requests every time the
+// Realtime screen opens (one per timeframe). Keying by URL lets the second mount reuse
+// the first mount's in-flight request instead of starting a new one.
+const inFlightHistory = new Map<string, Promise<{ candles: Candle[] }>>();
+
+function fetchHistory(url: string): Promise<{ candles: Candle[] }> {
+  const pending = inFlightHistory.get(url);
+  if (pending) return pending;
+  const request = apiFetch<{ candles: Candle[] }>(url).finally(() => inFlightHistory.delete(url));
+  inFlightHistory.set(url, request);
+  return request;
+}
+
 function toBar(candle: Candle) {
   return {
     time: Math.floor(candle.openTime / 1000) as UTCTimestamp,
@@ -45,6 +65,14 @@ function toBar(candle: Candle) {
     high: Number(candle.high),
     low: Number(candle.low),
     close: Number(candle.close),
+  };
+}
+
+function toVolumeBar(candle: Candle, upColor: string, downColor: string) {
+  return {
+    time: Math.floor(candle.openTime / 1000) as UTCTimestamp,
+    value: Number(candle.volume),
+    color: Number(candle.close) >= Number(candle.open) ? upColor : downColor,
   };
 }
 
@@ -71,7 +99,10 @@ function showDefaultWindow(chart: IChartApi, bars: ReturnType<typeof toBar>[], w
 export function CandleChart({ pair, timeframe }: CandleChartProps) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const channelStatus = useChannelStatus();
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The chart div only mounts once there's data to show (see `hasData` below), and in
   // dev-mode StrictMode a freshly-mounted node is destroyed and recreated once as a
@@ -85,6 +116,7 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
       chartRef.current?.remove();
       chartRef.current = null;
       seriesRef.current = null;
+      volumeSeriesRef.current = null;
       return;
     }
     const chart = createChart(node, {
@@ -98,18 +130,30 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
       // only, at every zoom level, even when zoomed into a single hour.
       timeScale: { rightOffset: 4, timeVisible: true, secondsVisible: false },
     });
+    const upColor = token('--ok');
+    const downColor = token('--bad');
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: token('--ok'),
-      downColor: token('--bad'),
-      borderUpColor: token('--ok'),
-      borderDownColor: token('--bad'),
-      wickUpColor: token('--ok'),
-      wickDownColor: token('--bad'),
+      upColor,
+      downColor,
+      borderUpColor: upColor,
+      borderDownColor: downColor,
+      wickUpColor: upColor,
+      wickDownColor: downColor,
     });
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: 'volume' },
+      priceScaleId: '',
+    });
+    // Confines the volume histogram to the bottom 20% of the pane instead of sharing
+    // the candlesticks' own scale, so bars read as a strip under the price action
+    // rather than overlapping it.
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     chartRef.current = chart;
     seriesRef.current = series;
+    volumeSeriesRef.current = volumeSeries;
     const bars = candlesRef.current.map(toBar);
     series.setData(bars);
+    volumeSeries.setData(candlesRef.current.map((c) => toVolumeBar(c, upColor, downColor)));
     // A chart created inside a CSS grid cell can still be mid-layout (grid track
     // widths not yet resolved) at this instant — setting the range against a stale
     // width can render oddly. One frame is enough for layout to settle.
@@ -119,23 +163,29 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
   useEffect(() => {
     setState({ kind: 'loading' });
     candlesRef.current = [];
-    const controller = new AbortController();
-    fetch(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`, {
-      signal: controller.signal,
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((body: { candles: Candle[] }) => setState({ kind: 'ready', candles: body.candles }))
+    let cancelled = false;
+    fetchHistory(`/api/market/candles?pair=${pair}&timeframe=${timeframe}`)
+      .then((body) => {
+        if (cancelled) return;
+        setState({ kind: 'ready', candles: body.candles });
+        if (body.candles.length > 0) setLastUpdatedAt(Date.now());
+      })
       .catch((e: Error) => {
-        if (e.name === 'AbortError') return;
+        if (cancelled) return;
         setState({ kind: 'error', message: e.message });
       });
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [pair, timeframe, attempt]);
 
   useEffect(() => {
     if (state.kind !== 'ready' || state.candles.length === 0) return;
     candlesRef.current = state.candles;
     seriesRef.current?.setData(state.candles.map(toBar));
+    volumeSeriesRef.current?.setData(
+      state.candles.map((c) => toVolumeBar(c, token('--ok'), token('--bad'))),
+    );
   }, [state]);
 
   useTopic(
@@ -146,32 +196,43 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
         kind: 'ready',
         candles: appendCandle(prev.kind === 'ready' ? prev.candles : [], message.payload.candle),
       }));
+      setLastUpdatedAt(Date.now());
     }, []),
   );
 
   const hasData = state.kind === 'ready' && state.candles.length > 0;
+  const isStale = hasData && channelStatus === 'down';
 
   return (
     <>
-      {state.kind === 'loading' && <p className="state">Loading history…</p>}
+      {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
         <p className="state bad">
-          <strong>History unreachable.</strong> {state.message}{' '}
+          <strong>Không tải được dữ liệu lịch sử.</strong> {state.message}{' '}
           <button type="button" onClick={() => setAttempt((n) => n + 1)}>
-            Retry
+            Thử lại
           </button>
         </p>
       )}
 
       {state.kind === 'ready' && state.candles.length === 0 && (
         <p className="state">
-          No history yet for <strong>{pair}</strong> on <strong>{timeframe}</strong> — it
-          backfills on first watch, and a candle appears here as soon as one closes.
+          Chưa có dữ liệu lịch sử cho <strong>{pair}</strong> ở <strong>{timeframe}</strong>{' '}
+          — dữ liệu sẽ được nạp khi bắt đầu theo dõi, và nến sẽ xuất hiện ngay khi đóng.
         </p>
       )}
 
-      {hasData && <div ref={attachChart} className="chart" />}
+      {isStale && (
+        <p className="chart-stale-banner state bad">
+          <strong>Mất kết nối kênh.</strong> Dữ liệu đứng yên từ{' '}
+          {lastUpdatedAt ? clock(lastUpdatedAt) : '—'}.
+        </p>
+      )}
+
+      {hasData && (
+        <div ref={attachChart} className={isStale ? 'chart chart-stale' : 'chart'} />
+      )}
     </>
   );
 }

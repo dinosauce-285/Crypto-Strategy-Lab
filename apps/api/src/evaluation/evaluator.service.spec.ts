@@ -38,23 +38,31 @@ describe('EvaluatorService', () => {
     service = new EvaluatorService(repository);
   });
 
+  it('delegates isRecorded to the repository', async () => {
+    repository.isRecorded.mockResolvedValue(true);
+
+    const recorded = await service.isRecorded('dataset-1', 'hash-abc');
+    expect(recorded).toBe(true);
+    expect(repository.isRecorded).toHaveBeenCalledWith('dataset-1', 'hash-abc');
+  });
+
   it('computes metrics purely without calling repository', () => {
     const trades: Trade[] = [
-      { entryTime: 1000, entryPrice: '100', exitTime: 2000, exitPrice: '110', side: 'BUY', profit: '10' },
+      { entryTime: 1000, entryPrice: '100', exitTime: 2000, exitPrice: '110', side: 'BUY', profit: '0.1' },
     ];
 
     const metrics = service.computeMetrics(trades, defaultRules);
     expect(metrics.totalReturn).toBeCloseTo(0.1);
     expect(metrics.tradeCount).toBe(1);
     expect(metrics.winRate).toBe(1.0);
-    expect(metrics.profitLoss).toBe('10');
+    expect(metrics.profitLoss).toBe('0.1');
     expect(repository.recordCompleted).not.toHaveBeenCalled();
   });
 
   it('evaluates and persists completed experiment atomically', async () => {
     const trades: Trade[] = [
-      { entryTime: 1000, entryPrice: '100', exitTime: 2000, exitPrice: '110', side: 'BUY', profit: '10' },
-      { entryTime: 3000, entryPrice: '110', exitTime: 4000, exitPrice: '105', side: 'BUY', profit: '-5' },
+      { entryTime: 1000, entryPrice: '100', exitTime: 2000, exitPrice: '110', side: 'BUY', profit: '0.1' },
+      { entryTime: 3000, entryPrice: '110', exitTime: 4000, exitPrice: '105', side: 'BUY', profit: '-0.05' },
     ];
 
     repository.recordCompleted.mockResolvedValue('exp-123');

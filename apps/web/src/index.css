@@ -1,3 +1,9 @@
+/* Whole-weight files, not the per-subset ones: only these carry unicode-range, without
+   which the Vietnamese subset would replace latin instead of filling its gaps. */
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+@import '@fontsource/ibm-plex-mono/700.css';
+
 :root {
   --bg: #faf9f6;
   --surface: #f4f1ea;
@@ -10,7 +16,7 @@
   --control-h: 1.9rem;
   --radius-sm: 3px;
   --radius: 6px;
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: "IBM Plex Mono", "JetBrains Mono", "Noto Sans Mono", monospace;
   color: var(--ink);
   background: var(--bg);
   color-scheme: light;
@@ -25,7 +31,9 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 
 /* --- app shell (navbar + routed screen) --- */
 
-.app-shell { display: grid; grid-template-columns: 10.5rem 1fr; min-height: 100vh; }
+/* A definite height, not a minimum: `1fr` rows below have nothing to divide without one,
+   and the screen scrolls inside itself rather than the whole page moving. */
+.app-shell { display: grid; grid-template-columns: 10.5rem 1fr; height: 100vh; }
 
 .navbar {
   border-right: 1px solid var(--line);
@@ -50,14 +58,29 @@ h2 { font-size: 0.92rem; margin: 0; font-weight: 600; text-wrap: balance; }
 .navbar-tabs a:hover { color: var(--ink); background: var(--surface); }
 .navbar-tabs a.active { color: var(--ink); background: var(--surface); }
 
-.screen { padding: 1rem 1.25rem; }
+.screen { padding: 1rem 1.25rem; display: flex; flex-direction: column; min-height: 0; overflow: auto; }
 
 .screen-head { border-bottom: 1px solid var(--line); padding-bottom: 0.4rem; margin-bottom: 0.75rem; }
 
-.screen-body { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 1.25rem; align-items: start; }
-.screen-main, .screen-side { display: flex; flex-direction: column; gap: 0.65rem; }
+.screen-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 19rem;
+  gap: 1.25rem;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+.screen-main, .screen-side { display: flex; flex-direction: column; gap: 0.65rem; min-height: 0; }
 
-.controls-row { display: flex; align-items: center; gap: 0.5rem; }
+/* A screen with no side column still fills the height it was given. */
+.screen > .screen-main { flex: 1; }
+
+/* The screen's subject takes whatever height is left over; siblings keep their own. */
+.grows { flex: 1; min-height: 0; }
+
+/* Wraps before it shrinks — eight timeframes plus a pair select outrun a narrow column. */
+.controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.15rem; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -104,7 +127,7 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   max-width: 100%;
 }
 
-.seg { display: flex; gap: 0.25rem; }
+.seg { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .seg button {
   height: var(--control-h);
   min-width: 2.75rem;
@@ -131,8 +154,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 
 .source { color: var(--muted); font-size: 0.76rem; margin: 0; }
 
+/* The floor is what a candle needs to be readable; above it the chart takes the slack. */
 .chart {
-  height: 320px;
+  flex: 1;
+  min-height: 320px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
@@ -140,13 +165,29 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-auto-rows: 1fr;
   gap: 0.85rem;
+  min-height: 0;
 }
-.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; }
-.dashboard-grid .chart { height: 230px; }
+.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; min-height: 0; }
+.dashboard-grid .chart-frame { flex: 1; min-height: 0; }
+.dashboard-grid .chart { min-height: 190px; }
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
-.chart-frame { position: relative; }
+.chart-frame { position: relative; display: flex; flex-direction: column; }
+.chart-stale { opacity: 0.45; transition: opacity 0.2s; }
+.chart-stale-banner {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.6rem;
+  left: 0.6rem;
+  margin: 0;
+  font-size: 0.72rem;
+  text-align: right;
+  pointer-events: none;
+}
 .chart-label {
   position: absolute;
   top: 0.5rem;
@@ -160,6 +201,10 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem;
   pointer-events: none;
+}
+.chart-label-selected {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 @media (max-width: 640px) {
@@ -286,7 +331,7 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 .sentiment-bar {
-  display: flex;
+  position: relative;
   height: 1.1rem;
   width: 100%;
   border-radius: var(--radius-sm);
@@ -295,9 +340,13 @@ tbody tr:last-child td { border-bottom: 0; }
   background: var(--surface);
 }
 
+/* Each segment is laid out full-width and placed by transform, so a changing
+   distribution animates on the compositor instead of reflowing the row. */
 .sentiment-bar-seg {
-  height: 100%;
-  transition: width 0.3s ease;
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transition: transform 0.3s ease;
 }
 
 .seg-pos { background: var(--ok); }
@@ -382,6 +431,7 @@ tbody tr:last-child td { border-bottom: 0; }
   position: fixed;
   inset: 0;
   background: rgba(42, 37, 31, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,6 +537,15 @@ tbody tr:last-child td { border-bottom: 0; }
   cursor: pointer;
   box-sizing: border-box;
   text-align: left;
+}
+
+/* A label too long for the column ellipsises; the full text is on the element's title. */
+.custom-dropdown-trigger > span:first-child,
+.custom-dropdown-item > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .custom-dropdown-trigger:hover:not(:disabled) {
@@ -630,10 +689,15 @@ tbody tr:last-child td { border-bottom: 0; }
   background: var(--accent);
 }
 
+/* It takes the height the running panel would, so the empty state is centred in it
+   rather than pinned to a corner of a large box. */
 .empty-progress {
   min-height: 13rem;
+  align-items: center;
   justify-content: center;
+  text-align: center;
 }
+.empty-progress .state { max-width: 42ch; }
 
 .start-search-btn {
   width: 100%;

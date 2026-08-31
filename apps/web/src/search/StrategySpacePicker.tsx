@@ -1,4 +1,5 @@
 import type { StrategyMeta, StrategyRef } from '@csl/contracts';
+import { STRATEGY_GROUP_LABELS } from './group-labels';
 
 interface StrategySpacePickerProps {
   strategies: StrategyMeta[];
@@ -27,8 +28,8 @@ export function StrategySpacePicker({
   return (
     <div className="panel search-space-panel">
       <div className="panel-head">
-        <h2>Search Space</h2>
-        <span className="badge badge-neu">{selectedRefs.length} selected</span>
+        <h2>Không gian tìm kiếm</h2>
+        <span className="badge badge-neu">Đã chọn {selectedRefs.length}</span>
       </div>
 
       <div className="strategy-grid">
@@ -51,7 +52,8 @@ export function StrategySpacePicker({
               <span className="strategy-choice-body">
                 <span className="strategy-choice-title">{strategy.name}</span>
                 <span className="source">
-                  {strategy.group} / v{strategy.version} / warmup {strategy.warmup}
+                  {STRATEGY_GROUP_LABELS[strategy.group]} · v{strategy.version} · khởi động{' '}
+                  {strategy.warmup} nến
                 </span>
               </span>
             </label>

@@ -40,6 +40,14 @@ describe('RankingService', () => {
 
   beforeEach(() => {
     mockPrisma = {
+      dataset: {
+        findUnique: jest.fn().mockImplementation(({ where }) => {
+          if (where.id === 'dataset-1') {
+            return Promise.resolve({ id: 'dataset-1' });
+          }
+          return Promise.resolve(null);
+        }),
+      },
       experiment: {
         findMany: jest.fn().mockResolvedValue(mockExperiments),
       },
@@ -73,5 +81,11 @@ describe('RankingService', () => {
   it('returns empty array when datasetId is missing', async () => {
     const results = await service.getLeaderboard({ datasetId: '' });
     expect(results).toEqual([]);
+  });
+
+  it('throws NotFoundException when dataset does not exist', async () => {
+    await expect(service.getLeaderboard({ datasetId: 'non-existent' })).rejects.toThrow(
+      'Dataset "non-existent" not found',
+    );
   });
 });

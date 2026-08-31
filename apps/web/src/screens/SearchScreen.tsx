@@ -6,12 +6,15 @@ import {
   type RunBound,
   type RunStatus,
   type SearchMode,
+  type StrategyGroup,
   type StrategyMeta,
   type StrategyRef,
 } from '@csl/contracts';
+import { ApiError, apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
 import { useTopic } from '../channel/use-topic';
+import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { SearchControlsPanel } from '../search/SearchControlsPanel';
 import { SearchProgressPanel } from '../search/SearchProgressPanel';
 import { SearchRegistryState } from '../search/SearchRegistryState';
@@ -21,6 +24,15 @@ type StrategyState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; strategies: StrategyMeta[] };
+
+/**
+ * Mirrors DomainGuidedCandidateGenerator's CORE_GROUPS/CONTEXT_GROUPS
+ * (apps/api/src/search/domain-guided-candidate.generator.ts) — a selection missing
+ * either produces zero candidates server-side and the run ends "exhausted" at tried: 0
+ * with no explanation (BUG-03). Checked here so START SEARCH can block it up front.
+ */
+const CORE_GROUPS: readonly StrategyGroup[] = ['Trend', 'Momentum'];
+const CONTEXT_GROUPS: readonly StrategyGroup[] = ['Structure', 'Volatility', 'Information'];
 
 export function SearchScreen() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
@@ -33,13 +45,15 @@ export function SearchScreen() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const strategies = strategyState.kind === 'ready' ? strategyState.strategies : [];
+  const strategies = useMemo(
+    () => (strategyState.kind === 'ready' ? strategyState.strategies : []),
+    [strategyState],
+  );
   const runningDatasetId = status?.datasetId ?? null;
   const hasActiveRun = status ? status.state !== 'ended' : false;
 
   useEffect(() => {
-    fetch('/api/strategies')
-      .then((res) => readJson<StrategyMeta[]>(res))
+    apiFetch<StrategyMeta[]>('/api/strategies')
       .then((list) => {
         setStrategyState({ kind: 'ready', strategies: list });
         setSelectedRefs((current) =>
@@ -52,38 +66,31 @@ export function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    fetch('/api/search/runs/current')
-      .then((res) => {
-        if (res.status === 404) return null;
-        return readJson<RunStatus>(res);
-      })
+    apiFetch<RunStatus>('/api/search/runs/current')
       .then((current) => {
-        if (!current) return;
         setStatus(current);
-        setSelectedRefs(current.strategyRefs);
-        if (current.state !== 'ended') {
-          fetch('/api/datasets')
-            .then((res) => readJson<Dataset[]>(res))
-            .then((datasets) => {
-              const match = datasets.find((item) => item.id === current.datasetId);
-              if (match) setDataset(match);
-            })
-            .catch(() => undefined);
-        }
+        if (current.state !== 'ended') setSelectedRefs(current.strategyRefs);
       })
-      .catch((error: Error) => setRequestError(error.message));
+      .catch((error: Error) => {
+        // Nothing started yet is the ordinary first visit, not a failure.
+        if (error instanceof ApiError && error.status === 404) return;
+        setRequestError(error.message);
+      });
   }, []);
 
   useEffect(() => {
-    if (!runningDatasetId || !hasActiveRun || dataset?.id === runningDatasetId) return;
-    fetch('/api/datasets')
-      .then((res) => readJson<Dataset[]>(res))
+    /**
+     * Only while a run is still active — once it ends, the picker unlocks and a manual
+     * selection must stick instead of being pulled back to the last run's dataset.
+     */
+    if (!hasActiveRun || !runningDatasetId || dataset?.id === runningDatasetId) return;
+    apiFetch<Dataset[]>('/api/datasets')
       .then((datasets) => {
         const match = datasets.find((item) => item.id === runningDatasetId);
         if (match) setDataset(match);
       })
       .catch(() => undefined);
-  }, [dataset?.id, hasActiveRun, runningDatasetId]);
+  }, [dataset?.id, runningDatasetId, hasActiveRun]);
 
   useTopic(
     status ? searchRunTopic(status.runId) : null,
@@ -94,9 +101,35 @@ export function SearchScreen() {
     }, []),
   );
 
+  const missingGroups = useMemo(() => {
+    if (mode !== 'domain-guided') return [];
+    const selectedGroups = new Set(
+      selectedRefs
+        .map((ref) => strategies.find((s) => s.id === ref.id && s.version === ref.version)?.group)
+        .filter((group): group is StrategyGroup => Boolean(group)),
+    );
+    const missingCore = CORE_GROUPS.filter((group) => !selectedGroups.has(group));
+    const missingContext = CONTEXT_GROUPS.some((group) => selectedGroups.has(group))
+      ? []
+      : [CONTEXT_GROUPS.map((group) => STRATEGY_GROUP_LABELS[group]).join('/')];
+    return [...missingCore.map((group) => STRATEGY_GROUP_LABELS[group]), ...missingContext];
+  }, [mode, selectedRefs, strategies]);
+
+  const candidateLimitInvalid =
+    !Number.isInteger(maxCandidates) || maxCandidates < 1 || maxCandidates > 10000;
+  const blockedReason =
+    candidateLimitInvalid
+      ? 'Số candidate tối đa phải là số nguyên từ 1 đến 10000.'
+      : missingGroups.length > 0
+        ? `Chế độ Có định hướng cần nhóm ${CORE_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join(', ')} và ít nhất một trong số ${CONTEXT_GROUPS.map((g) => STRATEGY_GROUP_LABELS[g]).join('/')}. Còn thiếu: ${missingGroups.join(', ')}.`
+        : null;
+
   const canStart = useMemo(
-    () => Boolean(dataset && selectedRefs.length > 0 && strategyState.kind === 'ready'),
-    [dataset, selectedRefs.length, strategyState.kind],
+    () =>
+      Boolean(dataset && selectedRefs.length > 0 && strategyState.kind === 'ready') &&
+      missingGroups.length === 0 &&
+      !candidateLimitInvalid,
+    [dataset, selectedRefs.length, strategyState.kind, missingGroups, candidateLimitInvalid],
   );
 
   const start = async () => {
@@ -133,7 +166,7 @@ export function SearchScreen() {
 
   return (
     <main className="screen">
-      <Header title="Search Control" />
+      <Header title="Điều khiển Tìm kiếm" />
 
       {strategyState.kind === 'loading' && <SearchRegistryState kind="loading" />}
 
@@ -165,19 +198,22 @@ export function SearchScreen() {
             />
           </div>
 
-          <SearchControlsPanel
-            dataset={dataset}
-            mode={mode}
-            maxCandidates={maxCandidates}
-            busy={busy}
-            isRunning={hasActiveRun}
-            canStart={canStart}
-            onDatasetChange={setDataset}
-            onOpenDatasetModal={() => setIsModalOpen(true)}
-            onModeChange={setMode}
-            onMaxCandidatesChange={setMaxCandidates}
-            onStart={() => void start()}
-          />
+          <div className="screen-side">
+            <SearchControlsPanel
+              dataset={dataset}
+              mode={mode}
+              maxCandidates={maxCandidates}
+              busy={busy}
+              isRunning={hasActiveRun}
+              canStart={canStart}
+              blockedReason={blockedReason}
+              onDatasetChange={setDataset}
+              onOpenDatasetModal={() => setIsModalOpen(true)}
+              onModeChange={setMode}
+              onMaxCandidatesChange={setMaxCandidates}
+              onStart={() => void start()}
+            />
+          </div>
         </div>
       )}
 
@@ -191,16 +227,10 @@ export function SearchScreen() {
   );
 }
 
-async function readJson<T>(response: Response): Promise<T> {
-  if (response.ok) return response.json() as Promise<T>;
-  throw new Error(`HTTP ${response.status}`);
-}
-
-async function postRun(path: string, body?: unknown): Promise<RunStatus> {
-  const response = await fetch(path, {
+function postRun(path: string, body?: unknown): Promise<RunStatus> {
+  return apiFetch<RunStatus>(path, {
     method: 'POST',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
-  return readJson<RunStatus>(response);
 }

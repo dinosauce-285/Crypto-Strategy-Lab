@@ -7,6 +7,7 @@ import {
   type LeaderboardSortField,
   type SortDirection,
 } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
 import { DatasetPicker } from '../backtest/DatasetPicker';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
@@ -14,6 +15,7 @@ import { LeaderboardTable } from '../leaderboard/LeaderboardTable';
 import { useTopic } from '../channel/use-topic';
 
 type State =
+  | { kind: 'no-dataset' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; entries: LeaderboardEntry[] };
@@ -24,23 +26,22 @@ export function LeaderboardScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<LeaderboardSortField>('score');
   const [direction, setDirection] = useState<SortDirection>('desc');
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const [state, setState] = useState<State>({ kind: 'no-dataset' });
 
   const fetchLeaderboard = useCallback(() => {
     if (!selectedDataset) {
-      setState({ kind: 'ready', entries: [] });
+      setState({ kind: 'no-dataset' });
       return;
     }
 
     setState({ kind: 'loading' });
     const controller = new AbortController();
 
-    fetch(
+    apiFetch<LeaderboardEntry[]>(
       `/api/leaderboard?datasetId=${selectedDataset.id}&sortBy=${sortBy}&direction=${direction}&limit=10`,
       { signal: controller.signal },
     )
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((data: LeaderboardEntry[]) => {
+      .then((data) => {
         setState({ kind: 'ready', entries: data });
       })
       .catch((err: Error) => {
@@ -51,9 +52,7 @@ export function LeaderboardScreen() {
     return () => controller.abort();
   }, [selectedDataset, sortBy, direction]);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+  useEffect(() => fetchLeaderboard(), [fetchLeaderboard]);
 
   // Real-time push updates: when a better candidate appears or experiment completes, refresh table
   const topic = selectedDataset ? leaderboardTopic(selectedDataset.id) : null;
@@ -84,7 +83,7 @@ export function LeaderboardScreen() {
 
   return (
     <main className="screen">
-      <Header title="Strategy Leaderboard" />
+      <Header title="Bảng xếp hạng Strategy" />
 
       <div className="screen-main" style={{ gap: '1rem' }}>
         {/* Top Control Bar: Dataset Picker */}
@@ -104,10 +103,39 @@ export function LeaderboardScreen() {
           />
         </div>
 
-        {/* Leaderboard Table / 4 States */}
-        {state.kind === 'loading' && (
+        {/* Leaderboard Table / 5 States */}
+        {state.kind === 'no-dataset' && (
           <div
             className="panel"
+            style={{
+              minHeight: '280px',
+              border: '1px dashed var(--line)',
+              borderRadius: 'var(--radius)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              textAlign: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
+              Vui lòng chọn một dataset hoặc tạo dataset mới để xem bảng xếp hạng.
+            </p>
+            <button
+              type="button"
+              className="btn-action"
+              onClick={() => setIsModalOpen(true)}
+            >
+              + Tạo dataset mới
+            </button>
+          </div>
+        )}
+
+        {state.kind === 'loading' && (
+          <div
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px solid var(--line)',
@@ -119,13 +147,13 @@ export function LeaderboardScreen() {
               textAlign: 'center',
             }}
           >
-            <p className="state">Computing live rankings for this dataset…</p>
+            <p className="state">Đang tính xếp hạng trực tiếp cho dataset này…</p>
           </div>
         )}
 
         {state.kind === 'error' && (
           <div
-            className="panel"
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px solid var(--line)',
@@ -139,21 +167,21 @@ export function LeaderboardScreen() {
             }}
           >
             <p className="state bad" style={{ marginBottom: '0.75rem' }}>
-              <strong>Failed to load rankings.</strong> {state.message}
+              <strong>Không tải được bảng xếp hạng.</strong> {state.message}
             </p>
             <button
               type="button"
               className="btn-action"
               onClick={fetchLeaderboard}
             >
-              Retry
+              Thử lại
             </button>
           </div>
         )}
 
         {state.kind === 'ready' && state.entries.length === 0 && (
           <div
-            className="panel"
+            className="panel grows"
             style={{
               minHeight: '280px',
               border: '1px dashed var(--line)',
@@ -166,7 +194,8 @@ export function LeaderboardScreen() {
             }}
           >
             <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-              No completed experiments recorded for this dataset yet. Run a single strategy on the <strong>Backtest</strong> tab to record your first experiment.
+              Chưa có kết quả thí nghiệm nào hoàn tất cho dataset này. Hãy chạy kiểm thử chiến lược ở tab{' '}
+              <strong>Backtest</strong> hoặc <strong>Search</strong> để ghi nhận kết quả đầu tiên.
             </p>
           </div>
         )}

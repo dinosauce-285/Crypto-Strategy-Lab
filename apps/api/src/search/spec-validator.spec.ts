@@ -43,4 +43,14 @@ describe('validateSpec', () => {
       }),
     ).toThrow('member weights sum to 0.9, not 1');
   });
+
+  it('rejects duplicate members in one candidate', () => {
+    expect(() =>
+      validateSpec({
+        rule: 'weighted',
+        threshold: 0.3,
+        members: [member(0.5), member(0.5)],
+      }),
+    ).toThrow('duplicate member ma@1');
+  });
 });

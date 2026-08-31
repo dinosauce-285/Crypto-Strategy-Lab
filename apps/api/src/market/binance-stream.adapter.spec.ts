@@ -33,7 +33,7 @@ describe('BinanceStreamAdapter', () => {
         endTime: 1600000120000,
       });
 
-      expect(candles.length).toBe(2);
+      expect(candles).toHaveLength(2);
       expect(candles[0]).toEqual({
         pair: 'BTCUSDT',
         timeframe: '1m',
@@ -45,6 +45,46 @@ describe('BinanceStreamAdapter', () => {
         volume: '50.12',
         closed: true,
       });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('fetchCandles retries on HTTP 429 rate limit before succeeding', async () => {
+    const config = new ConfigService({
+      BINANCE_REST_URL: 'https://mock-binance.test',
+    });
+
+    const adapter = new BinanceStreamAdapter(config);
+    let attempts = 0;
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      attempts++;
+      if (attempts === 1) {
+        return {
+          status: 429,
+          ok: false,
+          headers: new Headers({ 'Retry-After': '0' }),
+        } as unknown as Response;
+      }
+      return {
+        status: 200,
+        ok: true,
+        json: async () => [[1600000000000, '100.0', '105.0', '95.0', '102.0', '10']],
+      } as unknown as Response;
+    };
+
+    try {
+      const candles = await adapter.fetchCandles({
+        pair: 'BTCUSDT',
+        timeframe: '1m',
+        startTime: 1600000000000,
+      });
+
+      expect(attempts).toBe(2);
+      expect(candles).toHaveLength(1);
+      expect(candles[0].open).toBe('100.0');
     } finally {
       globalThis.fetch = originalFetch;
     }

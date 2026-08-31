@@ -5,16 +5,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { StrategyModule } from '../strategy/strategy.module';
 import { MarketModule } from '../market/market.module';
 import { IndicatorModule } from '../indicator/indicator.module';
+import { EvaluationModule } from '../evaluation/evaluation.module';
 import { BacktestProcessor } from './backtest.processor';
 import { BacktestWorker } from './backtest.worker';
-import { ExperimentRepository } from './experiment.repository';
 import { DatasetRepository } from './dataset.repository';
 import { BacktestRunner } from './ports/backtest-runner.port';
 import { BacktestRunnerService } from './backtest-runner.service';
-
-import { EvaluationModule } from '../evaluation/evaluation.module';
-import { RunEvaluator } from './ports/run-evaluator.port';
-import { SearchRunEvaluatorService } from './search-run-evaluator.service';
 
 /**
  * What a worker process boots: the queue consumer, the pipeline it runs, and the database.
@@ -31,10 +27,8 @@ import { SearchRunEvaluatorService } from './search-run-evaluator.service';
     EvaluationModule,
   ],
   providers: [
-    ExperimentRepository,
     DatasetRepository,
     { provide: BacktestRunner, useClass: BacktestRunnerService },
-    { provide: RunEvaluator, useClass: SearchRunEvaluatorService },
     BacktestProcessor,
     BacktestWorker,
   ],

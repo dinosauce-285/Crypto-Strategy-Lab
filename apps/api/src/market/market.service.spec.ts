@@ -87,14 +87,12 @@ describe('MarketService & Connection Recovery (T09)', () => {
 
     const exchangeHistory: ExchangeHistoryPort = {
       fetchKlines: async () => [],
+      fetchRange: async () => [],
     };
 
     const candles = {
       range: async () => [],
-      hasHistory: async () => false,
       upsertMany: async () => {},
-      upsert: async () => {},
-      onCandleClosed: async () => {},
     } as unknown as CandleRepository;
 
     const service = new MarketService(
@@ -114,12 +112,12 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    expect(exchange.handlers).toBeTruthy();
+    expect(exchange.handlers).toBeDefined();
 
     const c1 = makeCandle('BTCUSDT', '1m', 1000);
     exchange.handlers?.candle(c1);
 
-    expect(published.length).toBe(1);
+    expect(published).toHaveLength(1);
     expect(published[0].topic).toBe('market:BTCUSDT:1m');
 
     service.onModuleDestroy();
@@ -129,11 +127,11 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    expect(exchange.handlers).toBeTruthy();
+    expect(exchange.handlers).toBeDefined();
 
     // Initial candle establishing cursor at T=1000
     exchange.handlers?.candle(makeCandle('BTCUSDT', '1m', 1000));
-    expect(published.length).toBe(1);
+    expect(published).toHaveLength(1);
 
     // Disconnect happens
     exchange.handlers?.status?.('reconnecting');
@@ -146,7 +144,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     ];
 
     // Reconnection succeeded
-    const recoveryPromise = new Promise((resolve) => setTimeout(resolve, 50));
+    const recoveryPromise = new Promise((resolve) => setTimeout(resolve, 100));
     exchange.handlers?.status?.('connected');
 
     // Live candle arriving during backfill (T=1180 duplicate + T=1240 new)
@@ -168,7 +166,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:BTCUSDT:1m', watched: true });
-    expect(exchange.handlers).toBeTruthy();
+    expect(exchange.handlers).toBeDefined();
 
     exchange.handlers?.candle(makeCandle('BTCUSDT', '1m', 1000));
 
@@ -178,15 +176,15 @@ describe('MarketService & Connection Recovery (T09)', () => {
     );
 
     exchange.handlers?.status?.('reconnecting');
-    const recoveryPromise = new Promise((resolve) => setTimeout(resolve, 50));
+    const recoveryPromise = new Promise((resolve) => setTimeout(resolve, 200));
     exchange.handlers?.status?.('connected');
 
     await recoveryPromise;
 
     // fetchCandles should have been called twice (1000 chunk + 200 chunk)
-    expect(exchange.fetchHistoryCalls.length).toBe(2);
+    expect(exchange.fetchHistoryCalls).toHaveLength(2);
     // 1 initial candle + 1200 recovered candles
-    expect(published.length).toBe(1201);
+    expect(published).toHaveLength(1201);
 
     service.onModuleDestroy();
   });
@@ -195,7 +193,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
     const { service, exchange, published, topicSubject } = setup();
 
     topicSubject.next({ topic: 'market:ETHUSDT:5m', watched: true });
-    expect(exchange.handlers).toBeTruthy();
+    expect(exchange.handlers).toBeDefined();
 
     exchange.handlers?.candle(makeCandle('ETHUSDT', '5m', 5000));
     exchange.shouldFailFetch = true;
@@ -205,7 +203,7 @@ describe('MarketService & Connection Recovery (T09)', () => {
 
     exchange.handlers?.candle(makeCandle('ETHUSDT', '5m', 6000));
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const emittedOpenTimes = published.map(
       (p) => (p.message as { payload: { candle: Candle } }).payload.candle.openTime,

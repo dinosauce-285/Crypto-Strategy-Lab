@@ -36,11 +36,18 @@ export class MarketController {
       throw new BadRequestException('limit must be a positive integer');
     }
 
-    const candles = await this.market.getHistory(pair, timeframe, {
-      limit: Math.min(parsedLimit, MAX_LIMIT),
-      from: parsedFrom,
-      to: parsedTo,
-    });
+    const clampedLimit = Math.min(parsedLimit, MAX_LIMIT);
+
+    // No range: today's "most recent N" — read live from the exchange, never storage
+    // (ADR 0040). A range is still storage-only, unchanged (ADR 0026).
+    const candles =
+      parsedFrom === undefined
+        ? await this.market.getLiveHistory(pair, timeframe, clampedLimit)
+        : await this.market.getHistory(pair, timeframe, {
+            limit: clampedLimit,
+            from: parsedFrom,
+            to: parsedTo,
+          });
     return { candles };
   }
 }
