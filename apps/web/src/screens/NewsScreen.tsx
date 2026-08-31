@@ -68,6 +68,7 @@ export function NewsScreen() {
 
   const handleCollect = () => {
     setIsCollecting(true);
+    setNewsError(null);
     const body: { coins?: string[]; limit?: number; source?: string } = { limit: 20 };
     if (coin !== 'ALL') body.coins = [coin];
     if (source !== 'ALL') body.source = source;
@@ -84,12 +85,13 @@ export function NewsScreen() {
       })
       .catch((err: Error) => {
         setIsCollecting(false);
-        alert(`Thu thập tin tức thất bại: ${err.message}`);
+        setNewsError(err.message);
       });
   };
 
   const handleAnalyze = () => {
     setIsAnalyzing(true);
+    setStatsError(null);
     apiFetch('/api/sentiment/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -102,7 +104,7 @@ export function NewsScreen() {
       })
       .catch((err: Error) => {
         setIsAnalyzing(false);
-        alert(`Phân tích sentiment thất bại: ${err.message}`);
+        setStatsError(err.message);
       });
   };
 
