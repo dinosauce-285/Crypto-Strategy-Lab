@@ -9,7 +9,15 @@ export interface ScoredArticle {
 export class SentimentCalculator implements IndicatorCalculator {
   readonly name = 'sentiment';
 
-  constructor(private readonly articles: readonly ScoredArticle[] = []) {}
+  constructor(private articles: readonly ScoredArticle[] = []) {}
+
+  setArticles(articles: readonly ScoredArticle[]): void {
+    this.articles = articles;
+  }
+
+  getArticles(): readonly ScoredArticle[] {
+    return this.articles;
+  }
 
   compute(candles: readonly Candle[], params: StrategyParams): Record<string, number[]> {
     const windowHours = params.windowHours ?? 1;
@@ -38,3 +46,4 @@ export class SentimentCalculator implements IndicatorCalculator {
 }
 
 export const sentimentCalculator = new SentimentCalculator();
+

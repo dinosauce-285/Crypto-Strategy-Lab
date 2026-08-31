@@ -16,10 +16,6 @@ import { BacktestRunnerService } from './backtest-runner.service';
 import { CandidateSource } from './ports/candidate-source.port';
 import { GeneratedCandidateSource } from './generated-candidate-source';
 
-/**
- * The API half of the loop: it queues candidates, runs single backtests on demand,
- * and manages search lifecycle.
- */
 @Module({
   imports: [
     PrismaModule,

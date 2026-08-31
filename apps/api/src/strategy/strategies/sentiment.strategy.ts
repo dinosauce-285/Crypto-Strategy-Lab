@@ -38,13 +38,16 @@ export class SentimentStrategy implements Strategy {
     const score = context.get(sentimentRequest(this.params))[context.index];
 
     if (!Number.isFinite(score)) return hold();
-    if (score >= this.params[BUY_THRESHOLD]) {
+    const buyThreshold = this.params[BUY_THRESHOLD] ?? 0.7;
+    const sellThreshold = this.params[SELL_THRESHOLD] ?? -0.7;
+
+    if (score >= buyThreshold) {
       return {
         direction: 'BUY',
         strength: clamp(score),
       };
     }
-    if (score <= this.params[SELL_THRESHOLD]) {
+    if (score <= sellThreshold) {
       return {
         direction: 'SELL',
         strength: clamp(Math.abs(score)),

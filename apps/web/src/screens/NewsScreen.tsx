@@ -5,7 +5,6 @@ import { Header } from '../layout/Header';
 import { NewsControls } from '../news/NewsControls';
 import { NewsFeed } from '../news/NewsFeed';
 import { SentimentDistribution, type SentimentStats } from '../news/SentimentDistribution';
-import { StrategyIntegrationCard } from '../news/StrategyIntegrationCard';
 
 export function NewsScreen() {
   const [coin, setCoin] = useState('ALL');
@@ -141,7 +140,6 @@ export function NewsScreen() {
             error={statsError}
           />
 
-          <StrategyIntegrationCard />
         </div>
       </div>
     </main>
