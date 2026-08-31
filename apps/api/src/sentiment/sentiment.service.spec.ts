@@ -267,6 +267,7 @@ describe('SentimentService', () => {
       expect(result).toEqual({
         processed: 2,
         updated: 2,
+        failed: 0,
       });
     });
 
@@ -282,6 +283,7 @@ describe('SentimentService', () => {
       expect(result).toEqual({
         processed: 0,
         updated: 0,
+        failed: 0,
       });
     });
 
@@ -308,6 +310,8 @@ describe('SentimentService', () => {
       expect(result).toEqual({
         processed: 2,
         updated: 1,
+        failed: 1,
+        errors: [{ id: 'news-1', error: 'Groq model timeout' }],
       });
     });
   });

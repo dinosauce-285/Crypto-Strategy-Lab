@@ -41,7 +41,7 @@ export class GroqSentimentProvider extends SentimentProviderPort {
     const systemPrompt =
       'You are a crypto market sentiment analyzer. Analyze the provided news text and classify its sentiment as POSITIVE, NEUTRAL, or NEGATIVE, along with a numeric sentiment score strictly between -1.0 (extremely bearish/negative) and 1.0 (extremely bullish/positive). Respond ONLY with valid JSON in this exact format: {"label": "POSITIVE" | "NEUTRAL" | "NEGATIVE", "score": <number between -1.0 and 1.0>}.';
 
-    const response = await fetch(apiUrl, {
+    const response = await this.fetchWithRateLimitRetry(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,10 +57,6 @@ export class GroqSentimentProvider extends SentimentProviderPort {
         temperature: 0.1,
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Groq sentiment analysis failed: HTTP ${response.status}`);
-    }
 
     const json = (await response.json()) as GroqChatCompletionResponse;
     const choice = json.choices?.[0];
@@ -113,4 +109,29 @@ export class GroqSentimentProvider extends SentimentProviderPort {
 
     return { label, score };
   }
+
+  /** One retry on 429, waiting what Groq requests in Retry-After or 1s. */
+  private async fetchWithRateLimitRetry(url: string, init: RequestInit): Promise<Response> {
+    const response = await fetch(url, init);
+    if (response.ok) return response;
+
+    if (response.status === 429) {
+      const retryAfterHeader = response.headers.get('Retry-After');
+      const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) || 1 : 1;
+      this.logger.warn(
+        `Groq rate limit hit (429), waiting ${retryAfterSeconds}s before retrying...`,
+      );
+      await sleep(retryAfterSeconds * 1000);
+
+      const retried = await fetch(url, init);
+      if (retried.ok) return retried;
+      throw new Error(`Groq sentiment analysis failed: HTTP ${retried.status}`);
+    }
+
+    throw new Error(`Groq sentiment analysis failed: HTTP ${response.status}`);
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

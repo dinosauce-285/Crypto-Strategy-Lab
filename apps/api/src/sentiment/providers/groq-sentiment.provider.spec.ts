@@ -199,16 +199,38 @@ describe('GroqSentimentProvider', () => {
     );
   });
 
-  it('should throw an error when Groq API HTTP response is not ok', async () => {
+  it('should throw an error when Groq API HTTP response is not ok and retry fails', async () => {
     globalThis.fetch = jest.fn().mockResolvedValue({
       ok: false,
-      status: 429,
-      statusText: 'Too Many Requests',
+      status: 500,
+      headers: { get: () => null },
     });
 
     await expect(provider.analyze('Some news')).rejects.toThrow(
-      'Groq sentiment analysis failed: HTTP 429',
+      'Groq sentiment analysis failed: HTTP 500',
     );
+  });
+
+  it('should retry on 429 with Retry-After header and succeed if second attempt succeeds', async () => {
+    const mockGroqResponse = {
+      choices: [{ message: { content: JSON.stringify({ label: 'POSITIVE', score: 0.8 }) } }],
+    };
+
+    globalThis.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: { get: (name: string) => (name.toLowerCase() === 'retry-after' ? '0' : null) },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockGroqResponse),
+      });
+
+    const result = await provider.analyze('Bitcoin hits new all-time high');
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ label: 'POSITIVE', score: 0.8 });
   });
 
   it('should throw an error when Groq response does not contain choices or valid content', async () => {
