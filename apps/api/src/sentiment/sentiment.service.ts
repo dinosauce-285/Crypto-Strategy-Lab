@@ -15,6 +15,12 @@ function formatNewsText(item: NewsItem): string {
   return parts.join('\n\n');
 }
 
+const CALL_DELAY_MS = 50;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 @Injectable()
 export class SentimentService {
   private readonly logger = new Logger(SentimentService.name);
@@ -36,7 +42,8 @@ export class SentimentService {
       return;
     }
 
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       try {
         const text = formatNewsText(item);
         const sentiment = await this.provider.analyze(text);
@@ -50,6 +57,9 @@ export class SentimentService {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to analyze sentiment for news ${item.id}: ${message}`);
+      }
+      if (i < items.length - 1) {
+        await sleep(CALL_DELAY_MS);
       }
     }
   }
@@ -75,15 +85,22 @@ export class SentimentService {
     return updated;
   }
 
-  async analyzeBatch(limit?: number): Promise<{ processed: number; updated: number }> {
+  async analyzeBatch(limit?: number): Promise<{
+    processed: number;
+    updated: number;
+    failed: number;
+    errors?: Array<{ id: string; error: string }>;
+  }> {
     const items = await this.repository.findUnscored(limit);
     if (items.length === 0) {
-      return { processed: 0, updated: 0 };
+      return { processed: 0, updated: 0, failed: 0 };
     }
 
     const updates: { id: string; sentiment: Sentiment }[] = [];
+    const errors: Array<{ id: string; error: string }> = [];
 
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       try {
         const text = formatNewsText(item);
         const sentiment = await this.provider.analyze(text);
@@ -91,6 +108,10 @@ export class SentimentService {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.warn(`Failed to analyze sentiment for news ${item.id}: ${message}`);
+        errors.push({ id: item.id, error: message });
+      }
+      if (i < items.length - 1) {
+        await sleep(CALL_DELAY_MS);
       }
     }
 
@@ -108,6 +129,8 @@ export class SentimentService {
     return {
       processed: items.length,
       updated,
+      failed: errors.length,
+      ...(errors.length > 0 ? { errors } : {}),
     };
   }
 
