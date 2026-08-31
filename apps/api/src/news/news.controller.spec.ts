@@ -115,10 +115,10 @@ describe('NewsController', () => {
 
     it('throws BadRequestException if offset is not a non-negative integer', async () => {
       await expect(controller.getNews(undefined, undefined, undefined, undefined, undefined, '-1')).rejects.toThrow(
-        BadRequestException,
+        'offset must be a non-negative integer',
       );
       await expect(controller.getNews(undefined, undefined, undefined, undefined, undefined, 'xyz')).rejects.toThrow(
-        BadRequestException,
+        'offset must be a non-negative integer',
       );
     });
   });

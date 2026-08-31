@@ -28,8 +28,10 @@ export class NewsController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ): Promise<GetNewsResponseDto> {
-    const parsedFrom = from !== undefined ? parseNonNegativeInteger(from, 'from') : undefined;
-    const parsedTo = to !== undefined ? parseNonNegativeInteger(to, 'to') : undefined;
+    const parsedFrom =
+      from !== undefined ? parseNonNegativeInteger(from, 'from', 'epoch milliseconds') : undefined;
+    const parsedTo =
+      to !== undefined ? parseNonNegativeInteger(to, 'to', 'epoch milliseconds') : undefined;
 
     if (parsedFrom !== undefined && parsedTo !== undefined && parsedFrom > parsedTo) {
       throw new BadRequestException('from must not be after to');
@@ -100,10 +102,11 @@ export class NewsController {
   }
 }
 
-function parseNonNegativeInteger(value: string, name: string): number {
+function parseNonNegativeInteger(value: string, name: string, suffix?: string): number {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new BadRequestException(`${name} must be a non-negative integer (epoch milliseconds)`);
+    const extra = suffix ? ` (${suffix})` : '';
+    throw new BadRequestException(`${name} must be a non-negative integer${extra}`);
   }
   return parsed;
 }
