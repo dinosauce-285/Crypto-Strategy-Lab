@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS, type NewsItem } from '@csl/contracts';
 import { NewsRepository, type FindManyNewsQuery } from './news.repository';
@@ -121,18 +122,15 @@ describe('NewsService', () => {
       });
     });
 
-    it('returns empty result when specified source does not match any provider', async () => {
-      const result = await service.collect({ source: 'NonExistentSource' });
+    it('throws NotFoundException when specified source does not match any provider', async () => {
+      await expect(service.collect({ source: 'NonExistentSource' })).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(provider1.fetchNewsMock).not.toHaveBeenCalled();
       expect(provider2.fetchNewsMock).not.toHaveBeenCalled();
       expect(mockRepository.upsertMany).not.toHaveBeenCalled();
       expect(mockEventEmitter.emit).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        collected: 0,
-        inserted: 0,
-        newsIds: [],
-      });
     });
 
     it('is fault-tolerant: continues with remaining providers if one provider throws', async () => {

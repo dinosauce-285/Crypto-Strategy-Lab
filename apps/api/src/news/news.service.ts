@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS, type NewsItem } from '@csl/contracts';
 import { NewsRepository, type FindManyNewsQuery } from './news.repository';
@@ -39,6 +39,7 @@ export class NewsService {
     if (targetProviders.length === 0) {
       if (options?.source) {
         this.logger.warn(`No news provider found matching source: ${options.source}`);
+        throw new NotFoundException(`Nguồn tin "${options.source}" không tồn tại`);
       }
       return { collected: 0, inserted: 0, newsIds: [] };
     }
