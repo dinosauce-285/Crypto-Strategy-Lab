@@ -39,10 +39,11 @@ describe('NewsController', () => {
         total: 1,
       });
 
-      const result = await controller.getNews('BTC', '1755700000000', '1755800000000', '10', '0');
+      const result = await controller.getNews('BTC', 'CryptoCompare', '1755700000000', '1755800000000', '10', '0');
 
       expect(mockNewsService.getNews).toHaveBeenCalledWith({
         coin: 'BTC',
+        source: 'CryptoCompare',
         from: 1755700000000,
         to: 1755800000000,
         limit: 10,
@@ -60,10 +61,11 @@ describe('NewsController', () => {
         total: 1,
       });
 
-      const result = await controller.getNews(undefined, undefined, undefined, undefined, undefined);
+      const result = await controller.getNews(undefined, undefined, undefined, undefined, undefined, undefined);
 
       expect(mockNewsService.getNews).toHaveBeenCalledWith({
         coin: undefined,
+        source: undefined,
         from: undefined,
         to: undefined,
         limit: undefined,
@@ -76,46 +78,46 @@ describe('NewsController', () => {
     });
 
     it('throws BadRequestException if from is not a valid non-negative integer', async () => {
-      await expect(controller.getNews(undefined, 'invalid', undefined, undefined, undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, 'invalid', undefined, undefined, undefined)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(controller.getNews(undefined, '-100', undefined, undefined, undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, '-100', undefined, undefined, undefined)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('throws BadRequestException if to is not a valid non-negative integer', async () => {
-      await expect(controller.getNews(undefined, undefined, 'not-a-number', undefined, undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, 'not-a-number', undefined, undefined)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(controller.getNews(undefined, undefined, '-500', undefined, undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, '-500', undefined, undefined)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('throws BadRequestException if from is after to', async () => {
-      await expect(controller.getNews(undefined, '2000', '1000', undefined, undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, '2000', '1000', undefined, undefined)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('throws BadRequestException if limit is not a positive integer', async () => {
-      await expect(controller.getNews(undefined, undefined, undefined, '0', undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, undefined, '0', undefined)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(controller.getNews(undefined, undefined, undefined, '-5', undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, undefined, '-5', undefined)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(controller.getNews(undefined, undefined, undefined, 'abc', undefined)).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, undefined, 'abc', undefined)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('throws BadRequestException if offset is not a non-negative integer', async () => {
-      await expect(controller.getNews(undefined, undefined, undefined, undefined, '-1')).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, undefined, undefined, '-1')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(controller.getNews(undefined, undefined, undefined, undefined, 'xyz')).rejects.toThrow(
+      await expect(controller.getNews(undefined, undefined, undefined, undefined, undefined, 'xyz')).rejects.toThrow(
         BadRequestException,
       );
     });

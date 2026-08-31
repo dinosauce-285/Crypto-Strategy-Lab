@@ -229,6 +229,25 @@ describe('NewsRepository', () => {
       });
     });
 
+    it('filters by source', async () => {
+      mockPrisma.$transaction.mockResolvedValue([[mockDbRow], 1]);
+
+      await repository.findMany({ source: 'CryptoCompare' });
+
+      expect(mockPrisma.news.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            source: { contains: 'CryptoCompare', mode: 'insensitive' },
+          },
+        }),
+      );
+      expect(mockPrisma.news.count).toHaveBeenCalledWith({
+        where: {
+          source: { contains: 'CryptoCompare', mode: 'insensitive' },
+        },
+      });
+    });
+
     it('filters by publishedAt date range (from & to)', async () => {
       const from = sampleTimestamp - 50000;
       const to = sampleTimestamp + 50000;

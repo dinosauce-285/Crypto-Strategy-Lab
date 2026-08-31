@@ -9,6 +9,7 @@ const SENTIMENT_LABELS: Record<SentimentLabel, string> = {
 
 export interface NewsFeedProps {
   items: NewsItem[];
+  total?: number;
   isLoading: boolean;
   error: string | null;
   onRetry: () => void;
@@ -26,6 +27,7 @@ function formatScore(score: number): string {
 
 export function NewsFeed({
   items,
+  total,
   isLoading,
   error,
   onRetry,
@@ -79,7 +81,11 @@ export function NewsFeed({
     <div className="panel">
       <div className="panel-head">
         <h2>Nguồn tin đầu vào</h2>
-        <span className="source">{items.length} bài viết</span>
+        <span className="source">
+          {total !== undefined && total > items.length
+            ? `${items.length} / ${total} bài viết`
+            : `${total ?? items.length} bài viết`}
+        </span>
       </div>
 
       {error && (

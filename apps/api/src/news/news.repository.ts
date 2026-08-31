@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export interface FindManyNewsQuery {
   coin?: string;
+  source?: string;
   from?: number;
   to?: number;
   limit?: number;
@@ -62,6 +63,10 @@ export class NewsRepository {
 
     if (query.coin) {
       where.relatedCoins = { has: query.coin.toUpperCase() };
+    }
+
+    if (query.source) {
+      where.source = { contains: query.source, mode: 'insensitive' };
     }
 
     if (query.from !== undefined || query.to !== undefined) {

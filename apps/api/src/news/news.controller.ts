@@ -22,6 +22,7 @@ export class NewsController {
   @Get()
   async getNews(
     @Query('coin') coin?: string,
+    @Query('source') source?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('limit') limit?: string,
@@ -40,6 +41,7 @@ export class NewsController {
 
     return this.newsService.getNews({
       coin: coin ? coin.trim() : undefined,
+      source: source && source !== 'ALL' ? source.trim() : undefined,
       from: parsedFrom,
       to: parsedTo,
       limit: parsedLimit !== undefined ? Math.min(parsedLimit, MAX_LIMIT) : undefined,
