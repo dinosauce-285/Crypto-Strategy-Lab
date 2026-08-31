@@ -19,6 +19,7 @@ export function NewsScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchNews = useCallback(() => {
     setIsLoadingNews(true);
@@ -66,17 +67,23 @@ export function NewsScreen() {
   const handleCollect = () => {
     setIsCollecting(true);
     setNewsError(null);
+    setFeedback(null);
     const body: { coins?: string[]; limit?: number; source?: string } = { limit: 20 };
     if (coin !== 'ALL') body.coins = [coin];
     if (source !== 'ALL') body.source = source;
 
-    apiFetch('/api/news/collect', {
+    apiFetch<{ collected: number; inserted: number }>('/api/news/collect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-      .then(() => {
+      .then((res) => {
         setIsCollecting(false);
+        if (res.inserted > 0) {
+          setFeedback(`Đã thu thập ${res.collected} bài viết (thêm mới ${res.inserted} bài).`);
+        } else {
+          setFeedback(`Đã thu thập ${res.collected} bài viết (không có bài viết mới).`);
+        }
         fetchNews();
         fetchStats();
       })
@@ -89,13 +96,23 @@ export function NewsScreen() {
   const handleAnalyze = () => {
     setIsAnalyzing(true);
     setStatsError(null);
-    apiFetch('/api/sentiment/batch', {
+    setFeedback(null);
+    apiFetch<{ processed: number; updated: number; failed?: number }>('/api/sentiment/batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ limit: 50 }),
     })
-      .then(() => {
+      .then((res) => {
         setIsAnalyzing(false);
+        if (res.processed === 0) {
+          setFeedback('Không có bài viết nào cần chấm điểm.');
+        } else if (res.failed && res.failed > 0) {
+          setFeedback(
+            `Đã phân tích ${res.processed} bài viết: chấm điểm thành công ${res.updated}, thất bại ${res.failed}.`,
+          );
+        } else {
+          setFeedback(`Đã chấm điểm thành công ${res.updated} / ${res.processed} bài viết.`);
+        }
         fetchNews();
         fetchStats();
       })
@@ -120,6 +137,7 @@ export function NewsScreen() {
             onAnalyze={handleAnalyze}
             isCollecting={isCollecting}
             isAnalyzing={isAnalyzing}
+            feedback={feedback}
           />
 
           <NewsFeed

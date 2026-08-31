@@ -7,6 +7,7 @@ export interface NewsControlsProps {
   onAnalyze: () => void;
   isCollecting: boolean;
   isAnalyzing: boolean;
+  feedback?: string | null;
 }
 
 const COIN_OPTIONS = ['ALL', 'BTC', 'ETH', 'SOL', 'BNB', 'XRP'];
@@ -25,55 +26,66 @@ export function NewsControls({
   onAnalyze,
   isCollecting,
   isAnalyzing,
+  feedback,
 }: NewsControlsProps) {
   return (
-    <div className="controls-row" style={{ flexWrap: 'wrap' }}>
-      <div className="seg" role="group" aria-label="Chọn coin">
-        {COIN_OPTIONS.map((c) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+      <div className="controls-row" style={{ flexWrap: 'wrap' }}>
+        <div className="seg" role="group" aria-label="Chọn coin">
+          {COIN_OPTIONS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-pressed={coin === c}
+              onClick={() => onCoinChange(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <select
+          className="pair-select"
+          value={source}
+          onChange={(e) => onSourceChange(e.target.value)}
+          aria-label="Lọc theo nguồn tin"
+        >
+          {SOURCE_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
           <button
-            key={c}
             type="button"
-            aria-pressed={coin === c}
-            onClick={() => onCoinChange(c)}
+            className="btn-action btn-primary"
+            onClick={onCollect}
+            disabled={isCollecting}
           >
-            {c}
+            {isCollecting ? 'Đang thu thập…' : 'Thu thập tin tức'}
           </button>
-        ))}
+
+          <button
+            type="button"
+            className="btn-action"
+            onClick={onAnalyze}
+            disabled={isAnalyzing}
+            title="Sentiment: điểm cảm xúc thị trường được tính từ nội dung tin tức"
+          >
+            {isAnalyzing ? 'Đang phân tích…' : 'Chạy phân tích sentiment AI'}
+          </button>
+        </div>
       </div>
 
-      <select
-        className="pair-select"
-        value={source}
-        onChange={(e) => onSourceChange(e.target.value)}
-        aria-label="Lọc theo nguồn tin"
-      >
-        {SOURCE_OPTIONS.map((s) => (
-          <option key={s.value} value={s.value}>
-            {s.label}
-          </option>
-        ))}
-      </select>
-
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
-        <button
-          type="button"
-          className="btn-action btn-primary"
-          onClick={onCollect}
-          disabled={isCollecting}
-        >
-          {isCollecting ? 'Đang thu thập…' : 'Thu thập tin tức'}
-        </button>
-
-        <button
-          type="button"
-          className="btn-action"
-          onClick={onAnalyze}
-          disabled={isAnalyzing}
-          title="Sentiment: điểm cảm xúc thị trường được tính từ nội dung tin tức"
-        >
-          {isAnalyzing ? 'Đang phân tích…' : 'Chạy phân tích sentiment AI'}
-        </button>
-      </div>
+      {feedback && (
+        <div style={{ fontSize: '0.85rem' }}>
+          <span className="ok" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            ✓ {feedback}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
