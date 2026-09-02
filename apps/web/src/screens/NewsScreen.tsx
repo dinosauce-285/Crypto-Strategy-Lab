@@ -9,6 +9,9 @@ import { SentimentDistribution, type SentimentStats } from '../news/SentimentDis
 export function NewsScreen() {
   const [coin, setCoin] = useState('ALL');
   const [source, setSource] = useState('ALL');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [limit, setLimit] = useState(20);
   const [items, setItems] = useState<NewsItem[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<SentimentStats | null>(null);
@@ -65,12 +68,27 @@ export function NewsScreen() {
   }, [fetchNews, fetchStats]);
 
   const handleCollect = () => {
+    if (fromDate && toDate && new Date(fromDate).getTime() > new Date(toDate).getTime()) {
+      setNewsError('Thời gian "Từ ngày" không được sau "Đến ngày".');
+      return;
+    }
+
     setIsCollecting(true);
     setNewsError(null);
     setFeedback(null);
-    const body: { coins?: string[]; limit?: number; source?: string } = { limit: 20 };
+    const body: { coins?: string[]; limit?: number; source?: string; from?: number; to?: number } = {
+      limit: limit > 0 ? limit : 20,
+    };
     if (coin !== 'ALL') body.coins = [coin];
     if (source !== 'ALL') body.source = source;
+    if (fromDate) {
+      body.from = new Date(fromDate).getTime();
+    }
+    if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      body.to = endOfDay.getTime();
+    }
 
     apiFetch<{ collected: number; inserted: number }>('/api/news/collect', {
       method: 'POST',
@@ -133,6 +151,12 @@ export function NewsScreen() {
             onCoinChange={setCoin}
             source={source}
             onSourceChange={setSource}
+            fromDate={fromDate}
+            onFromDateChange={setFromDate}
+            toDate={toDate}
+            onToDateChange={setToDate}
+            limit={limit}
+            onLimitChange={setLimit}
             onCollect={handleCollect}
             onAnalyze={handleAnalyze}
             isCollecting={isCollecting}
