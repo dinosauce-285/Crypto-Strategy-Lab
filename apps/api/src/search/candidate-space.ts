@@ -1,5 +1,7 @@
 import {
+  balancedWeights,
   canonicalJson,
+  DEFAULT_THRESHOLD,
   type CandidateMember,
   type CandidateSpec,
   type StrategyGroup,
@@ -9,7 +11,6 @@ import {
 
 export type RandomFn = () => number;
 
-const DEFAULT_THRESHOLD = 0.3;
 const GROUP_ORDER: readonly StrategyGroup[] = [
   'Trend',
   'Momentum',
@@ -51,14 +52,6 @@ export function shuffle<T>(values: readonly T[], random: RandomFn): T[] {
   return copy;
 }
 
-function balancedWeights(count: number): number[] {
-  if (!Number.isInteger(count) || count < 1 || count > 10) {
-    throw new Error('candidate member count must be between 1 and 10');
-  }
-  const base = Math.floor(10 / count);
-  const extra = 10 - base * count;
-  return Array.from({ length: count }, (_, index) => (base + (index < extra ? 1 : 0)) / 10);
-}
 
 function chooseParams(meta: StrategyMeta, random: RandomFn): StrategyParams {
   return Object.fromEntries(

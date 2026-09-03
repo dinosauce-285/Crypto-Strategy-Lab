@@ -15,6 +15,7 @@ import { DatasetFormModal } from '../backtest/DatasetFormModal';
 import { StrategyPicker } from '../backtest/StrategyPicker';
 import { SingleRunChart } from '../backtest/SingleRunChart';
 import { MetricsPanel } from '../backtest/MetricsPanel';
+import { LeaderboardLink } from '../leaderboard/LeaderboardLink';
 import { TradesTable } from '../backtest/TradesTable';
 
 interface TradeRow {
@@ -62,9 +63,13 @@ type RunState =
 
 export function BacktestScreen() {
   const location = useLocation();
+  // Read on the first render, not in an effect: StrategyPicker falls back to the first
+  // single strategy as soon as its list arrives, and an arriving specification has to be
+  // in hand before that happens or the panel describes a strategy the run never used.
+  const arrivingSpec = (location.state as { spec?: CandidateSpec } | null)?.spec ?? null;
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [strategy, setStrategy] = useState<StrategyMeta | null>(null);
-  const [customSpec, setCustomSpec] = useState<CandidateSpec | null>(null);
+  const [customSpec, setCustomSpec] = useState<CandidateSpec | null>(arrivingSpec);
   const [params, setParams] = useState<StrategyParams>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [state, setState] = useState<RunState>({ kind: 'idle' });
@@ -170,9 +175,8 @@ export function BacktestScreen() {
         <div className="screen-main">
           {state.kind === 'idle' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px dashed var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -190,9 +194,8 @@ export function BacktestScreen() {
 
           {state.kind === 'loading' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px solid var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -208,9 +211,8 @@ export function BacktestScreen() {
 
           {state.kind === 'error' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px solid var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -232,7 +234,7 @@ export function BacktestScreen() {
 
           {state.kind === 'ready' && (
             <>
-              <div className="panel grows">
+              <div className="panel grows backtest-stage">
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (
@@ -292,9 +294,9 @@ export function BacktestScreen() {
             {state.kind === 'loading' ? 'Đang mô phỏng…' : '▶ Chạy Backtest'}
           </button>
 
-          {state.kind === 'ready' && (
-            <MetricsPanel metrics={state.result.metrics} />
-          )}
+          {state.kind === 'ready' && <MetricsPanel metrics={state.result.metrics} />}
+
+          <LeaderboardLink hint="Xếp hạng các tổ hợp đã chấm điểm trên cùng dataset." />
         </div>
       </div>
 

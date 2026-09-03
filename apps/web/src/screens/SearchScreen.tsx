@@ -15,6 +15,8 @@ import { Header } from '../layout/Header';
 import { DatasetFormModal } from '../backtest/DatasetFormModal';
 import { useTopic } from '../channel/use-topic';
 import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
+import { LeaderboardLink } from '../leaderboard/LeaderboardLink';
+import { ManualCompositePanel } from '../search/ManualCompositePanel';
 import { SearchControlsPanel } from '../search/SearchControlsPanel';
 import { SearchProgressPanel } from '../search/SearchProgressPanel';
 import { SearchRegistryState } from '../search/SearchRegistryState';
@@ -186,6 +188,8 @@ export function SearchScreen() {
               onChange={setSelectedRefs}
             />
 
+            <ManualCompositePanel strategies={strategies} dataset={dataset} />
+
             <SearchProgressPanel
               status={status}
               dataset={dataset}
@@ -196,6 +200,8 @@ export function SearchScreen() {
               onResume={() => void command('resume')}
               onStop={() => void command('stop')}
             />
+
+            <LeaderboardLink hint="Ứng viên đã chạy xong được chấm điểm và xếp hạng ở đó." />
           </div>
 
           <div className="screen-side">

@@ -232,6 +232,8 @@ th, td {
   font-variant-numeric: tabular-nums;
 }
 th:first-child, td:first-child { text-align: left; }
+/* Figures line up on the right edge; a sentence that wraps does not. */
+th.text-cell, td.text-cell { text-align: left; }
 thead th { color: var(--muted); font-weight: 400; font-size: 0.74rem; }
 tbody tr:last-child td { border-bottom: 0; }
 
@@ -429,6 +431,22 @@ tbody tr:last-child td { border-bottom: 0; }
 
 /* --- modal & backtest controls (T14) --- */
 
+/* The chart keeps a floor of its own, so the panel holding it needs the same floor —
+   otherwise a short window shrinks the panel and the chart spills over the trades table. */
+.backtest-stage { min-height: 360px; }
+
+/* A member's parameters are one unbreakable token wide enough to push the page sideways,
+   so this line wraps rather than widening the column it sits in. */
+.composite-member {
+  font-size: 0.78rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 0.5rem;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -610,7 +628,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .search-control-panel,
 .search-space-panel,
 .search-progress-panel,
-.search-state-panel {
+.search-state-panel,
+.composite-builder-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -662,6 +681,40 @@ tbody tr:last-child td { border-bottom: 0; }
 .strategy-choice-title {
   font-weight: 600;
   font-size: 0.86rem;
+}
+
+/* Wider than the search space's tiles: these carry a stepper as well as a name. */
+.composite-builder-panel .strategy-grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+
+.strategy-choice-main {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.weight-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: center;
+}
+
+.btn-step {
+  width: var(--control-h);
+  padding: 0;
+  justify-content: center;
+}
+
+.composite-weight {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: right;
 }
 
 .running-dataset,

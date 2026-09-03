@@ -32,6 +32,11 @@ export function StrategySpacePicker({
         <span className="badge badge-neu">Đã chọn {selectedRefs.length}</span>
       </div>
 
+      <p className="source">
+        Khoanh phạm vi để máy tự dò từng tổ hợp bên trong. Muốn tự tay dựng một tổ hợp cụ
+        thể thì dùng Tổ hợp thủ công ngay bên dưới.
+      </p>
+
       <div className="strategy-grid">
         {strategies.map((strategy) => {
           const ref = { id: strategy.id, version: strategy.version };

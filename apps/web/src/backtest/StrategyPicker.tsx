@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CandidateSpec, StrategyMeta, StrategyParams } from '@csl/contracts';
 import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { DynamicParamForm } from './DynamicParamForm';
+import { formatParams } from './param-labels';
 
 interface StrategyPickerProps {
   selectedStrategy: StrategyMeta | null;
@@ -102,9 +103,12 @@ export function StrategyPicker({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--bg)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
             {customSpec.members.map((m, idx) => (
-              <div key={idx} style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <strong>{m.id} <span className="source" style={{ fontWeight: 'normal' }}>v{m.version}</span></strong>
-                <span className="source">{(m.weight * 100).toFixed(0)}% · {JSON.stringify(m.params)}</span>
+              <div key={idx} className="composite-member">
+                <strong>
+                  {strategies.find((s) => s.id === m.id)?.name ?? m.id}{' '}
+                  <span className="source" style={{ fontWeight: 'normal' }}>v{m.version}</span>
+                </strong>
+                <span className="source">{(m.weight * 100).toFixed(0)}% · {formatParams(m.params)}</span>
               </div>
             ))}
           </div>
