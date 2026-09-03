@@ -8,6 +8,7 @@ import {
   type StrategyMeta,
   type StrategyParams,
 } from '@csl/contracts';
+import { DynamicParamForm } from '../backtest/DynamicParamForm';
 import { STRATEGY_GROUP_LABELS } from './group-labels';
 import {
   balancedParts,
@@ -18,6 +19,7 @@ import {
   weightOf,
   TOTAL_PARTS,
   type Parts,
+  type ParamsByKey,
 } from './composite-spec';
 import { DynamicParamForm } from '../backtest/DynamicParamForm';
 
@@ -41,23 +43,30 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
   const [chosenKeys, setChosenKeys] = useState<string[]>([]);
   const [parts, setParts] = useState<Parts>({});
   const [threshold, setThreshold] = useState<number>(DEFAULT_THRESHOLD);
-  const [paramsByStrategy, setParamsByStrategy] = useState<Record<string, StrategyParams>>({});
+  const [paramsByKey, setParamsByKey] = useState<ParamsByKey>({});
 
   const chosen = new Set(chosenKeys);
   const selected = strategies.filter((strategy) => chosen.has(strategyKey(strategy)));
   const atCap = selected.length >= MAX_MEMBERS;
   const total = totalParts(selected, parts);
-  const spec = buildSpec(selected, parts, threshold, paramsByStrategy);
+  const spec = buildSpec(selected, parts, threshold, paramsByKey);
   // A lone member holds the whole grid; there is nobody to hand a part to.
   const canAdjust = selected.length > 1;
 
   const toggle = (strategy: StrategyMeta) => {
     const key = strategyKey(strategy);
-    const nextKeys = chosen.has(key)
-      ? chosenKeys.filter((held) => held !== key)
-      : [...chosenKeys, key];
+    const nowSelected = !chosen.has(key);
+    const nextKeys = nowSelected
+      ? [...chosenKeys, key]
+      : chosenKeys.filter((held) => held !== key);
     setChosenKeys(nextKeys);
     setParts(balancedParts(strategies.filter((one) => nextKeys.includes(strategyKey(one)))));
+    setParamsByKey((current) => {
+      if (nowSelected) return { ...current, [key]: defaultParams(strategy) };
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
   };
 
   const step = (strategy: StrategyMeta, delta: number) => {
@@ -105,7 +114,7 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
           const currentParams = paramsByStrategy[key] ?? defaultParams(strategy);
           return (
             <div key={key} className="strategy-choice" data-selected={isSelected ? 'true' : 'false'}>
-              <div className="strategy-choice-header">
+              <div className="strategy-choice-row">
                 <label className="strategy-choice-main">
                   <input
                     type="checkbox"
@@ -148,14 +157,13 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
               </div>
 
               {isSelected && strategy.params.length > 0 && (
-                <div className="composite-strategy-params">
-                  <div className="strategy-params-header">
-                    <span className="stat-tile-label">Tham số ({strategy.params.length})</span>
-                  </div>
+                <div className="strategy-choice-params">
                   <DynamicParamForm
                     params={strategy.params}
-                    values={currentParams}
-                    onChange={(updated) => handleParamChange(strategy, updated)}
+                    values={paramsByKey[key] ?? defaultParams(strategy)}
+                    onChange={(updated) =>
+                      setParamsByKey((current) => ({ ...current, [key]: updated }))
+                    }
                   />
                 </div>
               )}

@@ -41,12 +41,14 @@ export function weightOf(strategy: StrategyMeta, parts: Parts): number {
   return (parts[strategyKey(strategy)] ?? 0) * WEIGHT_STEP;
 }
 
+export type ParamsByKey = Record<string, StrategyParams>;
+
 /** Null whenever the parts do not add up, so an invalid specification never leaves here. */
 export function buildSpec(
   selected: StrategyMeta[],
   parts: Parts,
   threshold: number,
-  paramsByStrategy?: Record<string, StrategyParams>,
+  paramsByKey: ParamsByKey,
 ): CandidateSpec | null {
   if (selected.length === 0) return null;
   if (totalParts(selected, parts) !== TOTAL_PARTS) return null;
@@ -55,8 +57,7 @@ export function buildSpec(
     rule: 'weighted',
     threshold,
     members: selected.map((strategy): CandidateMember => {
-      const key = strategyKey(strategy);
-      const params = paramsByStrategy?.[key] ?? defaultParams(strategy);
+      const params = paramsByKey[strategyKey(strategy)] ?? defaultParams(strategy);
       return {
         id: strategy.id,
         version: strategy.version,
