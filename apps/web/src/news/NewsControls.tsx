@@ -14,6 +14,7 @@ export interface NewsControlsProps {
   isCollecting: boolean;
   isAnalyzing: boolean;
   feedback?: string | null;
+  filterError?: string | null;
 }
 
 const COIN_OPTIONS = ['ALL', 'BTC', 'ETH', 'SOL', 'BNB', 'XRP'];
@@ -39,6 +40,7 @@ export function NewsControls({
   isCollecting,
   isAnalyzing,
   feedback,
+  filterError,
 }: NewsControlsProps) {
   return (
     <div className="panel panel-box">
@@ -72,7 +74,7 @@ export function NewsControls({
               className="pair-select"
               value={fromDate}
               onChange={(e) => onFromDateChange(e.target.value)}
-              title="Thu thập tin từ ngày"
+              title="Chỉ hiện tin đăng từ ngày này"
             />
           </label>
         )}
@@ -85,29 +87,33 @@ export function NewsControls({
               className="pair-select"
               value={toDate}
               onChange={(e) => onToDateChange(e.target.value)}
-              title="Thu thập tin đến ngày"
+              title="Chỉ hiện tin đăng đến hết ngày này"
             />
           </label>
         )}
 
-        {onLimitChange && (
-          <label className="news-filter-field news-filter-limit">
-            Số lượng
-            <input
-              type="number"
-              className="pair-select"
-              min={1}
-              max={500}
-              value={limit || ''}
-              onChange={(e) =>
-                onLimitChange(Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0)
-              }
-              title="Số lượng bài viết thu thập"
-            />
-          </label>
-        )}
-
+        {/* The collect count belongs to the button beside it, not to the filters on the
+            left — those narrow what is shown, this says how much to go and fetch. */}
         <div className="controls-row-end">
+          {onLimitChange && (
+            <label className="news-filter-field news-filter-limit">
+              Số bài
+              <input
+                type="number"
+                className="pair-select"
+                min={1}
+                max={500}
+                value={limit || ''}
+                onChange={(e) =>
+                  onLimitChange(
+                    Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0,
+                  )
+                }
+                title="Số bài viết sẽ thu thập về"
+              />
+            </label>
+          )}
+
           <button
             type="button"
             className="btn-action btn-primary"
@@ -129,6 +135,7 @@ export function NewsControls({
         </div>
       </div>
 
+      {filterError && <p className="state bad">{filterError}</p>}
       {feedback && <p className="state ok">✓ {feedback}</p>}
     </div>
   );
