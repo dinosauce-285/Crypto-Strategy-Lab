@@ -472,6 +472,21 @@ tbody tr:last-child td { border-bottom: 0; }
   box-shadow: 0 4px 12px rgba(42, 37, 31, 0.08);
 }
 
+.dataset-management-modal {
+  max-width: min(60rem, calc(100vw - 2rem));
+}
+
+.dataset-management-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.75rem;
+}
+
+.dataset-management-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
 .dataset-form {
   display: flex;
   flex-direction: column;
@@ -533,6 +548,11 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 0.35rem;
   width: 100%;
   box-sizing: border-box;
+}
+
+.dataset-picker-actions {
+  display: flex;
+  gap: 0.35rem;
 }
 
 .custom-dropdown-wrap {

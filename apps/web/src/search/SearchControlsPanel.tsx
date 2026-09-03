@@ -21,7 +21,7 @@ interface SearchControlsPanelProps {
   isRunning: boolean;
   canStart: boolean;
   blockedReason: string | null;
-  onDatasetChange: (dataset: Dataset) => void;
+  onDatasetChange: (dataset: Dataset | null) => void;
   onOpenDatasetModal: () => void;
   onModeChange: (mode: SearchMode) => void;
   onMaxCandidatesChange: (value: number) => void;

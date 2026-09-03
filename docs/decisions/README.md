@@ -80,6 +80,7 @@ code that assumes it.
 - [0046](0046-the-timeframe-set-follows-section-3-and-adds-30m-and-2h.md) — the timeframe set covers every example in the brief
 - [0047](0047-a-run-reports-the-candidate-being-tested-right-now.md) — a run reports the candidate being tested right now
 - [0048](0048-the-weight-grid-and-default-threshold-live-in-the-contract-n.md) — the weight grid and default threshold live in the contract, not in the generator
+- [0049](0049-active-backtests-hold-a-durable-dataset-lease.md) — active backtests hold a durable Dataset lease
 
 
 

@@ -35,6 +35,7 @@ export class EvaluatorService implements EvaluatorPort {
       specHash: input.specHash,
       metrics,
       trades: input.trades,
+      leaseId: input.leaseId,
     });
 
     return {

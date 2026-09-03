@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { UnrecoverableError, type Job } from 'bullmq';
 import { canonicalJson, type BacktestJob } from '@csl/contracts';
@@ -10,6 +10,7 @@ import { BacktestRunner, UnknownDatasetError } from './ports/backtest-runner.por
 import { StrategyFactory, UnknownStrategyError } from './ports/strategy-factory.port';
 import { InvalidSpecError, validateSpec } from './spec-validator';
 import { specHash as hashSpec } from './spec-hash';
+import { acquireDatasetLease, type DatasetLease } from './dataset-lease';
 
 export class MissingPortError extends Error {
   constructor(port: string, task: string) {
@@ -45,6 +46,7 @@ export class BacktestProcessor {
     const startedAt = Date.now();
     const { spec: raw, datasetId } = job.data ?? { spec: undefined, datasetId: '' };
     let specHash: string | undefined;
+    let lease: DatasetLease | undefined;
     try {
       const spec = validateSpec(raw);
       specHash = hashSpec(spec);
@@ -60,6 +62,11 @@ export class BacktestProcessor {
       const evaluator = this.require(this.evaluator, 'EvaluatorPort', 'T13');
       if (await evaluator.isRecorded(datasetId, specHash)) return done('duplicate');
 
+      lease = await acquireDatasetLease(
+        this.datasets,
+        datasetId,
+        `worker:${job.id ?? specHash}:${randomUUID()}`,
+      );
       const strategy = await this.require(this.factory, 'StrategyFactory', 'T11').build(spec);
       const trades = await this.require(this.runner, 'BacktestRunner', 'T12').run(strategy, datasetId);
 
@@ -78,14 +85,17 @@ export class BacktestProcessor {
       const { metrics, experimentId } = await evaluator.evaluateAndRecord({
         datasetId,
         spec,
-        specHash,
+        specHash: identity,
         rules: dataset.rules,
         trades,
         candles: candleSeries,
+        leaseId: lease.id,
       });
       return experimentId ? done('completed', { experimentId, metrics }) : done('duplicate');
     } catch (error) {
-      return this.fail(job, { raw, datasetId, specHash }, error);
+      return await this.fail(job, { raw, datasetId, specHash }, error);
+    } finally {
+      await lease?.release();
     }
   }
 

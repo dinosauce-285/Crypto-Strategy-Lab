@@ -25,7 +25,9 @@ describe('BacktestController', () => {
   beforeEach(() => {
     service = {
       listDatasets: jest.fn().mockResolvedValue([sampleDataset]),
+      getDataset: jest.fn().mockResolvedValue(sampleDataset),
       createDataset: jest.fn().mockResolvedValue(sampleDataset),
+      deleteDataset: jest.fn().mockResolvedValue(sampleDataset),
       runSingle: jest.fn(),
     } as unknown as jest.Mocked<BacktestService>;
 
@@ -36,6 +38,11 @@ describe('BacktestController', () => {
     const list = await controller.listDatasets();
     expect(list).toEqual([sampleDataset]);
     expect(service.listDatasets).toHaveBeenCalled();
+  });
+
+  it('gets one dataset', async () => {
+    await expect(controller.getDataset('dataset-1')).resolves.toEqual(sampleDataset);
+    expect(service.getDataset).toHaveBeenCalledWith('dataset-1');
   });
 
   it('creates dataset with valid payload', async () => {
@@ -56,6 +63,11 @@ describe('BacktestController', () => {
     const result = await controller.createDataset(payload);
     expect(result).toEqual(sampleDataset);
     expect(service.createDataset).toHaveBeenCalledWith(payload);
+  });
+
+  it('deletes one dataset', async () => {
+    await expect(controller.deleteDataset('dataset-1')).resolves.toEqual(sampleDataset);
+    expect(service.deleteDataset).toHaveBeenCalledWith('dataset-1');
   });
 
   it('throws InvalidDatasetError on invalid dataset parameters', async () => {

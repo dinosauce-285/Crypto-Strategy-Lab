@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { CandidateSpec, Metrics, Trade } from '@csl/contracts';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { DATASET_LEASE_MS } from '../prisma/dataset-lease-policy';
+import { DatasetLeaseLostError } from './dataset-lease-lost.error';
 
 export interface CompletedExperimentData {
   datasetId: string;
@@ -9,6 +11,7 @@ export interface CompletedExperimentData {
   specHash: string;
   metrics: Metrics;
   trades: readonly Trade[];
+  leaseId: string;
 }
 
 export interface FailedExperimentData {
@@ -44,8 +47,14 @@ export class EvaluationRepository {
    * Returns the created experiment id, or null if already recorded by another worker.
    */
   async recordCompleted(data: CompletedExperimentData): Promise<string | null> {
-    try {
-      const experiment = await this.prisma.experiment.create({
+    return this.prisma.$transaction(async (tx) => {
+      const renewed = await tx.datasetLease.updateMany({
+        where: { id: data.leaseId, datasetId: data.datasetId, expiresAt: { gt: new Date() } },
+        data: { expiresAt: new Date(Date.now() + DATASET_LEASE_MS) },
+      });
+      if (renewed.count !== 1) throw new DatasetLeaseLostError(data.datasetId);
+      try {
+        const experiment = await tx.experiment.create({
         data: {
           datasetId: data.datasetId,
           spec: asJson(data.spec),
@@ -72,11 +81,12 @@ export class EvaluationRepository {
         },
         select: { id: true },
       });
-      return experiment.id;
-    } catch (error) {
-      if (isCode(error, UNIQUE_VIOLATION)) return null;
-      throw error;
-    }
+        return experiment.id;
+      } catch (error) {
+        if (isCode(error, UNIQUE_VIOLATION)) return null;
+        throw error;
+      }
+    });
   }
 
   /**

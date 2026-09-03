@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
 import { formatDatasetRange } from '../market/format';
+import { DatasetManagementModal } from './DatasetManagementModal';
 
 interface DatasetPickerProps {
   selectedDataset: Dataset | null;
-  onSelectDataset: (dataset: Dataset) => void;
+  onSelectDataset: (dataset: Dataset | null) => void;
   onOpenCreateModal: () => void;
   disabled?: boolean;
 }
@@ -33,6 +34,7 @@ export function DatasetPicker({
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -65,6 +67,12 @@ export function DatasetPicker({
     }
   };
 
+  const handleDeleted = (deleted: Dataset) => {
+    const remaining = datasets.filter((dataset) => dataset.id !== deleted.id);
+    setDatasets(remaining);
+    if (selectedDataset?.id === deleted.id) onSelectDataset(remaining[0] ?? null);
+  };
+
   // The column is narrower than the label, so the full text lives on the control's title.
   const selectedLabel = selectedDataset
     ? `${selectedDataset.pair} · ${selectedDataset.timeframe} (${formatDatasetRange(selectedDataset.from, selectedDataset.to)})`
@@ -84,15 +92,26 @@ export function DatasetPicker({
         <label className="stat-tile-label" htmlFor="dataset-select">
           Dataset đang dùng
         </label>
-        <button
-          type="button"
-          className="btn-action"
-          disabled={disabled}
-          onClick={onOpenCreateModal}
-          style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
-        >
-          + Dataset mới
-        </button>
+        <div className="dataset-picker-actions">
+          <button
+            type="button"
+            className="btn-action"
+            disabled={disabled}
+            onClick={onOpenCreateModal}
+            style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
+          >
+            + Dataset mới
+          </button>
+          <button
+            type="button"
+            className="btn-action"
+            disabled={disabled || loading}
+            onClick={() => setIsManagementOpen(true)}
+            style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
+          >
+            Quản lý
+          </button>
+        </div>
       </div>
 
       <select
@@ -143,6 +162,16 @@ export function DatasetPicker({
           </div>
         );
       })()}
+
+      {isManagementOpen && (
+        <DatasetManagementModal
+          datasets={datasets}
+          loading={loading}
+          listError={error}
+          onClose={() => setIsManagementOpen(false)}
+          onDeleted={handleDeleted}
+        />
+      )}
     </div>
   );
 }
