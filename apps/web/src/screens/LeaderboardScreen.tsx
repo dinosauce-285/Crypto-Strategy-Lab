@@ -83,7 +83,10 @@ export function LeaderboardScreen() {
 
   return (
     <main className="screen">
-      <Header title="Bảng xếp hạng Strategy" />
+      <Header
+        title="Bảng xếp hạng Strategy"
+        subtitle="So sánh kết quả thí nghiệm theo dataset đã chọn."
+      />
 
       <div className="screen-main" style={{ gap: '1rem' }}>
         {/* Top Control Bar: Dataset Picker */}

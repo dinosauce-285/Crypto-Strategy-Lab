@@ -124,7 +124,10 @@ export function NewsScreen() {
 
   return (
     <main className="screen">
-      <Header title="Thu thập tin tức & Phân tích Sentiment" />
+      <Header
+        title="Thu thập tin tức & Phân tích Sentiment"
+        subtitle="Thu thập tin tức và theo dõi phân bố sentiment theo coin."
+      />
 
       <div className="screen-body">
         <div className="screen-main">
