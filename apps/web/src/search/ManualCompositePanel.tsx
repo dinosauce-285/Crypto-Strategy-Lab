@@ -7,15 +7,18 @@ import {
   type Dataset,
   type StrategyMeta,
 } from '@csl/contracts';
+import { DynamicParamForm } from '../backtest/DynamicParamForm';
 import { STRATEGY_GROUP_LABELS } from './group-labels';
 import {
   balancedParts,
   buildSpec,
+  defaultParams,
   strategyKey,
   totalParts,
   weightOf,
   TOTAL_PARTS,
   type Parts,
+  type ParamsByKey,
 } from './composite-spec';
 
 interface ManualCompositePanelProps {
@@ -38,22 +41,30 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
   const [chosenKeys, setChosenKeys] = useState<string[]>([]);
   const [parts, setParts] = useState<Parts>({});
   const [threshold, setThreshold] = useState<number>(DEFAULT_THRESHOLD);
+  const [paramsByKey, setParamsByKey] = useState<ParamsByKey>({});
 
   const chosen = new Set(chosenKeys);
   const selected = strategies.filter((strategy) => chosen.has(strategyKey(strategy)));
   const atCap = selected.length >= MAX_MEMBERS;
   const total = totalParts(selected, parts);
-  const spec = buildSpec(selected, parts, threshold);
+  const spec = buildSpec(selected, parts, threshold, paramsByKey);
   // A lone member holds the whole grid; there is nobody to hand a part to.
   const canAdjust = selected.length > 1;
 
   const toggle = (strategy: StrategyMeta) => {
     const key = strategyKey(strategy);
-    const nextKeys = chosen.has(key)
-      ? chosenKeys.filter((held) => held !== key)
-      : [...chosenKeys, key];
+    const nowSelected = !chosen.has(key);
+    const nextKeys = nowSelected
+      ? [...chosenKeys, key]
+      : chosenKeys.filter((held) => held !== key);
     setChosenKeys(nextKeys);
     setParts(balancedParts(strategies.filter((one) => nextKeys.includes(strategyKey(one)))));
+    setParamsByKey((current) => {
+      if (nowSelected) return { ...current, [key]: defaultParams(strategy) };
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
   };
 
   const step = (strategy: StrategyMeta, delta: number) => {
@@ -92,43 +103,57 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
           const held = parts[key] ?? 0;
           return (
             <div key={key} className="strategy-choice" data-selected={isSelected ? 'true' : 'false'}>
-              <label className="strategy-choice-main">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={!isSelected && atCap}
-                  onChange={() => toggle(strategy)}
-                />
-                <span className="strategy-choice-body">
-                  <span className="strategy-choice-title">{strategy.name}</span>
-                  <span className="source">
-                    {STRATEGY_GROUP_LABELS[strategy.group]} · v{strategy.version} · khởi động{' '}
-                    {strategy.warmup} nến
+              <div className="strategy-choice-row">
+                <label className="strategy-choice-main">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    disabled={!isSelected && atCap}
+                    onChange={() => toggle(strategy)}
+                  />
+                  <span className="strategy-choice-body">
+                    <span className="strategy-choice-title">{strategy.name}</span>
+                    <span className="source">
+                      {STRATEGY_GROUP_LABELS[strategy.group]} · v{strategy.version} · khởi động{' '}
+                      {strategy.warmup} nến
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
 
-              {isSelected && (
-                <div className="weight-stepper">
-                  <button
-                    type="button"
-                    className="btn-action btn-step"
-                    aria-label={`Giảm trọng số ${strategy.name}`}
-                    disabled={!canAdjust || held <= 1}
-                    onClick={() => step(strategy, -1)}
-                  >
-                    −
-                  </button>
-                  <span className="composite-weight">{percent(weightOf(strategy, parts))}</span>
-                  <button
-                    type="button"
-                    className="btn-action btn-step"
-                    aria-label={`Tăng trọng số ${strategy.name}`}
-                    disabled={!canAdjust || held >= TOTAL_PARTS}
-                    onClick={() => step(strategy, 1)}
-                  >
-                    +
-                  </button>
+                {isSelected && (
+                  <div className="weight-stepper">
+                    <button
+                      type="button"
+                      className="btn-action btn-step"
+                      aria-label={`Giảm trọng số ${strategy.name}`}
+                      disabled={!canAdjust || held <= 1}
+                      onClick={() => step(strategy, -1)}
+                    >
+                      −
+                    </button>
+                    <span className="composite-weight">{percent(weightOf(strategy, parts))}</span>
+                    <button
+                      type="button"
+                      className="btn-action btn-step"
+                      aria-label={`Tăng trọng số ${strategy.name}`}
+                      disabled={!canAdjust || held >= TOTAL_PARTS}
+                      onClick={() => step(strategy, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isSelected && strategy.params.length > 0 && (
+                <div className="strategy-choice-params">
+                  <DynamicParamForm
+                    params={strategy.params}
+                    values={paramsByKey[key] ?? defaultParams(strategy)}
+                    onChange={(updated) =>
+                      setParamsByKey((current) => ({ ...current, [key]: updated }))
+                    }
+                  />
                 </div>
               )}
             </div>
