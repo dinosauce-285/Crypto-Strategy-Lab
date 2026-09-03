@@ -15,6 +15,7 @@ import { DatasetFormModal } from '../backtest/DatasetFormModal';
 import { StrategyPicker } from '../backtest/StrategyPicker';
 import { SingleRunChart } from '../backtest/SingleRunChart';
 import { MetricsPanel } from '../backtest/MetricsPanel';
+import { LeaderboardLink } from '../leaderboard/LeaderboardLink';
 import { TradesTable } from '../backtest/TradesTable';
 
 interface TradeRow {
@@ -62,9 +63,13 @@ type RunState =
 
 export function BacktestScreen() {
   const location = useLocation();
+  // Read on the first render, not in an effect: StrategyPicker falls back to the first
+  // single strategy as soon as its list arrives, and an arriving specification has to be
+  // in hand before that happens or the panel describes a strategy the run never used.
+  const arrivingSpec = (location.state as { spec?: CandidateSpec } | null)?.spec ?? null;
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [strategy, setStrategy] = useState<StrategyMeta | null>(null);
-  const [customSpec, setCustomSpec] = useState<CandidateSpec | null>(null);
+  const [customSpec, setCustomSpec] = useState<CandidateSpec | null>(arrivingSpec);
   const [params, setParams] = useState<StrategyParams>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [state, setState] = useState<RunState>({ kind: 'idle' });
@@ -289,9 +294,9 @@ export function BacktestScreen() {
             {state.kind === 'loading' ? 'Đang mô phỏng…' : '▶ Chạy Backtest'}
           </button>
 
-          {state.kind === 'ready' && (
-            <MetricsPanel metrics={state.result.metrics} />
-          )}
+          {state.kind === 'ready' && <MetricsPanel metrics={state.result.metrics} />}
+
+          <LeaderboardLink hint="Xếp hạng các tổ hợp đã chấm điểm trên cùng dataset." />
         </div>
       </div>
 
