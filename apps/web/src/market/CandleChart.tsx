@@ -18,7 +18,7 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { apiFetch } from '../api/request';
-import { useChannelStatus, useTopic } from '../channel/use-topic';
+import { useChannelStatus, useTopic, type ChannelStatus } from '../channel/use-topic';
 import { clock } from './format';
 
 interface CandleChartProps {
@@ -45,6 +45,15 @@ type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; candles: Candle[] };
+
+// A small always-on badge per T33, distinct from the `isStale` banner below (which only
+// appears once the channel has actually been down long enough to matter). The badge
+// answers "is this chart live right now"; the banner answers "how long has it been dead."
+const CHANNEL_BADGE: Record<ChannelStatus, { text: string; className: string }> = {
+  live: { text: '● Đang nhận dữ liệu', className: 'badge-pos' },
+  connecting: { text: 'Đang kết nối…', className: 'badge-neu' },
+  down: { text: 'Mất kết nối', className: 'badge-neg' },
+};
 
 // Dev-mode StrictMode mounts every effect twice (mount, cleanup, remount) as a safety
 // check. Without this cache each mount would fire its own history fetch, and the first
@@ -328,14 +337,29 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
   const hasData = state.kind === 'ready' && state.candles.length > 0;
   const isStale = hasData && channelStatus === 'down';
 
+  const badge = CHANNEL_BADGE[channelStatus];
+
   return (
     <>
+      {/* index.css is off-limits here (owned by other in-flight cards), so this rides
+          inline styles instead of a new class; colors still come from the shared .badge
+          classes. Laid out in normal flow (not an absolute overlay) and on purpose: an
+          overlay collided with the chart's own price-scale labels when a chart was
+          showing, and with the loading/error text and chart-label's timeframe pill when
+          it wasn't. A real flow row, right-aligned, sits clear of both in every state. */}
+      {/* marginTop lines this up with chart-label's (Dashboard.tsx, index.css) top:0.5rem
+          absolute offset — chart-label has less padding than .badge, so flush-top made
+          the two rows read as visibly misaligned. */}
+      <div style={{ textAlign: 'right', marginTop: '0.45rem', marginBottom: '0.5rem' }}>
+        <span className={`badge ${badge.className}`}>{badge.text}</span>
+      </div>
+
       {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
         <p className="state bad">
           <strong>Không tải được dữ liệu lịch sử.</strong> {state.message}{' '}
-          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+          <button type="button" className="btn-action" onClick={() => setAttempt((n) => n + 1)}>
             Thử lại
           </button>
         </p>
@@ -349,7 +373,10 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
       )}
 
       {isStale && (
-        <p className="chart-stale-banner state bad">
+        // chart-stale-banner is an absolute overlay (index.css, unmodified) meant to sit
+        // right at the top of the chart below — pushed down to clear the badge row above,
+        // which takes real layout space now and would otherwise sit right underneath it.
+        <p className="chart-stale-banner state bad" style={{ top: '2.1rem' }}>
           <strong>Mất kết nối kênh.</strong> Dữ liệu đứng yên từ{' '}
           {lastUpdatedAt ? clock(lastUpdatedAt) : '—'}.
         </p>
