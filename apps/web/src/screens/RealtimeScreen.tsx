@@ -6,6 +6,7 @@ import { Dashboard } from '../market/Dashboard';
 import { TimeframeSelect } from '../market/TimeframeSelect';
 import { RecentTicks } from '../market/RecentTicks';
 import { Annotations } from '../market/Annotations';
+import { ConnectionStatusPanel } from '../market/ConnectionStatusPanel';
 
 // Reading order of the 2x2 grid: [5m, 15m] on row one, [1h, 4h] on row two.
 const DEFAULT_LAYOUT: Timeframe[] = ['5m', '15m', '1h', '4h'];
@@ -21,23 +22,22 @@ export function RealtimeScreen() {
 
   return (
     <main className="screen">
-      <Header title="Biểu đồ thời gian thực - Nhiều khung thời gian" />
+      <Header
+        title="Biểu đồ thời gian thực - Nhiều khung thời gian"
+        subtitle="Theo dõi giá và nến theo nhiều khung thời gian."
+      />
 
       <div className="screen-body">
         <div className="screen-main">
           <div className="controls-row">
             <PairSelect value={pair} onChange={setPair} />
-            <div className="timeframe-control">
-              <span className="stat-tile-label">
-                Khung cho biểu đồ đang chọn (biểu đồ {selected + 1})
-              </span>
-              <TimeframeSelect value={timeframes[selected]} onChange={setSelectedTimeframe} />
-            </div>
+            <TimeframeSelect value={timeframes[selected]} onChange={setSelectedTimeframe} />
           </div>
           <Dashboard pair={pair} timeframes={timeframes} selected={selected} onSelect={setSelected} />
         </div>
 
         <div className="screen-side">
+          <ConnectionStatusPanel />
           <RecentTicks pair={pair} />
           <Annotations />
         </div>

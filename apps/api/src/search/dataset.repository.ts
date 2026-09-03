@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, type OnModuleInit } from '@nestjs/common';
 import type { Dataset, Timeframe } from '@csl/contracts';
-import type { Prisma } from '../generated/prisma/client';
+import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { DATASET_LEASE_MS } from '../prisma/dataset-lease-policy';
 import { validateDataset } from './dataset-validator';
 
 type DatasetRow = Prisma.DatasetModel;
@@ -12,9 +13,21 @@ export interface CreateDatasetResult {
   created: boolean;
 }
 
+export type DeleteDatasetResult =
+  | { kind: 'deleted'; dataset: Dataset }
+  | { kind: 'not-found' }
+  | { kind: 'in-use' };
+
+const NOT_FOUND_CODE = 'P2025';
+const FOREIGN_KEY_VIOLATION_CODE = 'P2003';
+
 @Injectable()
-export class DatasetRepository {
+export class DatasetRepository implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.removeExpiredLeases();
+  }
 
   async findById(id: string): Promise<Dataset | null> {
     const row = await this.prisma.dataset.findUnique({
@@ -60,6 +73,47 @@ export class DatasetRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.dataset.delete({ where: { id } });
   }
+
+  async deleteIfUnused(id: string): Promise<DeleteDatasetResult> {
+    await this.removeExpiredLeases();
+    try {
+      const row = await this.prisma.dataset.delete({ where: { id } });
+      return { kind: 'deleted', dataset: toDataset(row) };
+    } catch (error) {
+      if (isCode(error, NOT_FOUND_CODE)) return { kind: 'not-found' };
+      if (isCode(error, FOREIGN_KEY_VIOLATION_CODE)) return { kind: 'in-use' };
+      throw error;
+    }
+  }
+
+  async acquireLease(datasetId: string, leaseId: string): Promise<boolean> {
+    await this.removeExpiredLeases();
+    try {
+      await this.prisma.datasetLease.create({
+        data: { id: leaseId, datasetId, expiresAt: new Date(Date.now() + DATASET_LEASE_MS) },
+      });
+      return true;
+    } catch (error) {
+      if (isCode(error, FOREIGN_KEY_VIOLATION_CODE)) return false;
+      throw error;
+    }
+  }
+
+  async releaseLease(leaseId: string): Promise<void> {
+    await this.prisma.datasetLease.deleteMany({ where: { id: leaseId } });
+  }
+
+  async renewLease(leaseId: string): Promise<boolean> {
+    const renewed = await this.prisma.datasetLease.updateMany({
+      where: { id: leaseId },
+      data: { expiresAt: new Date(Date.now() + DATASET_LEASE_MS) },
+    });
+    return renewed.count === 1;
+  }
+
+  private async removeExpiredLeases(): Promise<void> {
+    await this.prisma.datasetLease.deleteMany({ where: { expiresAt: { lte: new Date() } } });
+  }
 }
 
 function toDataset(row: DatasetRow): Dataset {
@@ -78,3 +132,6 @@ function toDataset(row: DatasetRow): Dataset {
     },
   };
 }
+
+const isCode = (error: unknown, code: string): boolean =>
+  error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;

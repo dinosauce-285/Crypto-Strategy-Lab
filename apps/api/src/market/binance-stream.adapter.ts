@@ -102,6 +102,14 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
 
     const handleDrop = () => {
       if (explicitClose) return;
+      // A single failure reaches here twice in practice — the WebSocket spec fires
+      // 'error' then 'close' for the same failure, and the watchdog's forced close races
+      // the socket's own 'close'. Without this guard, each occurrence scheduled its own
+      // reconnect, so one drop could spawn multiple overlapping sockets; a late 'open'
+      // from one of those could then fire after a newer socket had already replaced it,
+      // sending on a socket still CONNECTING — which threw and crashed the process. One
+      // pending reconnect at a time is enough; connect() clears this once it runs.
+      if (reconnectTimer) return;
 
       if (healthyTimer) {
         clearTimeout(healthyTimer);
@@ -129,10 +137,17 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
 
     const connect = () => {
       if (explicitClose) return;
+      reconnectTimer = null;
 
-      socket = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrl);
+      socket = ws;
+      // Every listener below checks this first: if a newer connect() has already run
+      // (socket reassigned), this instance is stale and its events are ignored. Guards
+      // against exactly the race that used to crash the process (see handleDrop above).
+      const isCurrent = () => socket === ws;
 
-      socket.addEventListener('open', () => {
+      ws.addEventListener('open', () => {
+        if (!isCurrent()) return;
         const wasReconnecting = retries > 0;
 
         // Only reset retries once the connection has proven stable
@@ -146,7 +161,7 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
 
         const streams = Array.from(activeStreams);
         if (streams.length > 0) {
-          socket?.send(JSON.stringify({ method: 'SUBSCRIBE', params: streams, id: nextId++ }));
+          ws.send(JSON.stringify({ method: 'SUBSCRIBE', params: streams, id: nextId++ }));
         }
         this.logger.log(`${pair} upstream open`);
         if (wasReconnecting) {
@@ -154,7 +169,8 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
         }
       });
 
-      socket.addEventListener('message', (event) => {
+      ws.addEventListener('message', (event) => {
+        if (!isCurrent()) return;
         resetWatchdog();
         const frame = parse(String(event.data));
         if (!frame) return;
@@ -171,12 +187,14 @@ export class BinanceStreamAdapter extends ExchangeStreamPort {
         if (frame.k.x) handlers.candle(toCandle(frame));
       });
 
-      socket.addEventListener('error', () => {
+      ws.addEventListener('error', () => {
+        if (!isCurrent()) return;
         this.logger.warn(`${pair} upstream error`);
         handleDrop();
       });
 
-      socket.addEventListener('close', () => {
+      ws.addEventListener('close', () => {
+        if (!isCurrent()) return;
         if (explicitClose) {
           this.logger.log(`${pair} upstream closed explicitly`);
           return;

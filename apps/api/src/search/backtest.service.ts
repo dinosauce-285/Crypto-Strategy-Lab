@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { EVENTS, type Dataset } from '@csl/contracts';
 import { CandleRepository } from '../market/candle.repository';
@@ -12,6 +13,8 @@ import { validateSpec } from './spec-validator';
 import { validateDataset } from './dataset-validator';
 import type { SingleRunRequestDto, SingleRunResponseDto } from './dto/single-run.dto';
 import { specHash } from './spec-hash';
+import { DatasetInUseError, DatasetNotFoundError } from './dataset-errors';
+import { acquireDatasetLease } from './dataset-lease';
 
 @Injectable()
 export class BacktestService {
@@ -28,6 +31,19 @@ export class BacktestService {
 
   async listDatasets(): Promise<Dataset[]> {
     return this.datasets.list();
+  }
+
+  async getDataset(id: string): Promise<Dataset> {
+    const dataset = await this.datasets.findById(id);
+    if (!dataset) throw new DatasetNotFoundError(id);
+    return dataset;
+  }
+
+  async deleteDataset(id: string): Promise<Dataset> {
+    const result = await this.datasets.deleteIfUnused(id);
+    if (result.kind === 'not-found') throw new DatasetNotFoundError(id);
+    if (result.kind === 'in-use') throw new DatasetInUseError(id);
+    return result.dataset;
   }
 
   async createDataset(data: Omit<Dataset, 'id'>): Promise<Dataset> {
@@ -67,7 +83,7 @@ export class BacktestService {
     if (request.datasetId) {
       dataset = await this.datasets.findById(request.datasetId);
       if (!dataset) {
-        throw new NotFoundException(`Dataset "${request.datasetId}" not found`);
+        throw new DatasetNotFoundError(request.datasetId);
       }
     } else if (request.dataset) {
       dataset = await this.createDatasetWithHistory(validateDataset(request.dataset));
@@ -94,17 +110,23 @@ export class BacktestService {
     }
 
     // 3. Run backtest simulation
-    const rawTrades = await this.runner.run(strategy, dataset.id);
-
-    // 4. Evaluate metrics & persist to DB atomically via EvaluatorPort
-    const evaluationResult = await this.evaluator.evaluateAndRecord({
-      datasetId: dataset.id,
-      spec: validatedSpec,
-      specHash: hash,
-      rules: dataset.rules,
-      trades: rawTrades,
-      candles: candleSeries,
-    });
+    const lease = await acquireDatasetLease(this.datasets, dataset.id, `single:${randomUUID()}`);
+    let rawTrades;
+    let evaluationResult;
+    try {
+      rawTrades = await this.runner.run(strategy, dataset.id);
+      evaluationResult = await this.evaluator.evaluateAndRecord({
+        datasetId: dataset.id,
+        spec: validatedSpec,
+        specHash: hash,
+        rules: dataset.rules,
+        trades: rawTrades,
+        candles: candleSeries,
+        leaseId: lease.id,
+      });
+    } finally {
+      await lease.release();
+    }
 
     // Notify listeners (Leaderboard & WebSocket push channel)
     this.emitter.emit(EVENTS.BacktestCompleted, {

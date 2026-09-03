@@ -1,6 +1,7 @@
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { CandidateSpec, Dataset } from '@csl/contracts';
 import { BacktestService } from './backtest.service';
+import { DatasetInUseError, DatasetNotFoundError } from './dataset-errors';
 import type { DatasetRepository } from './dataset.repository';
 import type { CandleRepository } from '../market/candle.repository';
 import type { CandleBackfillPort } from '../market/ports/candle-backfill.port';
@@ -61,6 +62,10 @@ describe('BacktestService', () => {
       create: jest.fn().mockResolvedValue({ dataset: sampleDataset, created: true }),
       list: jest.fn().mockResolvedValue([sampleDataset]),
       delete: jest.fn().mockResolvedValue(undefined),
+      deleteIfUnused: jest.fn().mockResolvedValue({ kind: 'deleted', dataset: sampleDataset }),
+      acquireLease: jest.fn().mockResolvedValue(true),
+      releaseLease: jest.fn().mockResolvedValue(undefined),
+      renewLease: jest.fn().mockResolvedValue(true),
     } as unknown as jest.Mocked<DatasetRepository>;
 
     mockCandles = {
@@ -125,6 +130,34 @@ describe('BacktestService', () => {
     const list = await service.listDatasets();
     expect(list).toHaveLength(1);
     expect(list[0].id).toBe('dataset-123');
+  });
+
+  it('gets a dataset by id', async () => {
+    await expect(service.getDataset(sampleDataset.id)).resolves.toEqual(sampleDataset);
+    expect(mockDatasets.findById).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('reports a missing dataset when getting one by id', async () => {
+    mockDatasets.findById.mockResolvedValueOnce(null);
+
+    await expect(service.getDataset('missing')).rejects.toBeInstanceOf(DatasetNotFoundError);
+  });
+
+  it('deletes a dataset without experiments', async () => {
+    await expect(service.deleteDataset(sampleDataset.id)).resolves.toEqual(sampleDataset);
+    expect(mockDatasets.deleteIfUnused).toHaveBeenCalledWith(sampleDataset.id);
+  });
+
+  it('reports a missing dataset when deleting', async () => {
+    mockDatasets.deleteIfUnused.mockResolvedValueOnce({ kind: 'not-found' });
+
+    await expect(service.deleteDataset('missing')).rejects.toBeInstanceOf(DatasetNotFoundError);
+  });
+
+  it('refuses to delete a dataset with experiments', async () => {
+    mockDatasets.deleteIfUnused.mockResolvedValueOnce({ kind: 'in-use' });
+
+    await expect(service.deleteDataset(sampleDataset.id)).rejects.toBeInstanceOf(DatasetInUseError);
   });
 
   it('creates a dataset and fetches its candle range before returning it', async () => {

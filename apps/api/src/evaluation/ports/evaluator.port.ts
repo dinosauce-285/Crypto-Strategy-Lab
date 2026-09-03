@@ -7,6 +7,7 @@ export interface EvaluationInput {
   rules: BacktestRules;
   trades: readonly Trade[];
   candles?: readonly Candle[];
+  leaseId: string;
 }
 
 export interface EvaluationResult {

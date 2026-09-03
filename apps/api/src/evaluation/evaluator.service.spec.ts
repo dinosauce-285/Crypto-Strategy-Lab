@@ -73,6 +73,7 @@ describe('EvaluatorService', () => {
       specHash: 'hash-abc',
       rules: defaultRules,
       trades,
+      leaseId: 'lease-1',
     });
 
     expect(result.experimentId).toBe('exp-123');

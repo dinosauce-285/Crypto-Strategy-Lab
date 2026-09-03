@@ -53,3 +53,8 @@ export function formatDatasetRange(from: number, to: number): string {
 export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
   return side.toUpperCase() === 'BUY' ? 'Mua' : 'Bán';
 }
+
+export function latency(ms: number): string {
+  const rounded = Math.max(0, Math.round(ms));
+  return `${rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}ms`;
+}

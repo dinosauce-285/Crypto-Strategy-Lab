@@ -58,6 +58,7 @@ export class BacktestRunnerService extends BacktestRunner {
     let pendingSignal: Signal | null = null;
 
     for (let i = 0; i < candleSeries.length; i++) {
+      if (i > 0) await yieldToEventLoop();
       const currentCandle = candleSeries[i];
       const candleOpenPrice = parseFloat(currentCandle.open);
       const candleClosePrice = parseFloat(currentCandle.close);
@@ -175,3 +176,5 @@ export class BacktestRunnerService extends BacktestRunner {
     });
   }
 }
+
+const yieldToEventLoop = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));

@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry, LeaderboardSortField, SortDirection, StrategyMeta } from '@csl/contracts';
+import { formatParams } from '../backtest/param-labels';
+import { scoreTooltip } from './score-formula';
+import { varyingParamNames, varyingParamText } from './varying-params';
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
@@ -17,6 +20,7 @@ export function LeaderboardTable({
   onSelectEntry,
 }: LeaderboardTableProps) {
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
+  const varying = varyingParamNames(entries);
 
   useEffect(() => {
     fetch('/api/strategies')
@@ -76,8 +80,8 @@ export function LeaderboardTable({
                   Hạng
                 </button>
               </th>
-              <th>Tổ hợp Candidate / Strategy</th>
-              <th aria-sort={sortAria('score')}>
+              <th className="text-cell">Tổ hợp Candidate / Strategy</th>
+              <th aria-sort={sortAria('score')} title={scoreTooltip(entries[0]?.scoreFormulaVersion)}>
                 <button
                   type="button"
                   onClick={() => onSortChange('score')}
@@ -186,8 +190,16 @@ export function LeaderboardTable({
               const ddColor = ddNum > 0 ? 'bad' : '';
 
               const recipeSummary = entry.spec.members
-                .map((m) => `${getStrategyName(m.id)} (${(m.weight * 100).toFixed(0)}%)`)
+                .map((m) => {
+                  const differs = varyingParamText(m.params, varying.get(m.id));
+                  const weight = `${(m.weight * 100).toFixed(0)}%`;
+                  return `${getStrategyName(m.id)} (${differs ? `${weight}, ${differs}` : weight})`;
+                })
                 .join(' + ');
+
+              const recipeDetail = entry.spec.members
+                .map((m) => `${getStrategyName(m.id)} v${m.version}: ${formatParams(m.params, 'long')}`)
+                .join('\n');
 
               return (
                 <tr
@@ -209,7 +221,7 @@ export function LeaderboardTable({
                       #{entry.rank}
                     </span>
                   </td>
-                  <td>
+                  <td className="text-cell" title={recipeDetail}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
                       <strong style={{ fontSize: '0.82rem' }}>{recipeSummary || 'Một Strategy'}</strong>
                       <span className="source" style={{ fontSize: '0.7rem' }}>

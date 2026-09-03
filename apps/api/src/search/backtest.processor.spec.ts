@@ -55,6 +55,9 @@ describe('BacktestProcessor', () => {
   beforeEach(() => {
     mockDatasets = {
       findById: jest.fn().mockResolvedValue(sampleDataset),
+      acquireLease: jest.fn().mockResolvedValue(true),
+      releaseLease: jest.fn().mockResolvedValue(undefined),
+      renewLease: jest.fn().mockResolvedValue(true),
     } as unknown as jest.Mocked<DatasetRepository>;
 
     mockCandles = {
@@ -124,6 +127,32 @@ describe('BacktestProcessor', () => {
     expect(outcome.status).toBe('duplicate');
     expect(mockFactory.build).not.toHaveBeenCalled();
     expect(mockRunner.run).not.toHaveBeenCalled();
+  });
+
+  it('uses a fresh lease for each attempt of the same job', async () => {
+    await processor.process(makeJob());
+    await processor.process(makeJob());
+
+    const leaseIds = mockDatasets.acquireLease.mock.calls.map(([, leaseId]) => leaseId);
+    expect(leaseIds).toHaveLength(2);
+    expect(leaseIds[0]).not.toBe(leaseIds[1]);
+  });
+
+  it('records a final failure before releasing the active Dataset lease', async () => {
+    mockRunner.run.mockRejectedValue(new Error('runner failed'));
+
+    await expect(processor.process(makeJob())).rejects.toThrow('runner failed');
+
+    expect(mockEvaluator.recordFailed).toHaveBeenCalledWith(
+      'dataset-123',
+      sampleSpec,
+      expect.any(String),
+      'runner failed',
+    );
+    expect(mockDatasets.releaseLease).toHaveBeenCalledTimes(1);
+    expect(mockEvaluator.recordFailed.mock.invocationCallOrder[0]).toBeLessThan(
+      mockDatasets.releaseLease.mock.invocationCallOrder[0],
+    );
   });
 
   it('fails the job permanently with MissingPortError and records nothing when EvaluatorPort is unbound', async () => {
