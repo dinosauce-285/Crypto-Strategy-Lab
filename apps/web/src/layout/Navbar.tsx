@@ -93,7 +93,7 @@ const TABS = [
   { to: '/backtest', label: 'Backtest', icon: BacktestIcon, title: 'Backtest: kiểm thử chiến lược trên dữ liệu lịch sử' },
   { to: '/search', label: 'Tìm kiếm', icon: SearchIcon },
   { to: '/leaderboard', label: 'Bảng xếp hạng', icon: LeaderboardIcon },
-  { to: '/news', label: 'Tin tức', icon: NewsIcon },
+  { to: '/news', label: 'News Crawler', icon: NewsIcon },
 ];
 
 export function Navbar() {
