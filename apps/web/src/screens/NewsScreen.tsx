@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { NewsItem } from '@csl/contracts';
 import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
+import { buildCollectNewsPayload, validateDateRange } from '../news/collect-payload';
 import { NewsControls } from '../news/NewsControls';
 import { NewsFeed } from '../news/NewsFeed';
 import { SentimentDistribution, type SentimentStats } from '../news/SentimentDistribution';
@@ -68,27 +69,16 @@ export function NewsScreen() {
   }, [fetchNews, fetchStats]);
 
   const handleCollect = () => {
-    if (fromDate && toDate && new Date(fromDate).getTime() > new Date(toDate).getTime()) {
-      setNewsError('Thời gian "Từ ngày" không được sau "Đến ngày".');
+    const dateError = validateDateRange(fromDate, toDate);
+    if (dateError) {
+      setNewsError(dateError);
       return;
     }
 
     setIsCollecting(true);
     setNewsError(null);
     setFeedback(null);
-    const body: { coins?: string[]; limit?: number; source?: string; from?: number; to?: number } = {
-      limit: limit > 0 ? limit : 20,
-    };
-    if (coin !== 'ALL') body.coins = [coin];
-    if (source !== 'ALL') body.source = source;
-    if (fromDate) {
-      body.from = new Date(fromDate).getTime();
-    }
-    if (toDate) {
-      const endOfDay = new Date(toDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      body.to = endOfDay.getTime();
-    }
+    const body = buildCollectNewsPayload({ coin, source, fromDate, toDate, limit });
 
     apiFetch<{ collected: number; inserted: number }>('/api/news/collect', {
       method: 'POST',
