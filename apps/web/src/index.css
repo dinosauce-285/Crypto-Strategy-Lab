@@ -154,10 +154,18 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 
 .source { color: var(--muted); font-size: 0.76rem; margin: 0; }
 
-/* The floor is what a candle needs to be readable; above it the chart takes the slack. */
+/* The floor is what a candle needs to be readable; above it the chart takes the slack.
+   min-width: 0 matters as much as the height floor: lightweight-charts' autoSize sets an
+   explicit pixel width on this element's canvas, which becomes this flex item's automatic
+   min-width (the default is `auto`, i.e. content-based) once mounted. Without overriding
+   that to 0, the box can never shrink narrower than its own canvas's last-measured width —
+   so a live window-width shrink never reaches the ResizeObserver autoSize depends on, and
+   the chart (and anything sharing its row) stays frozen at its original width until the
+   component remounts (e.g. a reload) and measures fresh. */
 .chart {
   flex: 1;
   min-height: 320px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
@@ -176,12 +184,12 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
   gap: 0.85rem;
   min-height: 420px;
 }
-.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; min-height: 0; }
+.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; min-height: 0; min-width: 0; }
 .dashboard-grid .chart-frame { flex: 1; min-height: 0; }
 .dashboard-grid .chart { min-height: 190px; }
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
-.chart-frame { position: relative; display: flex; flex-direction: column; }
+.chart-frame { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .chart-stale { opacity: 0.45; transition: opacity 0.2s; }
 .chart-stale-banner {
   position: absolute;
