@@ -67,4 +67,50 @@ describe('SentimentCalculator', () => {
     expect(result.value[1]).toBe(0);
     expect(result.value[2]).toBe(0.99);
   });
+
+  it('filters articles by coin matching the candle pair', () => {
+    const btcArticle: ScoredArticle = {
+      publishedAt: t0 - 1800000,
+      sentimentScore: 0.8,
+      relatedCoins: ['BTC'],
+    };
+    const ethArticle: ScoredArticle = {
+      publishedAt: t0 - 1800000,
+      sentimentScore: -0.9,
+      relatedCoins: ['ETH'],
+    };
+
+    const calc = new SentimentCalculator([btcArticle, ethArticle]);
+    // candles are BTCUSDT
+    const btcResult = calc.compute(candles, { windowHours: 1 });
+    expect(btcResult.value[0]).toBe(0.8);
+
+    // candles for ETHUSDT
+    const ethCandles: Candle[] = candles.map((c) => ({ ...c, pair: 'ETHUSDT' }));
+    const ethResult = calc.compute(ethCandles, { windowHours: 1 });
+    expect(ethResult.value[0]).toBe(-0.9);
+  });
+
+  it('includes multi-coin articles and generic articles without relatedCoins', () => {
+    const multiArticle: ScoredArticle = {
+      publishedAt: t0 - 1800000,
+      sentimentScore: 0.75,
+      relatedCoins: ['BTC', 'ETH'],
+    };
+    const genericArticle: ScoredArticle = {
+      publishedAt: t0 - 1800000,
+      sentimentScore: 0.25,
+      relatedCoins: [],
+    };
+    const solArticle: ScoredArticle = {
+      publishedAt: t0 - 1800000,
+      sentimentScore: -0.8,
+      relatedCoins: ['SOL'],
+    };
+
+    const calc = new SentimentCalculator([multiArticle, genericArticle, solArticle]);
+    const result = calc.compute(candles, { windowHours: 1 });
+    // Average of 0.75 and 0.25 = 0.50
+    expect(result.value[0]).toBe(0.5);
+  });
 });

@@ -3,6 +3,12 @@ export interface NewsControlsProps {
   onCoinChange: (coin: string) => void;
   source: string;
   onSourceChange: (source: string) => void;
+  fromDate?: string;
+  onFromDateChange?: (date: string) => void;
+  toDate?: string;
+  onToDateChange?: (date: string) => void;
+  limit?: number;
+  onLimitChange?: (limit: number) => void;
   onCollect: () => void;
   onAnalyze: () => void;
   isCollecting: boolean;
@@ -22,6 +28,12 @@ export function NewsControls({
   onCoinChange,
   source,
   onSourceChange,
+  fromDate = '',
+  onFromDateChange,
+  toDate = '',
+  onToDateChange,
+  limit = 20,
+  onLimitChange,
   onCollect,
   onAnalyze,
   isCollecting,
@@ -30,7 +42,7 @@ export function NewsControls({
 }: NewsControlsProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-      <div className="controls-row" style={{ flexWrap: 'wrap' }}>
+      <div className="controls-row" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
         <div className="seg" role="group" aria-label="Chọn coin">
           {COIN_OPTIONS.map((c) => (
             <button
@@ -56,6 +68,53 @@ export function NewsControls({
             </option>
           ))}
         </select>
+
+        {onFromDateChange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Từ</span>
+            <input
+              type="date"
+              className="pair-select"
+              value={fromDate}
+              onChange={(e) => onFromDateChange(e.target.value)}
+              aria-label="Từ ngày"
+              title="Thu thập tin từ ngày"
+            />
+          </div>
+        )}
+
+        {onToDateChange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Đến</span>
+            <input
+              type="date"
+              className="pair-select"
+              value={toDate}
+              onChange={(e) => onToDateChange(e.target.value)}
+              aria-label="Đến ngày"
+              title="Thu thập tin đến ngày"
+            />
+          </div>
+        )}
+
+        {onLimitChange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>SL</span>
+            <input
+              type="number"
+              className="pair-select"
+              style={{ width: '4.5rem' }}
+              min={1}
+              max={500}
+              value={limit || ''}
+              onChange={(e) =>
+                onLimitChange(Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0)
+              }
+              aria-label="Số lượng tin thu thập"
+              title="Số lượng bài viết thu thập"
+            />
+          </div>
+        )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
           <button
