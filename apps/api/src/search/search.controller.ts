@@ -42,7 +42,7 @@ export class SearchController {
   @Get('runs/current')
   status(): RunStatus {
     const status = this.search.status();
-    if (!status) throw new NotFoundException('no run has been started');
+    if (!status) throw new NotFoundException('Chưa có lượt tìm kiếm nào được bắt đầu.');
     return status;
   }
 

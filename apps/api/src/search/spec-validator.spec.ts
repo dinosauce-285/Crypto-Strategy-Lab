@@ -41,7 +41,8 @@ describe('validateSpec', () => {
         threshold: 0.3,
         members: [member(0.5), { ...member(0.4), id: 'rsi' }],
       }),
-    ).toThrow('member weights sum to 0.9, not 1');
+      // The refusal reports the total it actually saw, so the reader knows how far off it is.
+    ).toThrow('90%');
   });
 
   it('rejects duplicate members in one candidate', () => {
@@ -51,6 +52,7 @@ describe('validateSpec', () => {
         threshold: 0.3,
         members: [member(0.5), member(0.5)],
       }),
-    ).toThrow('duplicate member ma@1');
+      // The refusal names which strategy and which version was doubled up.
+    ).toThrow(/"ma".*1/);
   });
 });

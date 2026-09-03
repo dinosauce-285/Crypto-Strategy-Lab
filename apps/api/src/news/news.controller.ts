@@ -58,7 +58,7 @@ export class NewsController {
     }
     const item = await this.newsService.getById(id);
     if (!item) {
-      throw new NotFoundException(`News item with ID ${id} not found`);
+      throw new NotFoundException('Không tìm thấy bài viết này.');
     }
     return item;
   }

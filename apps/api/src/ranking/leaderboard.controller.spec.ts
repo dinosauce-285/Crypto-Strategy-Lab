@@ -1,3 +1,4 @@
+import { InvalidLeaderboardQueryError } from './dto/leaderboard-query.dto';
 import { LeaderboardController } from './leaderboard.controller';
 import type { RankingPort } from './ports/ranking.port';
 import type { ChannelPublisher } from '../realtime/ports/channel-publisher.port';
@@ -48,36 +49,31 @@ describe('LeaderboardController', () => {
     });
   });
 
-  it('throws BadRequestException when datasetId is missing or empty', async () => {
-    await expect(controller.getLeaderboard('')).rejects.toThrow(
-      'Query parameter "datasetId" is required',
-    );
+  // These assert that the refusal names the value it refused, not its exact wording — the
+  // wording is user-facing copy (ADR 0044) and is expected to be edited. The error is a
+  // DomainError carrying 400; the global filter is what turns it into the HTTP response.
+  it('refuses a missing or empty datasetId', async () => {
+    await expect(controller.getLeaderboard('')).rejects.toThrow(InvalidLeaderboardQueryError);
   });
 
-  it('throws BadRequestException when sortBy is invalid', async () => {
+  it('refuses an invalid sortBy, naming it', async () => {
     await expect(
       controller.getLeaderboard('ds-1', 'DROP_TABLE' as never),
-    ).rejects.toThrow('Invalid sortBy parameter "DROP_TABLE"');
+    ).rejects.toThrow('DROP_TABLE');
   });
 
-  it('throws BadRequestException when direction is invalid', async () => {
+  it('refuses an invalid direction, naming it', async () => {
     await expect(
       controller.getLeaderboard('ds-1', 'score', 'sideways' as never),
-    ).rejects.toThrow('Invalid direction parameter "sideways"');
+    ).rejects.toThrow('sideways');
   });
 
-  it('throws BadRequestException when limit is not a valid integer between 1 and 50', async () => {
-    await expect(
-      controller.getLeaderboard('ds-1', 'score', 'desc', 'abc'),
-    ).rejects.toThrow('Query parameter "limit" must be an integer between 1 and 50, received "abc"');
+  it('refuses a limit outside 1..50, naming it', async () => {
+    await expect(controller.getLeaderboard('ds-1', 'score', 'desc', 'abc')).rejects.toThrow('abc');
 
-    await expect(
-      controller.getLeaderboard('ds-1', 'score', 'desc', '-5'),
-    ).rejects.toThrow('Query parameter "limit" must be an integer between 1 and 50, received "-5"');
+    await expect(controller.getLeaderboard('ds-1', 'score', 'desc', '-5')).rejects.toThrow('-5');
 
-    await expect(
-      controller.getLeaderboard('ds-1', 'score', 'desc', '999'),
-    ).rejects.toThrow('Query parameter "limit" must be an integer between 1 and 50, received "999"');
+    await expect(controller.getLeaderboard('ds-1', 'score', 'desc', '999')).rejects.toThrow('999');
   });
 
   it('publishes update notification when backtest.completed event fires', () => {

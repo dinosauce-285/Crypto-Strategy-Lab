@@ -24,7 +24,7 @@ export class SentimentController {
     }
     const item = await this.sentimentService.analyzeArticle(id.trim());
     if (!item) {
-      throw new NotFoundException(`News item with ID ${id} not found`);
+      throw new NotFoundException('Không tìm thấy bài viết này.');
     }
     return item;
   }

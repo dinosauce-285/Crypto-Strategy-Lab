@@ -13,7 +13,7 @@ export class QueueUnavailableError extends DomainError {
   readonly status = 503;
 
   constructor() {
-    super('the backtest queue is unreachable — is Redis running on REDIS_URL?');
+    super('Không kết nối được hàng đợi backtest — Redis có đang chạy không?');
   }
 }
 

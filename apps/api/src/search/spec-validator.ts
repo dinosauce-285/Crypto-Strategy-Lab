@@ -35,11 +35,11 @@ const memberKey = (member: CandidateMember): string =>
   `${member.id}@${member.version}/${member.paramsHash}`;
 
 function readParams(value: unknown, id: string): StrategyParams {
-  if (!isRecord(value)) reject(`member ${id} has no params`);
+  if (!isRecord(value)) reject(`Chiến lược "${id}" trong tổ hợp thiếu phần tham số.`);
   const params: StrategyParams = {};
   for (const [key, param] of Object.entries(value)) {
     if (typeof param !== 'number' || !Number.isFinite(param)) {
-      reject(`member ${id} has a non-numeric param "${key}"`);
+      reject(`Tham số "${key}" của chiến lược "${id}" phải là một số.`);
     }
     params[key] = param;
   }
@@ -47,12 +47,14 @@ function readParams(value: unknown, id: string): StrategyParams {
 }
 
 function readMember(value: unknown): CandidateMember {
-  if (!isRecord(value)) reject('a member is not an object');
+  if (!isRecord(value)) reject('Một chiến lược trong tổ hợp không đúng định dạng.');
   const { id, version, params, paramsHash, weight } = value;
-  if (typeof id !== 'string' || id.length === 0) reject('a member has no id');
-  if (typeof version !== 'number' || !Number.isInteger(version)) reject(`member ${id} has no version`);
-  if (typeof paramsHash !== 'string' || paramsHash.length === 0) reject(`member ${id} has no paramsHash`);
-  if (!isWeight(weight)) reject(`member ${id} has a weight outside (0,1] on the 0.1 grid`);
+  if (typeof id !== 'string' || id.length === 0) reject('Một chiến lược trong tổ hợp thiếu mã định danh.');
+  if (typeof version !== 'number' || !Number.isInteger(version))
+    reject(`Chiến lược "${id}" trong tổ hợp thiếu số phiên bản.`);
+  if (typeof paramsHash !== 'string' || paramsHash.length === 0)
+    reject(`Chiến lược "${id}" trong tổ hợp thiếu mã băm tham số.`);
+  if (!isWeight(weight)) reject(`Trọng số của "${id}" phải từ 10% đến 100%, theo bước 10%.`);
   return { id, version, params: readParams(params, id), paramsHash, weight };
 }
 
@@ -62,19 +64,19 @@ function readMember(value: unknown): CandidateMember {
  * way a second attempt cannot fix.
  */
 export function validateSpec(value: unknown): CandidateSpec {
-  if (!isRecord(value)) reject('the specification is not an object');
+  if (!isRecord(value)) reject('Công thức tổ hợp không đúng định dạng.');
   const { rule, threshold, members } = value;
-  if (!isMergeRule(rule)) reject(`unknown merge rule "${String(rule)}"`);
-  if (!isThreshold(threshold)) reject('the threshold is outside (0,1) on the 0.1 grid');
-  if (!Array.isArray(members) || members.length === 0) reject('the specification has no members');
+  if (!isMergeRule(rule)) reject(`Không nhận ra cách gộp tín hiệu "${String(rule)}".`);
+  if (!isThreshold(threshold)) reject('Ngưỡng đồng thuận phải từ 0.1 đến 0.9, theo bước 0.1.');
+  if (!Array.isArray(members) || members.length === 0) reject('Tổ hợp chưa có chiến lược nào.');
   const read = members.map(readMember);
   const seen = new Set<string>();
   for (const member of read) {
     const key = memberKey(member);
-    if (seen.has(key)) reject(`duplicate member ${member.id}@${member.version}`);
+    if (seen.has(key)) reject(`Chiến lược "${member.id}" v${member.version} bị chọn hai lần.`);
     seen.add(key);
   }
   const total = Number(read.reduce((sum, member) => sum + member.weight, 0).toFixed(6));
-  if (total !== 1) reject(`member weights sum to ${total}, not 1`);
+  if (total !== 1) reject(`Tổng trọng số đang là ${Math.round(total * 100)}%, phải đúng 100%.`);
   return { rule, threshold, members: read };
 }

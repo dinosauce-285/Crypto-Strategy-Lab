@@ -21,6 +21,6 @@ export class UnknownStrategyError extends DomainError {
   readonly status = 400;
 
   constructor(readonly strategyId: string) {
-    super(`strategy "${strategyId}" is not registered`);
+    super(`Chiến lược "${strategyId}" chưa được đăng ký. Chọn lại trong danh sách.`);
   }
 }

@@ -48,7 +48,9 @@ export class GeneratedCandidateSource extends CandidateSource {
     ]);
     const missing = pairs.filter(([, meta]) => !meta).map(([ref]) => `${ref.id}@${ref.version}`);
     if (missing.length > 0) {
-      throw new InvalidSearchSpaceError(`unknown strategy versions: ${missing.join(', ')}`);
+      throw new InvalidSearchSpaceError(
+        `Không gian tìm kiếm có chiến lược không tồn tại: ${missing.join(', ')}.`,
+      );
     }
     return pairs.map(([, meta]) => meta).filter((meta): meta is StrategyMeta => Boolean(meta));
   }
