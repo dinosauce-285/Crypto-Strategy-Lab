@@ -72,10 +72,20 @@ model Dataset {
 
   createdAt   DateTime     @default(now()) @db.Timestamptz(3)
   experiments Experiment[]
+  leases      DatasetLease[]
 
   /// Two rows describing the same window judged the same way would split one
   /// leaderboard into two that each look complete.
   @@unique([pair, timeframe, from, to, entryPrice, feeRate, warmupCandles, profitMode, drawdownMode])
+}
+
+model DatasetLease {
+  id        String   @id
+  datasetId String
+  dataset   Dataset  @relation(fields: [datasetId], references: [id])
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@index([datasetId, expiresAt])
 }
 
 /// One run. Carries the whole recipe rather than a strategy name, so it can be

@@ -272,6 +272,7 @@ export function BacktestScreen() {
               selectedDataset={dataset}
               onSelectDataset={setDataset}
               onOpenCreateModal={() => setIsModalOpen(true)}
+              disabled={state.kind === 'loading'}
             />
           </div>
 

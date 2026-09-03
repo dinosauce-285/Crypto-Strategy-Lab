@@ -2,7 +2,9 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
 } from '@nestjs/common';
 import type { Dataset } from '@csl/contracts';
@@ -21,9 +23,19 @@ export class BacktestController {
     return this.backtestService.listDatasets();
   }
 
+  @Get('datasets/:id')
+  getDataset(@Param('id') id: string): Promise<Dataset> {
+    return this.backtestService.getDataset(id);
+  }
+
   @Post('datasets')
   createDataset(@Body() body: unknown): Promise<Dataset> {
     return this.backtestService.createDataset(validateDataset(body));
+  }
+
+  @Delete('datasets/:id')
+  deleteDataset(@Param('id') id: string): Promise<Dataset> {
+    return this.backtestService.deleteDataset(id);
   }
 
   @Post('backtest/run')
