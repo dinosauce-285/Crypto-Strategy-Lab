@@ -741,6 +741,25 @@ tbody tr:last-child td { border-bottom: 0; }
   grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
 }
 
+/* Scoped to this panel: StrategySpacePicker's cards are plain rows via the base
+   .strategy-choice rule above (label > checkbox + text, nothing else). Only here does a
+   card grow a params form below its row, so only here does it need to stack. */
+.composite-builder-panel .strategy-choice {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.strategy-choice-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.strategy-choice-params {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
 .strategy-choice-main {
   display: flex;
   gap: 0.55rem;
