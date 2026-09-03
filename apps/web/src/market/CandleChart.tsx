@@ -15,7 +15,7 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { apiFetch } from '../api/request';
-import { useChannelStatus, useTopic } from '../channel/use-topic';
+import { useChannelStatus, useTopic, type ChannelStatus } from '../channel/use-topic';
 import { clock } from './format';
 
 interface CandleChartProps {
@@ -42,6 +42,15 @@ type State =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; candles: Candle[] };
+
+// A small always-on badge per T33, distinct from the `isStale` banner below (which only
+// appears once the channel has actually been down long enough to matter). The badge
+// answers "is this chart live right now"; the banner answers "how long has it been dead."
+const CHANNEL_BADGE: Record<ChannelStatus, { text: string; className: string }> = {
+  live: { text: '● Đang nhận dữ liệu', className: 'badge-pos' },
+  connecting: { text: 'Đang kết nối…', className: 'badge-neu' },
+  down: { text: 'Mất kết nối', className: 'badge-neg' },
+};
 
 // Dev-mode StrictMode mounts every effect twice (mount, cleanup, remount) as a safety
 // check. Without this cache each mount would fire its own history fetch, and the first
@@ -203,8 +212,20 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
   const hasData = state.kind === 'ready' && state.candles.length > 0;
   const isStale = hasData && channelStatus === 'down';
 
+  const badge = CHANNEL_BADGE[channelStatus];
+
   return (
     <>
+      {/* index.css is off-limits here (owned by other in-flight cards), so positioning
+          rides inline styles instead of a new class; colors still come from the shared
+          .badge classes. Sits opposite chart-label's top-left corner. */}
+      <span
+        className={`badge ${badge.className}`}
+        style={{ position: 'absolute', top: '0.5rem', right: '0.6rem', zIndex: 1 }}
+      >
+        {badge.text}
+      </span>
+
       {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
@@ -224,7 +245,8 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
       )}
 
       {isStale && (
-        <p className="chart-stale-banner state bad">
+        // Shifted below the badge row above (top: 0.5rem) so the two don't overlap.
+        <p className="chart-stale-banner state bad" style={{ top: '1.7rem' }}>
           <strong>Mất kết nối kênh.</strong> Dữ liệu đứng yên từ{' '}
           {lastUpdatedAt ? clock(lastUpdatedAt) : '—'}.
         </p>
