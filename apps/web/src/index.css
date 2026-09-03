@@ -429,6 +429,10 @@ tbody tr:last-child td { border-bottom: 0; }
 
 /* --- modal & backtest controls (T14) --- */
 
+/* The chart keeps a floor of its own, so the panel holding it needs the same floor —
+   otherwise a short window shrinks the panel and the chart spills over the trades table. */
+.backtest-stage { min-height: 360px; }
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

@@ -170,9 +170,8 @@ export function BacktestScreen() {
         <div className="screen-main">
           {state.kind === 'idle' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px dashed var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -190,9 +189,8 @@ export function BacktestScreen() {
 
           {state.kind === 'loading' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px solid var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -208,9 +206,8 @@ export function BacktestScreen() {
 
           {state.kind === 'error' && (
             <div
-              className="panel grows"
+              className="panel grows backtest-stage"
               style={{
-                minHeight: '360px',
                 border: '1px solid var(--line)',
                 borderRadius: 'var(--radius)',
                 display: 'flex',
@@ -232,7 +229,7 @@ export function BacktestScreen() {
 
           {state.kind === 'ready' && (
             <>
-              <div className="panel grows">
+              <div className="panel grows backtest-stage">
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (
