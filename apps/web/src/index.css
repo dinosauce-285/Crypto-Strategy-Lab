@@ -154,28 +154,44 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 
 .source { color: var(--muted); font-size: 0.76rem; margin: 0; }
 
-/* The floor is what a candle needs to be readable; above it the chart takes the slack. */
+/* The floor is what a candle needs to be readable; above it the chart takes the slack.
+   min-width: 0 matters as much as the height floor: lightweight-charts' autoSize sets an
+   explicit pixel width on this element's canvas, which becomes this flex item's automatic
+   min-width (the default is `auto`, i.e. content-based) once mounted. Without overriding
+   that to 0, the box can never shrink narrower than its own canvas's last-measured width —
+   so a live window-width shrink never reaches the ResizeObserver autoSize depends on, and
+   the chart (and anything sharing its row) stays frozen at its original width until the
+   component remounts (e.g. a reload) and measures fresh. */
 .chart {
   flex: 1;
   min-height: 320px;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
+/* Same T44 fix, Realtime side: each chart below carries its own 190px floor
+   (`.dashboard-grid .chart`), but this grid claimed it could still shrink to 0 — so a
+   short window squeezed both rows below that floor and let the top row spill onto the
+   bottom one. Unlike Backtest's chart, this class is Realtime-only, so the floor goes
+   directly on it. Each row needs the chart (192px, 190px + 1px border top/bottom) *plus*
+   the connection badge row above it (T33 — margin-top 0.45rem + its own line + margin-
+   bottom 0.5rem, ~42px; it's real in-flow content now, not an absolute overlay): 2 rows x
+   (192px + 42px) + 1 row gap (0.85rem = 13.6px) = ~482px; rounded up with headroom. */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   grid-auto-rows: 1fr;
   gap: 0.85rem;
-  min-height: 0;
+  min-height: 500px;
 }
-.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; min-height: 0; }
+.dashboard-cell { display: flex; flex-direction: column; gap: 0.4rem; cursor: pointer; min-height: 0; min-width: 0; }
 .dashboard-grid .chart-frame { flex: 1; min-height: 0; }
 .dashboard-grid .chart { min-height: 190px; }
 .dashboard-cell.selected .chart { border-color: var(--accent); }
 
-.chart-frame { position: relative; display: flex; flex-direction: column; }
+.chart-frame { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .chart-stale { opacity: 0.45; transition: opacity 0.2s; }
 .chart-stale-banner {
   position: absolute;
@@ -208,7 +224,24 @@ code { background: var(--surface); padding: 0.05em 0.3em; border-radius: var(--r
 }
 
 @media (max-width: 640px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
+  /* Single column means the same 4 charts now stack as 4 rows instead of 2 — the 2-row
+     floor above was sized for 2 rows and left each row squeezed to a quarter of that,
+     overlapping its neighbors. 4 rows x (192px chart + ~42px connection badge row) +
+     3 gaps (0.85rem = 13.6px) = ~977px; rounded up with headroom. */
+  .dashboard-grid { grid-template-columns: 1fr; min-height: 1000px; }
+
+  /* .screen-main and .screen-side stack into 2 auto grid rows here (they sit side by side
+     above this breakpoint — see the other max-width: 640px block, above). An auto row is
+     supposed to size to fit its content, but a grid item's own min-height two levels down
+     (.dashboard-grid, above) doesn't reliably propagate up through .screen-main's
+     flex-basis: 0% into .screen-body's row-track sizing — the row can end up sized to
+     .screen-main's flex-computed share instead of what its content actually needs, and
+     .dashboard-grid overflows past it into .screen-side. Flooring .screen-body itself
+     sidesteps that: dashboard-grid's floor (1000px) + controls-row (~50px) + screen-main's
+     own gap (0.65rem) + this grid's row gap (1.25rem) + screen-side's steady-state content
+     (5 recent-ticks rows + the connection panel, ~341px) = ~1425px; rounded up with
+     headroom. */
+  .screen-body { min-height: 1450px; }
 }
 
 /* The scrollbar is part of the design too — the default belongs to no system. */
