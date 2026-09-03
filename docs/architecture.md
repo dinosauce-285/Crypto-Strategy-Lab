@@ -114,11 +114,15 @@ pushes depends on *being able to push*, not on Socket.IO.
 
 One line each. If a component needs two lines, it is doing two jobs.
 
-**market** — owns candles. `MarketService` holds one watch per pair, backfills 1000
-candles on first subscribe ([0023](decisions/0023-backfill-is-1000-candles-per-pair-and-timeframe-fetched-lazi.md)),
-reconnects and fills gaps on its own ([0032](decisions/0032-server-owned-reconnect-and-gap-backfill.md)).
-`CandleRepository` stores only closed candles — the one still forming lives on the socket
-and nowhere else.
+**market** — serves candles. `GET /market/candles` without a range reads recent chart
+history directly from Binance ([0040](decisions/0040-realtime-watched-candles-are-read-live-from-the-exchange-not.md)).
+`MarketService` holds one watch per pair, seeds its reconnect cursor with one recent
+candle from the exchange, reconnects and fills gaps on its own
+([0032](decisions/0032-server-owned-reconnect-and-gap-backfill.md)). Watching is
+transient: Realtime publishes only closed candles and never persists them. Dataset
+creation separately fetches and persists its requested historical range in pages
+([0041](decisions/0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md)),
+so backtests read a reproducible dataset.
 
 **indicator** — turns candles into numbers: moving average, RSI, Bollinger, support and
 resistance zones, and a sentiment series. Every calculator is strictly causal, and a
@@ -204,27 +208,32 @@ arrival.
 The server pushes; the browser never polls (`AGENTS.md`, iron rule 6).
 
 ```
+Binance REST ──► GET /market/candles ──► recent chart history in the browser
+                                               (no storage)
+
 Binance WS ──► BinanceStreamAdapter ──► MarketService
                                             │
-                            ┌───────────────┼───────────────┐
-                            ▼               ▼               ▼
-                     channel.publish   event bus:     CandleRepository
-                     market:BTCUSDT:1m  candle.closed   (closed only)
+                            ┌───────────────┴───────────────┐
+                            ▼                               ▼
+                     channel.publish                   event bus:
+                     market:BTCUSDT:1m                 candle.closed
                             │
                             ▼
                      browser, subscribed to that one topic
 ```
 
-A subscription is what starts the work. `TopicAudience` reports that a topic gained its
-first watcher, `MarketService` opens the upstream connection and backfills history, and
-when the last watcher leaves the connection closes. Nobody streams a pair no one is
-looking at.
+The screen obtains its initial chart history through `GET /market/candles` without
+`from`/`to`, which reads recent candles directly from Binance. A subscription starts the
+streaming work: `TopicAudience` reports that a topic gained its first watcher,
+`MarketService` opens the upstream connection and seeds a reconnect cursor with one
+recent candle from the exchange. When the last watcher leaves the connection closes.
+Nobody streams a pair no one is looking at, and watching never writes candles to storage.
 
 Reconnection is the server's job, not the browser's
 ([0032](decisions/0032-server-owned-reconnect-and-gap-backfill.md)). On a dropped socket
-the service reconnects, notices the gap between its cursor and the first live candle, and
-backfills it before releasing buffered candles in order. The browser sees a stutter, not a
-hole — and it never learns that the exchange went away, which is the point.
+the service reconnects, fetches the gap from Binance after its cursor, and releases the
+recovered and buffered closed candles in order. The browser sees a stutter, not a hole —
+and it never learns that the exchange went away, which is the point.
 
 ## 6. Strategy Flow
 
