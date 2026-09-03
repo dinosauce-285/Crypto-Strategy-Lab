@@ -168,7 +168,10 @@ export function BacktestScreen() {
 
   return (
     <main className="screen">
-      <Header title="Chạy Backtest" />
+      <Header
+        title="Chạy Backtest"
+        subtitle="Chọn dataset và strategy để mô phỏng, phân tích kết quả."
+      />
 
       <div className="screen-body">
         {/* Left Column: Visual Chart & Analysis Panels */}

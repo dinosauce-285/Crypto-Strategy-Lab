@@ -168,7 +168,10 @@ export function SearchScreen() {
 
   return (
     <main className="screen">
-      <Header title="Điều khiển Tìm kiếm" />
+      <Header
+        title="Điều khiển Tìm kiếm"
+        subtitle="Chọn không gian strategy và chạy tìm kiếm các tổ hợp."
+      />
 
       {strategyState.kind === 'loading' && <SearchRegistryState kind="loading" />}
 

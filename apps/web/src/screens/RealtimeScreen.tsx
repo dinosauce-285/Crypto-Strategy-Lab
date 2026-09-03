@@ -22,7 +22,10 @@ export function RealtimeScreen() {
 
   return (
     <main className="screen">
-      <Header title="Biểu đồ thời gian thực - Nhiều khung thời gian" />
+      <Header
+        title="Biểu đồ thời gian thực - Nhiều khung thời gian"
+        subtitle="Theo dõi giá và nến theo nhiều khung thời gian."
+      />
 
       <div className="screen-body">
         <div className="screen-main">
