@@ -15,8 +15,9 @@ colors:
   onAccent: "#202630"
   ok: "#0ecb81"
   bad: "#f6465d"
-  okInk: "#2ee5a0"
-  badInk: "#ff5c74"
+  okWash: "#10251d"
+  badWash: "#2a1a1e"
+  accentWash: "#2a2413"
 typography:
   title:
     fontFamily: "IBM Plex Sans, Segoe UI, system-ui, sans-serif"
@@ -98,11 +99,11 @@ components:
   data-table-row-hover:
     backgroundColor: "{colors.raised}"
   badge-pos:
-    textColor: "{colors.okInk}"
-    backgroundColor: "rgba(14, 203, 129, 0.12)"
+    textColor: "{colors.ok}"
+    backgroundColor: "{colors.okWash}"
   badge-neg:
-    textColor: "{colors.badInk}"
-    backgroundColor: "rgba(246, 70, 93, 0.12)"
+    textColor: "{colors.bad}"
+    backgroundColor: "{colors.badWash}"
   state-line:
     textColor: "{colors.muted}"
     typography: "{typography.data}"
@@ -160,11 +161,16 @@ Three neutral planes, one amber accent, and green/red reserved strictly for dire
 - **Hairline** (`#2b3139`) and **strong hairline** (`#363a45`): the only dividers, 1px.
 
 ### Semantic
-- **Up / buy** (`#0ecb81`) and **down / sell** (`#f6465d`) paint *marks*: candles, volume
-  bars, chart markers, bar segments, an invalid field's border.
-- **Up-ink** (`#2ee5a0`) and **down-ink** (`#ff5c74`) paint the same meanings as *text*.
-  They exist because `#f6465d` measures 4.48:1 on a panel — under this app's AA floor by a
-  hair. The mark colour stays authentic; the text colour clears the bar.
+- **Up / buy** (`#0ecb81`) and **down / sell** (`#f6465d`). One value each, for marks and
+  for text alike: candles, volume bars, chart markers and bar segments take the same red
+  and green a reader sees in a profit column. The red measures 4.48:1 on a panel — a
+  hair under the AA floor — and is kept anyway, because the alternative is a red that is
+  not the category's. `UI_CONSTRAINT.md` names and bounds that exception; ADR 0050 records
+  the call.
+- **Washes** (`#10251d`, `#2a1a1e`, `#2a2413`) are the grounds a coloured pill sits on.
+  They are *darker* than the plane behind them, not a transparent tint of the colour: a
+  tint lightens the ground and drags the text on it down with it — which is how the muted
+  sub-label on a selected strategy card ended up at 4.01:1.
 
 ### Named Rules
 
@@ -176,8 +182,9 @@ show that it is a panel.
 profit and loss, up and down are readable in greyscale through a word, a shape or a
 position. A colour-blind reader and a black-and-white printout reach the same conclusion.
 
-**The Mark / Ink Rule.** `--ok` and `--bad` are for things that are drawn; `--ok-ink` and
-`--bad-ink` are for things that are read. Text takes the -ink pair, always.
+**The One-Red Rule.** There is one red and one green, and a mark and a sentence use the
+same one. A second value tuned for a background is how a palette starts drifting, and it
+asks every future author to know which of two nearly identical tokens they want.
 
 ## 3. Typography
 
@@ -378,7 +385,7 @@ shortening it.
 - **Do** convey depth with the three planes plus a 1px hairline, never a shadow.
 - **Do** give every focusable element the same 2px amber ring at 1px offset.
 - **Do** pair every green or red with a word or a shape, so the meaning survives greyscale.
-- **Do** take `--ok-ink` / `--bad-ink` for text and `--ok` / `--bad` for marks.
+  This is what pays for the red's 4.48:1, so it is not optional here.
 - **Do** write all four states as sentences that name what is happening and what to do next.
 - **Do** keep one control height per row (2rem) and one radius family (4 / 8 / 12).
 

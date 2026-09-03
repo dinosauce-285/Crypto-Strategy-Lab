@@ -28,15 +28,16 @@
   --accent-dim: #6a5a11;
   --on-accent: #202630;
 
-  /* direction. --ok/--bad paint marks (candles, fills, borders); the -ink pair is the
-     same meaning as text, lifted until it clears 4.5:1 on --surface. */
+  /* Direction. One value each, for marks and for text alike — see ADR 0050 on the 4.48:1
+     this costs against --surface. The washes are deliberately darker than the plane they
+     sit on rather than a transparent tint of the colour: a tint lightens the ground and
+     drags coloured text down with it, and it took the muted sub-labels on a selected card
+     below the floor too. */
   --ok: #0ecb81;
   --bad: #f6465d;
-  --ok-ink: #2ee5a0;
-  --bad-ink: #ff5c74;
-  --ok-wash: rgba(14, 203, 129, 0.12);
-  --bad-wash: rgba(246, 70, 93, 0.12);
-  --accent-wash: rgba(252, 213, 53, 0.12);
+  --ok-wash: #10251d;
+  --bad-wash: #2a1a1e;
+  --accent-wash: #2a2413;
 
   --overlay: rgba(11, 14, 17, 0.72);
   --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.44);
@@ -129,8 +130,8 @@ th,
   font-variant-numeric: tabular-nums;
 }
 
-.ok { color: var(--ok-ink); }
-.bad { color: var(--bad-ink); }
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
 
 /* The parts nobody draws still belong to the system. */
 * {

@@ -22,14 +22,25 @@ Concretely:
 - **Top bar instead of a side rail,** with a live ticker rail under it. It buys back a
   10.5rem column for the charts and puts the last trade on every screen, which is what the
   category does and what this product's own "the number is the subject" principle wants.
-- **`--ok`/`--bad` for marks, `--ok-ink`/`--bad-ink` for text.** Binance's sell red
-  (`#f6465d`) is 4.48:1 on the panel plane — just under the AA floor this app binds itself
-  to. Rather than drop the colour, the text tokens are lifted (`#ff5c74`, 5.30:1) and the
-  original stays on candles, fills and borders where contrast rules do not apply.
+- **One red and one green,** `#f6465d` and `#0ecb81`, for marks and for text alike. The
+  red measures 4.48:1 on the panel plane, 0.02 under the AA floor this app binds itself
+  to. The first cut of this system dodged that with a second, lighter pair for text; the
+  product owner looked at both and kept the exchange's own value, because a red that is
+  not the category's red costs more than the 0.02 does. `UI_CONSTRAINT.md` now names and
+  bounds that exception rather than being quietly violated by the code.
 
-`docs/UI_CONSTRAINT.md` is unchanged and still holds: tokens carry every colour, four
-states per screen, AA contrast, one icon family, one control height per row. Only
-`DESIGN.md` — the visual system that law produced — was rewritten.
+- **Washes are darker than the plane behind them,** not a transparent tint of the colour.
+  A 12% tint lightens the ground under the very text it is meant to set off; it had the
+  muted sub-label on a selected strategy card at 4.01:1. Three flat dark grounds
+  (`#10251d`, `#2a1a1e`, `#2a2413`) put every pill and every selected card back over 4.5:1.
+
+`docs/UI_CONSTRAINT.md` keeps every other rule unchanged — tokens carry every colour, four
+states per screen, one icon family, one control height per row — and gains the bounded
+contrast exception above. `DESIGN.md`, the visual system that law produced, was rewritten.
+`PRODUCT.md`'s brand sentence was rewritten too: "an instrument rather than a trading
+floor" was written against the light system, and the honest replacement separates the
+*surface* (which is now deliberately the category's) from the *manner* (which is still a
+bench, not a venue).
 
 ## What else we looked at
 
@@ -56,11 +67,14 @@ colour still resolves through `--bg` / `--surface` / `--ink` / `--accent`, and
 is a second block of token values — not a sweep through JSX. What is *not* free is going
 back: the light palette's reasoning now lives only in git history and this record.
 
-**Two red tokens and two green tokens instead of one each.** A reader has to know that
-`--bad` paints a mark and `--bad-ink` paints text. That is one more thing to get wrong than
-a single token, and the reason is a 0.02 contrast-ratio gap. Kept anyway, because the
-alternative was either failing the app's own AA rule or shipping candles in a red that is
-not the one the category uses.
+**A measured accessibility shortfall, on the record.** `--bad` is 4.48:1 on a panel and
+3.72:1 on a hovered table row, against a 4.5:1 rule this project wrote for itself. Nothing
+about the Never-Alone rule makes that free: a reader with low vision still has to work
+harder on a red figure than on a white one, and "the word beside it carries the meaning"
+answers comprehension, not legibility. What it buys is a palette that is the category's
+rather than an approximation of it, and one token instead of two. If anyone revisits this,
+the cheapest lever is the panel: `--surface` is what the red is measured against, and
+darkening it a step clears the bar without touching the red.
 
 **Density moved toward the terminal and away from the projector.** Body type is 14px and
 table type 13px, where the old system argued for larger figures "readable from the back of
@@ -68,9 +82,10 @@ the room". The bet is that a dense dark table is more legible on a projector tha
 one, and that the demo will be driven at a laptop. If a room ever disagrees, the fix is the
 type scale in `tokens.css` and nothing else.
 
-**PRODUCT.md's "an instrument rather than a trading floor" is now half-true.** The
-anti-references it binds — the neon exchange with its gradients and blinking figures, and
-the beginner investing app with its oversized arrows — are still respected: no gradients,
-no glow, no badges that nudge, green and red still paired with a word. But the brand
-sentence itself was written against the light system, and it has not been renegotiated
-here. Whoever revisits the positioning should settle it there rather than in CSS.
+**The brand sentence now has to do more work.** "A working terminal rather than a
+showroom" draws the line between borrowing the category's surface and borrowing its
+manner, and the second half of that is not enforceable by a linter the way a colour token
+is. Nothing stops a future screen from being an exchange in the way this record says it
+must not be — a celebratory badge, a countdown, a figure enlarged because it is good news
+— except somebody noticing in review. The old sentence was easier to hold to precisely
+because it forbade the whole aesthetic.

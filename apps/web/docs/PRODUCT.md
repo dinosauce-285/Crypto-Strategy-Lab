@@ -60,8 +60,14 @@ the charting library (T06). None of them may be invented by a screen.
 
 ## Brand Commitments
 
-Precise, quiet, unadvertising — an instrument rather than a trading floor. The numbers are
+Precise, quiet, unadvertising — a working terminal rather than a showroom. The numbers are
 the subject and everything else recedes.
+
+It looks like the tools its readers already use: a dark ground, one accent, dense tables of
+figures. That familiarity is deliberate and it is the cheaper half of the fifteen minutes —
+nobody spends any of that budget learning where things are. What the familiar surface must
+not buy is the exchange's *manner*. This is a bench, not a venue: nothing celebrates, urges,
+counts down or congratulates, and no figure is made larger because it is good news.
 
 Two anti-references were made binding:
 

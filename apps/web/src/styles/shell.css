@@ -90,9 +90,9 @@
   background: var(--muted);
   flex-shrink: 0;
 }
-.link-status[data-state='live'] { color: var(--ok-ink); border-color: var(--line-strong); }
+.link-status[data-state='live'] { color: var(--ok); border-color: var(--line-strong); }
 .link-status[data-state='live'] .link-dot { background: var(--ok); }
-.link-status[data-state='down'] { color: var(--bad-ink); border-color: var(--bad); }
+.link-status[data-state='down'] { color: var(--bad); border-color: var(--bad); }
 .link-status[data-state='down'] .link-dot { background: var(--bad); }
 
 /* --- live ticker rail --- */
@@ -126,8 +126,8 @@
   transition: color var(--normal) var(--ease);
 }
 /* The last trade's side is data the server pushed, not a direction this screen derived. */
-.ticker-price[data-side='buy'] { color: var(--ok-ink); }
-.ticker-price[data-side='sell'] { color: var(--bad-ink); }
+.ticker-price[data-side='buy'] { color: var(--ok); }
+.ticker-price[data-side='sell'] { color: var(--bad); }
 .ticker-side { color: var(--muted); font-size: 0.6875rem; }
 .ticker-note { font-size: 0.75rem; color: var(--muted); }
 
