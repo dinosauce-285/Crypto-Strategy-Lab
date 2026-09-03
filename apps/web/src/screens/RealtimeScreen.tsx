@@ -32,6 +32,7 @@ export function RealtimeScreen() {
           <div className="controls-row">
             <PairSelect value={pair} onChange={setPair} />
             <TimeframeSelect value={timeframes[selected]} onChange={setSelectedTimeframe} />
+            <span className="source">Khung áp cho biểu đồ {selected + 1} — bấm một ô để đổi ô đang chọn</span>
           </div>
           <Dashboard pair={pair} timeframes={timeframes} selected={selected} onSelect={setSelected} />
         </div>

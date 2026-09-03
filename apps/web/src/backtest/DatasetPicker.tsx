@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Dataset } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { formatDatasetRange } from '../market/format';
 import { DatasetManagementModal } from './DatasetManagementModal';
 
@@ -35,18 +36,13 @@ export function DatasetPicker({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch('/api/datasets')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Lỗi kết nối máy chủ (HTTP ${res.status})`);
-        }
-        return res.json();
-      })
-      .then((data: Dataset[]) => {
+    apiFetch<Dataset[]>('/api/datasets')
+      .then((data) => {
         setDatasets(data);
         if (data.length > 0 && !selectedDataset) {
           onSelectDataset(data[0]);
@@ -57,7 +53,7 @@ export function DatasetPicker({
         setError(err.message || 'Không thể kết nối đến máy chủ.');
         setLoading(false);
       });
-  }, [onSelectDataset, selectedDataset]);
+  }, [onSelectDataset, selectedDataset, attempt]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedId = e.target.value;
@@ -80,34 +76,24 @@ export function DatasetPicker({
 
   return (
     <div className="dataset-picker-wrap">
-      <div
-        className="dataset-picker-header"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.35rem',
-        }}
-      >
+      <div className="dataset-picker-header">
         <label className="stat-tile-label" htmlFor="dataset-select">
           Dataset đang dùng
         </label>
         <div className="dataset-picker-actions">
           <button
             type="button"
-            className="btn-action"
+            className="btn-action btn-sm"
             disabled={disabled}
             onClick={onOpenCreateModal}
-            style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
           >
             + Dataset mới
           </button>
           <button
             type="button"
-            className="btn-action"
+            className="btn-action btn-sm"
             disabled={disabled || loading}
             onClick={() => setIsManagementOpen(true)}
-            style={{ height: '1.6rem', fontSize: '0.74rem', padding: '0 0.5rem' }}
           >
             Quản lý
           </button>
@@ -122,7 +108,6 @@ export function DatasetPicker({
         disabled={disabled || loading || datasets.length === 0}
         aria-label="Chọn dataset"
         title={selectedLabel}
-        style={{ width: '100%' }}
       >
         {datasets.length === 0 && (
           <option value="" disabled>
@@ -144,8 +129,16 @@ export function DatasetPicker({
       </select>
 
       {error && (
-        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--bad)' }}>
-          ⚠ {error}
+        <div className="field-retry">
+          <p className="field-error">{error}</p>
+          <button
+            type="button"
+            className="btn-action btn-sm"
+            disabled={loading}
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
@@ -157,9 +150,10 @@ export function DatasetPicker({
         const ddLabel = DRAWDOWN_MODE_LABELS[selectedDataset.rules.drawdownMode] ?? selectedDataset.rules.drawdownMode;
 
         return (
-          <div className="source" style={{ marginTop: '0.4rem', lineHeight: '1.35' }}>
-            <strong>Quy tắc:</strong> {entryLabel} · phí {formattedFee} · warmup {selectedDataset.rules.warmupCandles} nến · {profitLabel} · {ddLabel}
-          </div>
+          <p className="source">
+            <strong>Quy tắc:</strong> {entryLabel} · phí {formattedFee} · warmup{' '}
+            {selectedDataset.rules.warmupCandles} nến · {profitLabel} · {ddLabel}
+          </p>
         );
       })()}
 

@@ -1,0 +1,204 @@
+/* App chrome: the top bar, the live ticker rail under it, and the routed screen's frame. */
+
+/* A definite height, not a minimum: `1fr` rows below have nothing to divide without one,
+   and the screen scrolls inside itself rather than the whole page moving. */
+.app-shell {
+  display: grid;
+  grid-template-rows: var(--header-h) auto minmax(0, 1fr);
+  height: 100vh;
+  background: var(--bg);
+}
+
+/* --- top bar --- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.brand-mark { color: var(--accent); display: block; }
+.brand-name { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+
+.app-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+
+.app-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: var(--control-h);
+  padding: 0 0.65rem;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.app-nav a:hover { color: var(--ink); background: var(--surface); }
+/* Selection is carried by weight and colour together, so it survives greyscale. */
+.app-nav a.active { color: var(--accent); font-weight: 600; }
+
+.app-header-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* --- channel status --- */
+
+.link-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: var(--control-h);
+  padding: 0 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.link-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.link-status[data-state='live'] { color: var(--ok-ink); border-color: var(--line-strong); }
+.link-status[data-state='live'] .link-dot { background: var(--ok); }
+.link-status[data-state='down'] { color: var(--bad-ink); border-color: var(--bad); }
+.link-status[data-state='down'] .link-dot { background: var(--bad); }
+
+/* --- live ticker rail --- */
+
+.ticker-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ticker-strip::-webkit-scrollbar { display: none; }
+
+.ticker-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.ticker-pair { color: var(--muted); font-weight: 500; letter-spacing: 0.02em; }
+.ticker-price {
+  font-family: var(--font-num);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink);
+  transition: color var(--normal) var(--ease);
+}
+/* The last trade's side is data the server pushed, not a direction this screen derived. */
+.ticker-price[data-side='buy'] { color: var(--ok-ink); }
+.ticker-price[data-side='sell'] { color: var(--bad-ink); }
+.ticker-side { color: var(--muted); font-size: 0.6875rem; }
+.ticker-note { font-size: 0.75rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-price { transition: none; }
+}
+
+/* --- routed screen --- */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1.25rem 1.5rem;
+  gap: 0.85rem;
+}
+
+.screen-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+.screen-head .sub { margin: 0; }
+
+.screen-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 0.85rem;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+}
+.screen-main,
+.screen-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 0;
+}
+
+/* A screen with no side column still fills the height it was given. */
+.screen > .screen-main { flex: 1; }
+
+/* The screen's subject takes whatever height is left over; siblings keep their own. */
+.grows { flex: 1; min-height: 0; }
+
+/* Wraps before it shrinks — eight timeframes plus a pair select outrun a narrow column. */
+.controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+/* When some items in the row carry a label above them and others don't, the controls
+   themselves line up on the row's bottom edge rather than on its centre line. */
+.controls-row-bottom { align-items: flex-end; }
+/* The actions of a toolbar, pushed to its trailing edge. */
+.controls-row-end { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.timeframe-control { display: flex; flex-direction: column; gap: 0.2rem; }
+
+@media (max-width: 900px) {
+  .app-header { gap: 0.75rem; }
+  .brand-name { display: none; }
+}
+@media (max-width: 720px) {
+  .screen { padding: 0.85rem; }
+
+  /* One column, and the page scrolls instead of the screen filling the viewport. The
+     desktop layout hands its leftover height down through `min-height: 0` and `.grows`;
+     keep those here and a tall child (the 4-chart grid) overflows a collapsed track and
+     paints over the column stacked below it. Content-sized rows can't do that. */
+  .screen-body { grid-template-columns: 1fr; }
+  .screen-main,
+  .screen-side { min-height: auto; }
+  .screen > .screen-main { flex: 0 1 auto; }
+  .grows { flex: 0 1 auto; min-height: auto; }
+}

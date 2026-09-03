@@ -32,7 +32,7 @@ export function ConnectionStatusPanel() {
   const label = STATUS_LABEL[status];
 
   return (
-    <section className="panel">
+    <section className="panel panel-box">
       <div className="panel-head">
         <h2>Trạng thái kết nối</h2>
         <span className={`badge ${label.className}`}>{label.text}</span>

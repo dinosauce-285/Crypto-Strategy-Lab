@@ -88,17 +88,9 @@ export function LeaderboardScreen() {
         subtitle="So sánh kết quả thí nghiệm theo dataset đã chọn."
       />
 
-      <div className="screen-main" style={{ gap: '1rem' }}>
+      <div className="screen-main">
         {/* Top Control Bar: Dataset Picker */}
-        <div
-          className="panel"
-          style={{
-            background: 'var(--surface)',
-            padding: '0.85rem',
-            borderRadius: 'var(--radius)',
-            border: '1px solid var(--line)',
-          }}
-        >
+        <div className="panel panel-box">
           <DatasetPicker
             selectedDataset={selectedDataset}
             onSelectDataset={setSelectedDataset}
@@ -108,97 +100,39 @@ export function LeaderboardScreen() {
 
         {/* Leaderboard Table / 5 States */}
         {state.kind === 'no-dataset' && (
-          <div
-            className="panel"
-            style={{
-              minHeight: '280px',
-              border: '1px dashed var(--line)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              textAlign: 'center',
-              gap: '0.75rem',
-            }}
-          >
-            <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
+          <div className="stage stage-dashed">
+            <p className="state">
               Vui lòng chọn một dataset hoặc tạo dataset mới để xem bảng xếp hạng.
             </p>
-            <button
-              type="button"
-              className="btn-action"
-              onClick={() => setIsModalOpen(true)}
-            >
+            <button type="button" className="btn-action" onClick={() => setIsModalOpen(true)}>
               + Tạo dataset mới
             </button>
           </div>
         )}
 
         {state.kind === 'loading' && (
-          <div
-            className="panel grows"
-            style={{
-              minHeight: '280px',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              textAlign: 'center',
-            }}
-          >
+          <div className="stage grows">
             <p className="state">Đang tính xếp hạng trực tiếp cho dataset này…</p>
           </div>
         )}
 
         {state.kind === 'error' && (
-          <div
-            className="panel grows"
-            style={{
-              minHeight: '280px',
-              border: '1px solid var(--line)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              textAlign: 'center',
-            }}
-          >
-            <p className="state bad" style={{ marginBottom: '0.75rem' }}>
+          <div className="stage grows">
+            <p className="state bad">
               <strong>Không tải được bảng xếp hạng.</strong> {state.message}
             </p>
-            <button
-              type="button"
-              className="btn-action"
-              onClick={fetchLeaderboard}
-            >
+            <button type="button" className="btn-action" onClick={fetchLeaderboard}>
               Thử lại
             </button>
           </div>
         )}
 
         {state.kind === 'ready' && state.entries.length === 0 && (
-          <div
-            className="panel grows"
-            style={{
-              minHeight: '280px',
-              border: '1px dashed var(--line)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '2rem',
-              textAlign: 'center',
-            }}
-          >
-            <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-              Chưa có kết quả thí nghiệm nào hoàn tất cho dataset này. Hãy chạy kiểm thử chiến lược ở tab{' '}
-              <strong>Backtest</strong> hoặc <strong>Search</strong> để ghi nhận kết quả đầu tiên.
+          <div className="stage stage-dashed grows">
+            <p className="state">
+              Chưa có kết quả thí nghiệm nào hoàn tất cho dataset này. Hãy chạy kiểm thử chiến
+              lược ở tab <strong>Backtest</strong> hoặc <strong>Search</strong> để ghi nhận kết
+              quả đầu tiên.
             </p>
           </div>
         )}

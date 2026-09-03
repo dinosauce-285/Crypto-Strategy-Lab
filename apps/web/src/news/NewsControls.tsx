@@ -41,16 +41,11 @@ export function NewsControls({
   feedback,
 }: NewsControlsProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-      <div className="controls-row" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+    <div className="panel panel-box">
+      <div className="controls-row">
         <div className="seg" role="group" aria-label="Chọn coin">
           {COIN_OPTIONS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-pressed={coin === c}
-              onClick={() => onCoinChange(c)}
-            >
+            <button key={c} type="button" aria-pressed={coin === c} onClick={() => onCoinChange(c)}>
               {c}
             </button>
           ))}
@@ -70,53 +65,49 @@ export function NewsControls({
         </select>
 
         {onFromDateChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Từ</span>
+          <label className="news-filter-field">
+            Từ
             <input
               type="date"
               className="pair-select"
               value={fromDate}
               onChange={(e) => onFromDateChange(e.target.value)}
-              aria-label="Từ ngày"
               title="Thu thập tin từ ngày"
             />
-          </div>
+          </label>
         )}
 
         {onToDateChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>Đến</span>
+          <label className="news-filter-field">
+            Đến
             <input
               type="date"
               className="pair-select"
               value={toDate}
               onChange={(e) => onToDateChange(e.target.value)}
-              aria-label="Đến ngày"
               title="Thu thập tin đến ngày"
             />
-          </div>
+          </label>
         )}
 
         {onLimitChange && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>SL</span>
+          <label className="news-filter-field news-filter-limit">
+            Số lượng
             <input
               type="number"
               className="pair-select"
-              style={{ width: '4.5rem' }}
               min={1}
               max={500}
               value={limit || ''}
               onChange={(e) =>
                 onLimitChange(Number.isFinite(e.target.valueAsNumber) ? e.target.valueAsNumber : 0)
               }
-              aria-label="Số lượng tin thu thập"
               title="Số lượng bài viết thu thập"
             />
-          </div>
+          </label>
         )}
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem' }}>
+        <div className="controls-row-end">
           <button
             type="button"
             className="btn-action btn-primary"
@@ -138,13 +129,7 @@ export function NewsControls({
         </div>
       </div>
 
-      {feedback && (
-        <div style={{ fontSize: '0.85rem' }}>
-          <span className="ok" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            ✓ {feedback}
-          </span>
-        </div>
-      )}
+      {feedback && <p className="state ok">✓ {feedback}</p>}
     </div>
   );
 }

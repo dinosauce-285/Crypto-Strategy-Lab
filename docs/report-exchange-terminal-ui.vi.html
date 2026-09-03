@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giao diện kiểu sàn giao dịch</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg:#faf9f6; --surface:#f4f1ea; --subtle:#efe9dd; --border:#e2dbce;
+    --ink:#2a251f; --muted:#6f6658; --strong:#17130c;
+    --accent:#c2185b;
+    --link:#0b63c4;
+    --info:#0b63c4; --ok:#197e3a; --warn:#9a5b00; --crit:#b3271e; --purple:#6f42c1;
+
+    --measure: 74ch;
+    --r-sm:4px; --r:6px;
+    --mono: ui-monospace, "SF Mono", "IBM Plex Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  /* Readable in a dark browser too: only the values change, never the roles. */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg:#1b1d1f; --surface:#232629; --subtle:#2a2e31; --border:#3a3f44;
+      --ink:#e6e3dd; --muted:#9a958c; --strong:#f4f1ea;
+      --accent:#f48fb1;
+      --link:#79b8ff;
+      --info:#79b8ff; --ok:#5fd18b; --warn:#e0a458; --crit:#ff8a80; --purple:#c9a4ff;
+    }
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:14px; line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .win { max-width:82ch; margin:0 auto; }
+  .wrap { padding:1.6rem 1.4rem 3rem; }
+
+  p, li { max-width:var(--measure); }
+  h1 { font-size:1.4rem; font-weight:600; line-height:1.3; margin:0; color:var(--ink); }
+  a { color:var(--link); }
+  code { color:var(--ink); }
+  code:not(pre code) { background:var(--subtle); padding:.05em .3em; border-radius:3px; }
+  .num { font-variant-numeric:tabular-nums; }
+  .eyebrow { font-size:.72rem; letter-spacing:.06em; color:var(--muted); margin:0 0 .35rem; }
+  strong { color:var(--strong); font-weight:600; }
+  em { color:var(--muted); font-style:italic; }
+
+  /* frontmatter */
+  .meta { border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:.8rem 0; margin:1rem 0 0; display:grid; grid-template-columns:auto 1fr; gap:.3rem 1rem; font-size:.82rem; }
+  .meta dt { color:var(--muted); }
+  .meta dd { margin:0; }
+
+  /* static outline - no script, so every section ships open and the links just work */
+  .outline { margin:1rem 0 0; font-size:.8rem; }
+  .outline ul { list-style:none; padding:0; margin:.2rem 0 0; display:flex; flex-wrap:wrap; gap:.15rem .9rem; }
+  .outline li { max-width:none; }
+
+  /* fold tree */
+  .tree { margin-top:1.4rem; }
+  details.node { margin:0; }
+  details.node > summary.row { display:flex; align-items:center; gap:.15rem; padding:.24rem .4rem; border-radius:var(--r-sm); cursor:pointer; list-style:none; user-select:none; }
+  details.node > summary.row::-webkit-details-marker { display:none; }
+  details.node > summary.row::before {
+    content:""; width:0; height:0; display:inline-block; margin-right:.55rem;
+    border-left:5px solid var(--muted); border-top:4px solid transparent; border-bottom:4px solid transparent;
+    transition:transform .12s ease;
+  }
+  details.node[open] > summary.row::before { transform:rotate(90deg); }
+  summary.row:hover { background:var(--subtle); }
+  summary.row:focus-visible { outline:1px solid var(--link); outline-offset:1px; }
+  .row .lbl { font-weight:600; color:var(--ink); }
+  .row .hint { color:var(--muted); font-size:.76rem; margin-left:.5rem; }
+  .node > .kids { margin-left:.75rem; padding-left:1rem; border-left:1px solid var(--border); padding-top:.3rem; padding-bottom:.3rem; }
+  .node > .kids > * + * { margin-top:.65rem; }
+  .tree > details.node > summary.row .lbl { font-size:.98rem; }
+  .node .node > summary.row .lbl { font-weight:400; font-size:.9rem; }
+  @media (prefers-reduced-motion:reduce){ details.node>summary.row::before{ transition:none; } }
+
+  /* pills */
+  .pill { display:inline-block; font-family:var(--mono); font-size:.68rem; font-weight:600; padding:.02rem .4rem; border:1px solid currentColor; border-radius:4px; white-space:nowrap; color:var(--muted); }
+
+  /* BLUF */
+  .bluf p { margin:.35rem 0 0; max-width:none; }
+  .bluf p:first-of-type { margin-top:.15rem; }
+
+  /* stat tiles */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr)); gap:.5rem; }
+  .stat .n { font-size:1.25rem; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .stat .l { font-size:.74rem; color:var(--muted); margin-top:.1rem; }
+
+  /* callouts */
+  .call { border:0; padding:0; background:none; }
+  .call .k { display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap; font-weight:600; font-size:.76rem; letter-spacing:.03em; }
+  .call .k .t { font-weight:600; color:var(--ink); font-size:.9rem; }
+  .call p { margin:.2rem 0 0; }
+
+  /* checklist */
+  .checks { list-style:none; padding:0; margin:0; }
+  .checks li { display:grid; grid-template-columns:1.9rem 1fr; gap:.4rem; padding:.25rem 0; align-items:start; font-size:.88rem; max-width:none; }
+  .checks .box { color:var(--muted); }
+  .checks li.block .box { color:var(--crit); }
+  .checks .txt { max-width:var(--measure); }
+
+  /* tables */
+  .tbl-wrap { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:.84rem; }
+  th,td { text-align:left; padding:.45rem .65rem; border-bottom:1px solid var(--border); vertical-align:top; }
+  thead th { font-weight:600; color:var(--muted); font-size:.72rem; letter-spacing:.03em; }
+  tbody tr:last-child td { border-bottom:0; }
+  .tag { display:inline-block; font-family:var(--mono); font-size:.68rem; font-weight:600; padding:.02rem .4rem; border:1px solid currentColor; border-radius:4px; white-space:nowrap; color:var(--muted); }
+  .tag.risk { color:var(--crit); }
+
+  .chip { display:inline-block; font-family:var(--mono); font-size:.68rem; font-weight:600; padding:.02rem .4rem; border:1px solid currentColor; border-radius:4px; white-space:nowrap; color:var(--muted); }
+  .chip.warn{color:var(--warn)} .chip.crit{color:var(--crit)} .chip.info{color:var(--info)}
+
+  hr.soft { border:0; border-top:1px solid var(--border); margin:1.8rem 0 0; }
+  .foot { color:var(--muted); font-size:.82rem; margin-top:1rem; }
+  .foot ul { list-style:none; padding:0; }
+  .foot li { max-width:none; padding-left:1.1rem; position:relative; }
+  .foot li::before { content:"- "; position:absolute; left:0; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="wrap">
+
+    <header>
+      <p class="eyebrow">Báo cáo // nhánh feat/exchange-terminal-ui</p>
+      <h1>Giao diện kiểu sàn giao dịch</h1>
+      <dl class="meta">
+        <dt>Nhánh</dt><dd><code>feat/exchange-terminal-ui</code>, cắt từ <code>dev</code> tại <code>adddca3</code></dd>
+        <dt>Trạng thái</dt><dd>chưa commit — toàn bộ thay đổi đang nằm trong working tree</dd>
+        <dt>Phạm vi</dt><dd>28 file được sửa và 9 file mới, tất cả trong <code>apps/web</code>, cộng một bản ghi quyết định</dd>
+        <dt>Lý do</dt><dd><a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a> — báo cáo này không chép lại lập luận ở đó</dd>
+        <dt>Kiểm chứng</dt><dd>lint + lint:ui + build xanh; 5 màn hình chạy thật trên trình duyệt qua Playwright</dd>
+        <dt>Đọc</dt><dd>~5 phút</dd>
+      </dl>
+      <nav class="outline" aria-label="Mục lục">
+        <p class="eyebrow" style="margin:0">Mục lục</p>
+        <ul>
+          <li><a href="#tomtat">Tóm tắt</a></li>
+          <li><a href="#token">Bộ token</a></li>
+          <li><a href="#vo">Vỏ ứng dụng</a></li>
+          <li><a href="#thanhphan">Thành phần vẽ lại</a></li>
+          <li><a href="#loi">Lỗi đã sửa</a></li>
+          <li><a href="#kiemchung">Kiểm chứng</a></li>
+          <li><a href="#chualam">Cố ý chưa làm</a></li>
+          <li><a href="#gomgi">Thay đổi gồm gì</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="tree">
+
+      <details class="node sec" id="tomtat" open>
+        <summary class="row"><span class="lbl">Tóm tắt</span><span class="hint">đọc cái này là đủ nắm</span></summary>
+        <div class="kids">
+          <section class="bluf">
+            <p class="eyebrow" style="margin:0">Nói gọn</p>
+            <p><strong>Đã làm gì:</strong> thay toàn bộ diện mạo của web. Trước đây màn hình là một mặt giấy sáng màu, chữ và số cùng một phông máy chữ, điều hướng nằm ở cột trái. Giờ nó là một terminal nền tối: thanh điều hướng chạy ngang trên đỉnh, ngay dưới là một dải giá chạy liên tục, chữ dùng IBM Plex Sans còn con số dùng IBM Plex Mono.</p>
+            <p><strong>Vì sao đáng kể:</strong> người xem demo đã biết một màn hình sàn giao dịch trông thế nào. Bỏ cột trái lấy lại hơn 10rem chiều ngang cho biểu đồ, và giá lần khớp gần nhất giờ có mặt trên mọi màn.</p>
+            <p><strong>Chỗ cần chú ý:</strong> đợt này sửa được sáu lỗi thật, trong đó hai lỗi chồng lấp có chung một nguyên nhân. Xem mục "Lỗi đã sửa" — đó là phần đáng đọc nhất.</p>
+          </section>
+          <div class="stats">
+            <div class="stat"><div class="n">832 → 7</div><div class="l">dòng trong index.css</div></div>
+            <div class="stat"><div class="n">6</div><div class="l">lỗi đã sửa</div></div>
+            <div class="stat"><div class="n">5</div><div class="l">màn hình kiểm thật</div></div>
+            <div class="stat"><div class="n">4</div><div class="l">trạng thái mỗi màn</div></div>
+            <div class="stat"><div class="n">0</div><div class="l">màu thô ngoài file token</div></div>
+          </div>
+          <p>Ba con số cũ vẫn giữ nguyên vai trò của chúng: <code>UI_CONSTRAINT.md</code> không đổi một chữ, chỉ có <code>DESIGN.md</code> — hệ thống thị giác mà luật đó sinh ra — được viết lại.</p>
+        </div>
+      </details>
+
+      <details class="node sec" id="token" open>
+        <summary class="row"><span class="lbl">Bộ token và chỗ nó ở</span><span class="hint">một file giữ màu, năm file dùng màu</span></summary>
+        <div class="kids">
+          <p><strong>Tóm:</strong> tất cả màu, cỡ chữ, bo góc, thời lượng chuyển động nay nằm trong một file duy nhất; mọi file khác chỉ gọi tên biến.</p>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Một file 832 dòng tách thành sáu</span></summary>
+            <div class="kids">
+              <p>Trước đây <code>src/index.css</code> giữ cả bảng màu lẫn toàn bộ style của mọi màn hình trong 832 dòng. Giờ nó chỉ còn 7 dòng: một chuỗi <code>@import</code> theo đúng thứ tự, vì file token phải nạp trước những file đọc biến của nó.</p>
+              <div class="tbl-wrap">
+                <table>
+                  <thead><tr><th>File</th><th>Giữ cái gì</th><th>Dòng</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>src/tokens.css</code></td><td>bảng màu, phông, cỡ, bo góc, thang z-index, chuyển động</td><td class="num">143</td></tr>
+                    <tr><td><code>src/styles/shell.css</code></td><td>thanh trên, dải giá, khung màn hình, các mốc responsive</td><td class="num">204</td></tr>
+                    <tr><td><code>src/styles/controls.css</code></td><td>nút, ô nhập, bộ chuyển đoạn, dropdown, modal</td><td class="num">265</td></tr>
+                    <tr><td><code>src/styles/panels.css</code></td><td>panel, bảng dữ liệu, ô số liệu, badge, biểu đồ</td><td class="num">267</td></tr>
+                    <tr><td><code>src/styles/screens.css</code></td><td>phần riêng của từng màn: dataset, tìm kiếm, tin tức</td><td class="num">246</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Chia theo việc chứ không theo màn hình. Một nút trông giống nhau ở năm chỗ thì nó chỉ được định nghĩa một lần, ở <code>controls.css</code>.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Vì sao <code>lint:ui</code> vẫn xanh</span></summary>
+            <div class="kids">
+              <p><code>scripts/check-ui-tokens.mjs</code> duyệt cả cây <code>src/</code> và báo lỗi mỗi khi gặp một mã màu thô — <code>#abc</code>, <code>rgb()</code>, <code>hsl()</code>, <code>oklch()</code> — ở bất kỳ file nào ngoài <code>src/index.css</code>, <code>src/tokens.css</code>, <code>src/theme.css</code>. Đổi cả bảng màu mà vẫn qua được cửa này chỉ có một cách: không viết màu ở đâu khác.</p>
+              <p>Nên đợt này gỡ luôn những chỗ màu bị lén viết trong JSX. <code>Annotations.tsx</code> từng gán <code>color: 'var(--ok)'</code> cho từng mục chú thích rồi đổ vào <code>style</code>; giờ mỗi mục mang một class <code>dot-pos</code> / <code>dot-neg</code> / <code>dot-key</code> / <code>dot-neu</code>. <code>SentimentDistribution.tsx</code> cũng vậy. Biểu đồ thì đọc thẳng biến CSS lúc dựng, nên lưới, viền trục, crosshair và màu nến đều đi ra từ cùng một file.</p>
+              <p>Có đúng một bản sao của mã màu nằm ngoài file token: <code>public/favicon.svg</code>. Một favicon không đọc được biến CSS, và bộ kiểm chỉ soi <code>src/</code>, nên chỗ đó ghi kèm một dòng nhắc giữ cho khớp với <code>--accent</code>.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Hai sắc đỏ và hai sắc xanh</span><span class="hint">một cặp để vẽ, một cặp để đọc</span></summary>
+            <div class="kids">
+              <p><code>--ok</code> và <code>--bad</code> dùng cho những thứ được <em>vẽ</em>: thân nến, cột khối lượng, marker, viền một ô nhập sai. <code>--ok-ink</code> và <code>--bad-ink</code> dùng cho những thứ được <em>đọc</em>: chữ, con số, nhãn. Lý do và cái giá của việc có bốn token thay vì hai nằm ở <a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a>.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Phông tự chứa, không gọi ra ngoài</span></summary>
+            <div class="kids">
+              <p>Hai họ chữ nạp qua gói <code>@fontsource</code> chứ không qua CDN, và cố tình lấy bản nguyên trọng lượng thay vì bản chia nhỏ theo bảng chữ: chỉ bản nguyên mới mang <code>unicode-range</code>, thiếu nó thì bộ ký tự tiếng Việt sẽ <em>thay</em> bộ latin thay vì bù vào chỗ trống của nó.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="node sec" id="vo" open>
+        <summary class="row"><span class="lbl">Vỏ ứng dụng: thanh trên và dải giá</span><span class="hint">2 component mới</span></summary>
+        <div class="kids">
+          <p><strong>Tóm:</strong> cột điều hướng bên trái biến mất. Thay vào đó là một thanh cao 3.5rem chạy ngang đỉnh màn hình, và ngay dưới nó là một dải cao 2.25rem hiển thị giá khớp gần nhất của từng cặp.</p>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Thanh trên — <code>layout/Navbar.tsx</code></span></summary>
+            <div class="kids">
+              <p>Bên trái là dấu hiệu thương hiệu, giữa là năm màn hình, phải cùng là tình trạng kênh dữ liệu. Mỗi mục điều hướng có một icon riêng, tất cả nằm trong <code>layout/nav-icons.tsx</code> — một họ icon, một độ dày nét, đúng như luật yêu cầu.</p>
+              <p>Tab đang mở được đánh dấu bằng <em>hai</em> thay đổi cùng lúc: đổi màu sang hổ phách và tăng độ đậm. Chỉ đổi màu thì một người mù màu hoặc một bản in đen trắng sẽ không đọc ra tab nào đang mở. Khi màn hình hẹp dưới 900px, chữ thương hiệu ẩn đi và chỉ còn dấu hiệu; hàng tab thì cuộn ngang không hiện thanh cuộn, thay vì xuống dòng làm cao thêm thanh.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Dải giá — <code>market/TickerStrip.tsx</code></span></summary>
+            <div class="kids">
+              <p>Nó chỉ nói lại đúng những gì máy chủ đẩy xuống: giá và bên khớp lệnh. Không có phần trăm thay đổi 24 giờ, không có mũi tên lên xuống, vì hai thứ đó không nằm trong bản tin và trình duyệt thì không được phép tự tính.</p>
+              <p>Khi kênh rớt, màu bị gỡ khỏi con số nhưng con số vẫn giữ giá trị cuối, kèm câu "Mất kết nối — giá đang đứng yên." Một dấu gạch ngang nghĩa là chưa có gì về. Ba trạng thái, ba câu khác nhau, không có trạng thái nào im lặng.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Đèn báo kênh — <code>layout/ChannelStatusPill.tsx</code></span></summary>
+            <div class="kids">
+              <p>Một viên nhỏ ở góc phải thanh trên, ba trạng thái, mỗi trạng thái vừa có chấm màu vừa có chữ: "Trực tiếp", "Đang kết nối…", "Mất kết nối". Nó chỉ trả lời câu hỏi ngắn nhất — có gì đang về hay không — trên mọi màn. Câu chuyện dài hơn (nguồn, tin cuối, độ trễ) vẫn thuộc về <code>ConnectionStatusPanel</code> ở màn Thời gian thực.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="node sec" id="thanhphan" open>
+        <summary class="row"><span class="lbl">Những thành phần được vẽ lại</span><span class="hint">panel, bảng, ô số liệu, badge, khung trạng thái, modal</span></summary>
+        <div class="kids">
+          <p><strong>Tóm:</strong> thay đổi này xoá nhiều dòng hơn gấp đôi số dòng nó thêm, và gần như toàn bộ phần bị xoá là style viết thẳng trong JSX. Mỗi lần gỡ một khối như vậy, chỗ đó nhận lại một class có tên.</p>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Panel: một mặt phẳng, không phải một cái khung</span></summary>
+            <div class="kids">
+              <p><code>.panel</code> chỉ còn là một cột xếp dọc. Cái vẽ ra bề mặt là <code>.panel-box</code>: nền sáng hơn nền trang một bậc, bo 8px, không viền. Đặt một <code>.panel-box</code> trong một <code>.panel-box</code> thì cái bên trong tự phẳng lại — hộp trong hộp là vấn đề bố cục đội lốt trang trí.</p>
+              <p>Trước đó mỗi màn tự dựng lấy bề mặt của mình bằng bốn dòng inline giống hệt nhau: <code>background</code>, <code>padding</code>, <code>borderRadius</code>, <code>border</code>. Bốn dòng ấy xuất hiện ở màn Backtest, màn Bảng xếp hạng và trong <code>StrategyPicker</code>.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Bảng dữ liệu</span></summary>
+            <div class="kids">
+              <p>Không viền ngoài, không kẻ sọc: một đường tóc dưới mỗi dòng, dòng cuối thì không. Hàng tiêu đề dính vào mép trên nên cuộn dài vẫn đọc được tên cột. Số canh phải, cột đầu canh trái, và một ô chứa cả một câu thì nhận <code>.text-cell</code> để quay về phông chữ thường và được xuống dòng.</p>
+              <p>Dòng đang chọn giữ nền sáng hơn <em>và</em> có một vạch hổ phách 2px thụt vào ô đầu tiên, thay cho cách cũ là gán màu nền bằng inline style. Bảng cuộn trong hộp của nó (<code>.table-scroll</code>), còn <code>.table-scroll-capped</code> đặt trần cho bảng nào phải chia panel với một biểu đồ.</p>
+              <p><code>LeaderboardTable</code> gọn lại nhiều nhất: bảy khối <code>&lt;th&gt;</code> chép tay, mỗi khối kèm bảy dòng inline style giống nhau, rút thành một mảng <code>COLUMNS</code> và một vòng lặp.</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Ô số liệu và badge</span></summary>
+            <div class="kids">
+              <p><code>.stat-tile</code> là một nhãn trên một con số, không khung. Lưới của chúng là <code>repeat(auto-fit, minmax(8rem, 1fr))</code> nên tự xếp hai cột trong cột phải hẹp và bốn cột trong một panel rộng, không cần khai báo mốc màn hình cho từng chỗ đặt. Con số chỉ nhận màu khi hướng lên xuống là điều đang được nói tới, và luôn kèm <code>.stat-tile-note</code> ghi rõ ngưỡng ("Tốt (&gt;1.5)"), để màu không bao giờ là tín hiệu duy nhất.</p>
+              <p>Badge là viên bo nhỏ có nền nhạt, không viền, luôn kèm chữ: <code>badge-pos</code>, <code>badge-neg</code>, <code>badge-neu</code>, và <code>badge-key</code> màu hổ phách cho hạng top và cho nhãn "Tổ hợp".</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Khung trạng thái và modal</span></summary>
+            <div class="kids">
+              <p><code>.stage</code> gom ba trạng thái chờ, trống và lỗi về một hình dạng: cột căn giữa, sàn 17.5rem, nên màn hình không giật khi dữ liệu về. <code>.stage-dashed</code> là bản viền đứt, dành cho trạng thái đang đợi người dùng chứ không đợi máy chủ. Riêng ở màn Bảng xếp hạng, năm nhánh trạng thái từng mang năm khối inline style dài mười mấy dòng mỗi khối; giờ mỗi nhánh là một dòng class. Panel phân tích sentiment ở màn Tin tức cũng được bổ sung nút "Thử lại" cho trạng thái lỗi, thứ nó vốn thiếu.</p>
+              <p>Modal bo 12px, nền panel, viền tóc đậm, dùng một trong hai token bóng đổ duy nhất của hệ thống, hiện lên trong 180ms và không hiện gì cả khi người dùng bật <code>prefers-reduced-motion</code>.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="node sec" id="loi" open>
+        <summary class="row"><span class="lbl">Lỗi đã sửa</span><span class="hint">6 lỗi, kèm nguyên nhân</span></summary>
+        <div class="kids">
+
+          <div class="call">
+            <div class="k"><span class="chip crit">CHÍ MẠNG</span><span class="t">Lưới 4 biểu đồ đè lên cột bên dưới 720px</span></div>
+            <p><strong>Nguyên nhân:</strong> bố cục desktop chuyền chiều cao thừa xuống dưới bằng <code>flex: 1</code> kèm <code>min-height: 0</code>. Cặp đó cho phép một hộp co lại nhỏ hơn nội dung của chính nó. Trên desktop không sao vì hộp nào cũng còn dư chỗ. Khi màn hẹp lại và mọi thứ dồn về một cột, cặp đó vẫn còn nguyên: lưới 2×2 vốn cần sàn 460px bị ép vào một rãnh co về gần bằng không, và phần thừa tràn ra ngoài, phủ lên đúng cột vừa được xếp xuống dưới nó.</p>
+            <p><strong>Cách sửa:</strong> tắt hẳn việc chuyền chiều cao ở mốc 720px — <code>.grows</code> trở thành <code>flex: 0 1 auto; min-height: auto</code>, hai cột màn hình bỏ <code>min-height: 0</code>. Hàng nào cũng tự cao bằng nội dung của nó thì không hàng nào đè được lên hàng nào. Lưới 4 biểu đồ đồng thời chuyển thành bốn dòng đầy chiều ngang, mỗi biểu đồ nâng sàn lên 240px vì giờ nó rộng gấp đôi.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip crit">CHÍ MẠNG</span><span class="t">Panel tiến trình tìm kiếm đè lên link Bảng xếp hạng</span></div>
+            <p><strong>Nguyên nhân:</strong> giống hệt lỗi trên, chỉ khác chỗ xảy ra. <code>SearchProgressPanel</code> mang class <code>grows</code>, nhưng nội dung của nó là một chồng chữ chứ không phải một biểu đồ hay một bảng có thanh cuộn riêng. Chồng chữ ấy cao hơn cái rãnh mà bố cục cấp cho nó, nên nó tràn xuống đè lên link ngay bên dưới.</p>
+            <p><strong>Cách sửa:</strong> bỏ <code>grows</code> khỏi panel đó. Và để lỗi này không mọc lại ở chỗ thứ ba, nó được viết thành một luật có tên trong <code>DESIGN.md</code> — <em>The Height-Handoff Rule</em>: <code>.grows</code> chỉ được đặt lên hộp nào tự chứa thanh cuộn của nó hoặc chứa một biểu đồ; đặt lên một chồng chữ thì chữ sẽ tràn sang panel kế tiếp.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip warn">CẢNH BÁO</span><span class="t">Modal quản lý dataset cắt mất cột thao tác</span></div>
+            <p><strong>Nguyên nhân:</strong> bảng trong modal có tám cột, trong đó một cột chứa cả khoảng thời gian hai mốc. Bảng của hệ thống mới mặc định không cho ô xuống dòng, nên hàng không chịu co; thẻ modal thì rộng tối đa 34rem. Cột cuối — hai nút "Chi tiết" và "Xoá" — bị đẩy ra ngoài mép phải.</p>
+            <p><strong>Cách sửa:</strong> riêng modal này nới lên <code>min(72rem, 100vw − 2rem)</code>, khung bảng cho cuộn ngang, và các ô bên trong nó được phép xuống dòng. Hai nút thao tác đổi sang cỡ <code>.btn-sm</code>.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip warn">CẢNH BÁO</span><span class="t">Máy chủ chết thì màn hình nói tiếng Anh</span></div>
+            <p><strong>Nguyên nhân:</strong> <code>DatasetPicker</code> và <code>StrategyPicker</code> gọi thẳng <code>fetch</code> và chỉ kiểm tra <code>res.ok</code>. Nhưng khi máy chủ không trả lời, <code>fetch</code> không hề trả về một phản hồi để mà kiểm tra — nó ném ra lỗi của chính trình duyệt, và chuỗi <code>"Failed to fetch"</code> đi thẳng lên màn hình.</p>
+            <p><strong>Cách sửa:</strong> hai chỗ đó chuyển sang <code>apiFetch</code>, thứ vốn đã có sẵn trong repo và vốn đã phân biệt ba tình huống bằng ba câu tiếng Việt: mất mạng thì "Mất kết nối tới máy chủ. Kiểm tra mạng rồi thử lại."; lỗi 5xx thì "Hệ thống đang gặp sự cố. Thử lại sau ít phút."; còn 4xx thì lấy câu máy chủ gửi kèm, không có thì "Thiết lập không hợp lệ. Kiểm tra lại các giá trị vừa nhập." <code>LeaderboardTable</code> cũng được chuyển sang cùng đường đó.</p>
+            <p>Kèm theo, câu lỗi thôi tự vẽ lấy hình dạng: mọi chỗ báo lỗi cạnh một ô nhập giờ dùng chung class <code>.field-error</code> thay cho một khối inline có sẵn dấu <code>⚠</code>.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip warn">CẢNH BÁO</span><span class="t">Thiếu favicon, mỗi lần mở trang là một lần 404</span></div>
+            <p><strong>Nguyên nhân:</strong> <code>index.html</code> không khai báo icon, nên trình duyệt tự đi hỏi <code>/favicon.ico</code> và không tìm thấy.</p>
+            <p><strong>Cách sửa:</strong> thêm <code>public/favicon.svg</code> — chính hình vẽ <code>BrandMark</code> trên thanh trên, ở giá trị của token accent — và khai báo nó trong <code>index.html</code>. Cùng lúc, thẻ <code>meta name="color-scheme" content="dark"</code> được thêm vào để trình duyệt tô nền tối ngay từ đầu, trước khi stylesheet kịp về; thiếu nó thì mỗi lần tải trang có một nháy trắng.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip warn">CẢNH BÁO</span><span class="t">Nút bị kéo dài hết chiều ngang panel</span></div>
+            <p><strong>Nguyên nhân:</strong> một panel là cột flex căn <code>stretch</code>. Thả thẳng một nút vào đó thì nút bị kéo rộng bằng cả cột, dù nhãn của nó chỉ có hai chữ.</p>
+            <p><strong>Cách sửa:</strong> <code>.panel &gt; .btn-action</code> tự căn về đầu hàng, <code>.stage &gt; .btn-action</code> căn giữa, và nút nào <em>muốn</em> rộng hết cột thì nói ra bằng <code>.btn-block</code> — như nút "Chạy Backtest", nay là <code>btn-primary btn-lg btn-block</code> thay cho ba thuộc tính inline.</p>
+          </div>
+
+          <div class="call">
+            <div class="k"><span class="chip info">GHI CHÚ</span><span class="t">Nút "Chia đều lại" lơ lửng cao hơn nửa dòng</span></div>
+            <p><strong>Nguyên nhân:</strong> hàng điều khiển căn giữa theo chiều dọc. Ô chọn ngưỡng có một nhãn nằm phía trên nó, nút thì không. Căn giữa cả cụm khiến nút bị đẩy lên đúng bằng nửa chiều cao cái nhãn đó.</p>
+            <p><strong>Cách sửa:</strong> hàng nào trộn "có nhãn" với "không nhãn" thì căn theo mép dưới — <code>.controls-row-bottom</code>. Ô chọn cũng được bọc lại bằng cặp <code>.field</code> / <code>.field-label</code> dùng chung, thay vì tự dựng bố cục tại chỗ.</p>
+          </div>
+
+        </div>
+      </details>
+
+      <details class="node sec" id="kiemchung" open>
+        <summary class="row"><span class="lbl">Đã kiểm chứng thế nào</span><span class="hint">không đoán từ việc đọc CSS</span></summary>
+        <div class="kids">
+          <p><strong>Tóm:</strong> ba cổng tự động đều xanh, và cả năm màn hình được điều khiển thật trong trình duyệt chứ không chỉ được nhìn ảnh chụp.</p>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Cổng tự động</span></summary>
+            <div class="kids">
+              <div class="tbl-wrap">
+                <table>
+                  <thead><tr><th>Lệnh</th><th>Kiểm cái gì</th><th>Kết quả</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>pnpm lint</code></td><td>eslint toàn bộ web</td><td>xanh, không cảnh báo</td></tr>
+                    <tr><td><code>pnpm lint:ui</code></td><td>không có màu thô ngoài file token</td><td>xanh</td></tr>
+                    <tr><td><code>pnpm build</code></td><td><code>tsc -b</code> rồi <code>vite build</code></td><td>xanh</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Bản build ra <span class="num">543.16 kB</span> JavaScript (<span class="num">170.21 kB</span> sau gzip) và <span class="num">33.21 kB</span> CSS (<span class="num">6.12 kB</span> sau gzip).</p>
+            </div>
+          </details>
+
+          <details class="node" open>
+            <summary class="row"><span class="lbl">Trình duyệt thật</span></summary>
+            <div class="kids">
+              <p>Playwright điều khiển một trình duyệt thật trỏ vào dev server ở máy: bấm nút, đổi tab, đổi cặp coin, đổi khung thời gian, mở modal. Cả năm màn hình đều đi qua đủ bốn trạng thái mà <code>UI_CONSTRAINT.md</code> bắt buộc: đang tải, trống, lỗi, có dữ liệu.</p>
+              <p>Trạng thái lỗi được ép bằng cách chặn thẳng lời gọi API, không giả lập bằng biến cờ — đó là cách duy nhất thấy được câu tiếng Việt mà <code>apiFetch</code> sinh ra, và cũng là cách lỗi "Failed to fetch" lộ ra ngay từ đầu.</p>
+              <p>Toàn bộ được chạy lại ở khung nhìn rộng 720px, vì đó là mốc mà việc chuyền chiều cao bị tắt và cũng là nơi hai lỗi chồng lấp từng xảy ra.</p>
+            </div>
+          </details>
+        </div>
+      </details>
+
+      <details class="node sec" id="chualam" open>
+        <summary class="row"><span class="lbl">Cố ý chưa làm, và những gì còn treo</span><span class="hint">4 khoản</span></summary>
+        <div class="kids">
+          <ul class="checks">
+            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Câu định vị thương hiệu trong <code>PRODUCT.md</code> chưa được thương lượng lại.</strong> Câu đó — sản phẩm là "một thiết bị đo chứ không phải một sàn giao dịch" — được viết cho hệ thống sáng màu cũ. Những thứ nó cấm thì vẫn đang được tôn trọng: không gradient, không hào quang, không con số nhấp nháy, xanh đỏ luôn đi kèm một chữ. Nhưng chính câu ấy giờ chỉ còn đúng một nửa, và nó phải được chốt lại ở <code>PRODUCT.md</code>, không phải trong CSS.</span></li>
+            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Hệ thống có hai token đỏ và hai token xanh thay vì mỗi thứ một.</strong> <code>--bad</code> để vẽ, <code>--bad-ink</code> để đọc. Người đọc code phải nhớ thêm một luật, và lý do chỉ là một khoảng cách 0.02 trên thang tương phản: đỏ bán của Binance đo được 4.48:1 trên mặt panel, thấp hơn sàn AA mà chính ứng dụng này tự ràng buộc.</span></li>
+            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Không còn giao diện sáng.</strong> Mọi màu vẫn đi qua biến nên dựng lại một theme sáng là viết thêm một khối giá trị token, không phải quét lại JSX. Nhưng lập luận của bảng màu sáng cũ thì từ nay chỉ còn nằm trong lịch sử git và trong ADR 0050.</span></li>
+            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Gói web nặng 543 kB và vẫn là một mảnh.</strong> Vite cảnh báo mọi mảnh vượt 500 kB. Việc chia mảnh chưa được đụng tới trong đợt này vì nó là chuyện đóng gói chứ không phải chuyện giao diện — nhưng nó chưa được xử lý, và nên mở một thẻ riêng.</span></li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="node sec" id="gomgi" open>
+        <summary class="row"><span class="lbl">Thay đổi này gồm những gì</span><span class="hint">chưa commit</span></summary>
+        <div class="kids">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Nhóm</th><th>File</th></tr></thead>
+              <tbody>
+                <tr><td>File mới</td><td><code>src/tokens.css</code>, bốn file trong <code>src/styles/</code>, <code>src/layout/nav-icons.tsx</code>, <code>src/layout/ChannelStatusPill.tsx</code>, <code>src/market/TickerStrip.tsx</code>, <code>public/favicon.svg</code></td></tr>
+                <tr><td>Vỏ ứng dụng</td><td><code>index.html</code>, <code>src/App.tsx</code>, <code>src/index.css</code>, <code>src/layout/Navbar.tsx</code></td></tr>
+                <tr><td>Màn hình</td><td><code>BacktestScreen.tsx</code>, <code>LeaderboardScreen.tsx</code>, <code>RealtimeScreen.tsx</code></td></tr>
+                <tr><td>Thành phần</td><td>7 file trong <code>backtest/</code>, 5 file trong <code>market/</code>, 3 file trong <code>news/</code>, <code>LeaderboardTable.tsx</code>, 2 file trong <code>search/</code></td></tr>
+                <tr><td>Tài liệu</td><td><code>apps/web/docs/DESIGN.md</code> viết lại, <code>docs/decisions/0050-*.md</code> mới, một dòng thêm vào <code>docs/decisions/README.md</code></td></tr>
+                <tr><td>Phụ thuộc</td><td><code>@fontsource/ibm-plex-sans</code> thêm vào <code>apps/web/package.json</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><code>apps/web/docs/UI_CONSTRAINT.md</code> <strong>không</strong> nằm trong danh sách này, và đó là chủ ý: luật mà người review kiểm không đổi, chỉ có hệ thống thị giác mà luật ấy sinh ra là được viết lại.</p>
+          <p>ADR 0050 là thứ mở khoá cổng decision-gate lúc push, vì thay đổi này chạm vào một hợp đồng thị giác dùng chung cho cả năm màn hình.</p>
+        </div>
+      </details>
+
+    </div>
+
+    <hr class="soft">
+    <section class="foot">
+      <p class="eyebrow">Đọc thêm</p>
+      <ul>
+        <li><a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a> — vì sao chọn nền tối và một sắc hổ phách, đã cân nhắc những gì, đánh đổi cái gì.</li>
+        <li><code>apps/web/docs/DESIGN.md</code> — bảng màu, thang chữ, từng thành phần và các luật có tên.</li>
+        <li><code>apps/web/docs/UI_CONSTRAINT.md</code> — luật mà người review kiểm được, không đổi trong đợt này.</li>
+      </ul>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,5 +1,7 @@
 interface LegendItem {
-  color: string;
+  // A token class from styles/screens.css, not a colour — the swatch is design, and
+  // design colours live in the token file.
+  tone: string;
   label: string;
   // 'line' for the MA(20) overlay (it's a line series, not a fill) — 'square' for
   // everything else, matching the mockup's swatch style (docs/images/1-Realtime.jpg).
@@ -7,12 +9,12 @@ interface LegendItem {
 }
 
 const LEGEND_ITEMS: LegendItem[] = [
-  { color: 'var(--ok)', label: 'Nến tăng (Close > Open)', shape: 'square' },
-  { color: 'var(--bad)', label: 'Nến giảm (Close < Open)', shape: 'square' },
+  { tone: 'dot-pos', label: 'Nến tăng (Close > Open)', shape: 'square' },
+  { tone: 'dot-neg', label: 'Nến giảm (Close < Open)', shape: 'square' },
   // Non-breaking space keeps "động 20" from splitting across lines — a lone "20"
   // wrapping to its own line reads worse than the label wrapping one word earlier.
-  { color: 'var(--accent)', label: 'MA(20): Trung bình động 20', shape: 'line' },
-  { color: 'var(--bad)', label: 'Volume: Khối lượng giao dịch', shape: 'square' },
+  { tone: 'dot-key', label: 'MA(20): Trung bình động 20', shape: 'line' },
+  { tone: 'dot-neu', label: 'Volume: khối lượng, tô theo màu nến', shape: 'square' },
 ];
 
 /**
@@ -23,20 +25,15 @@ const LEGEND_ITEMS: LegendItem[] = [
  */
 export function Annotations() {
   return (
-    <section className="panel">
+    <section className="panel panel-box">
       <div className="panel-head">
         <h2>Chú thích</h2>
       </div>
-      <div className="panel" style={{ gap: '0.35rem' }}>
+      <div className="legend-list">
         {LEGEND_ITEMS.map((item) => (
           <span className="legend-item" key={item.label}>
             <span
-              className="legend-dot"
-              style={
-                item.shape === 'line'
-                  ? { background: item.color, width: '10px', height: '2px', borderRadius: 0 }
-                  : { background: item.color, borderRadius: '2px' }
-              }
+              className={`legend-dot ${item.tone}${item.shape === 'line' ? ' legend-line' : ''}`}
             />
             {item.label}
           </span>

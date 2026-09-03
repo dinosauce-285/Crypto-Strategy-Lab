@@ -174,6 +174,7 @@ export function NewsScreen() {
             stats={stats}
             isLoading={isLoadingStats}
             error={statsError}
+            onRetry={fetchStats}
           />
 
         </div>

@@ -67,7 +67,9 @@ export function SearchProgressPanel({
   const progress = budget ? Math.min(100, (tested / budget) * 100) : 0;
 
   return (
-    <div className="panel search-progress-panel grows">
+    // No `grows` once there is a run to report: this state is a stack of text, and a
+    // height-filling box lets that text overflow onto the link below it.
+    <div className="panel search-progress-panel">
       <div className="panel-head">
         <h2>Tiến trình chạy</h2>
         <span className={`badge ${status.state === 'running' ? 'badge-pos' : 'badge-neu'}`}>
@@ -90,7 +92,7 @@ export function SearchProgressPanel({
         aria-valuemax={100}
         aria-valuenow={Math.round(progress)}
       >
-        <span style={{ width: `${progress}%` }} />
+        <span style={{ transform: `scaleX(${progress / 100})` }} />
       </div>
 
       <div className="stat-tiles">
