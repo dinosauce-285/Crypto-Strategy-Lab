@@ -6,6 +6,7 @@ import {
   WEIGHT_STEP,
   type Dataset,
   type StrategyMeta,
+  type StrategyParams,
 } from '@csl/contracts';
 import { DynamicParamForm } from '../backtest/DynamicParamForm';
 import { STRATEGY_GROUP_LABELS } from './group-labels';
@@ -20,6 +21,7 @@ import {
   type Parts,
   type ParamsByKey,
 } from './composite-spec';
+import { DynamicParamForm } from '../backtest/DynamicParamForm';
 
 interface ManualCompositePanelProps {
   strategies: StrategyMeta[];
@@ -75,6 +77,14 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
     }));
   };
 
+  const handleParamChange = (strategy: StrategyMeta, updated: StrategyParams) => {
+    const key = strategyKey(strategy);
+    setParamsByStrategy((current) => ({
+      ...current,
+      [key]: updated,
+    }));
+  };
+
   const blockedReason = !dataset
     ? 'Chọn dataset ở cột bên phải trước khi chạy thử.'
     : selected.length === 0
@@ -101,6 +111,7 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
           const key = strategyKey(strategy);
           const isSelected = chosen.has(key);
           const held = parts[key] ?? 0;
+          const currentParams = paramsByStrategy[key] ?? defaultParams(strategy);
           return (
             <div key={key} className="strategy-choice" data-selected={isSelected ? 'true' : 'false'}>
               <div className="strategy-choice-row">
