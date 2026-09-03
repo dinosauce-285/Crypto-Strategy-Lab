@@ -65,3 +65,29 @@ export interface BacktestJob {
   spec: CandidateSpec;
   datasetId: string;
 }
+
+/** The grid every weight and every threshold sits on. */
+export const WEIGHT_STEP = 0.1;
+
+/**
+ * Ten weights of 0.1 is everything the grid can hand out, so a specification cannot
+ * hold more members than that without one of them weighing nothing.
+ */
+export const MAX_MEMBERS = Math.round(1 / WEIGHT_STEP);
+
+/** What a composite asks for before it acts, when nobody has chosen otherwise. */
+export const DEFAULT_THRESHOLD = 0.3;
+
+/**
+ * Weights that satisfy the grid and sum to 1 — the only division that does, since
+ * `count` rarely divides 10. The remainder goes to the members that come first, so
+ * three members are 0.4, 0.3, 0.3 rather than three equal weights that cannot exist.
+ */
+export function balancedWeights(count: number): number[] {
+  if (!Number.isInteger(count) || count < 1 || count > MAX_MEMBERS) {
+    throw new Error(`candidate member count must be between 1 and ${MAX_MEMBERS}`);
+  }
+  const base = Math.floor(10 / count);
+  const extra = 10 - base * count;
+  return Array.from({ length: count }, (_, index) => (base + (index < extra ? 1 : 0)) / 10);
+}
