@@ -216,22 +216,25 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
 
   return (
     <>
-      {/* index.css is off-limits here (owned by other in-flight cards), so positioning
-          rides inline styles instead of a new class; colors still come from the shared
-          .badge classes. Sits opposite chart-label's top-left corner. */}
-      <span
-        className={`badge ${badge.className}`}
-        style={{ position: 'absolute', top: '0.5rem', right: '0.6rem', zIndex: 1 }}
-      >
-        {badge.text}
-      </span>
+      {/* index.css is off-limits here (owned by other in-flight cards), so this rides
+          inline styles instead of a new class; colors still come from the shared .badge
+          classes. Laid out in normal flow (not an absolute overlay) and on purpose: an
+          overlay collided with the chart's own price-scale labels when a chart was
+          showing, and with the loading/error text and chart-label's timeframe pill when
+          it wasn't. A real flow row, right-aligned, sits clear of both in every state. */}
+      {/* marginTop lines this up with chart-label's (Dashboard.tsx, index.css) top:0.5rem
+          absolute offset — chart-label has less padding than .badge, so flush-top made
+          the two rows read as visibly misaligned. */}
+      <div style={{ textAlign: 'right', marginTop: '0.45rem', marginBottom: '0.5rem' }}>
+        <span className={`badge ${badge.className}`}>{badge.text}</span>
+      </div>
 
       {state.kind === 'loading' && <p className="state">Đang tải dữ liệu lịch sử…</p>}
 
       {state.kind === 'error' && (
         <p className="state bad">
           <strong>Không tải được dữ liệu lịch sử.</strong> {state.message}{' '}
-          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+          <button type="button" className="btn-action" onClick={() => setAttempt((n) => n + 1)}>
             Thử lại
           </button>
         </p>
@@ -245,8 +248,10 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
       )}
 
       {isStale && (
-        // Shifted below the badge row above (top: 0.5rem) so the two don't overlap.
-        <p className="chart-stale-banner state bad" style={{ top: '1.7rem' }}>
+        // chart-stale-banner is an absolute overlay (index.css, unmodified) meant to sit
+        // right at the top of the chart below — pushed down to clear the badge row above,
+        // which takes real layout space now and would otherwise sit right underneath it.
+        <p className="chart-stale-banner state bad" style={{ top: '2.1rem' }}>
           <strong>Mất kết nối kênh.</strong> Dữ liệu đứng yên từ{' '}
           {lastUpdatedAt ? clock(lastUpdatedAt) : '—'}.
         </p>
