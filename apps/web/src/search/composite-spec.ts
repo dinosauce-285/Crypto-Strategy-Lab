@@ -48,7 +48,7 @@ export function buildSpec(
   selected: StrategyMeta[],
   parts: Parts,
   threshold: number,
-  paramsByKey: ParamsByKey,
+  paramsByKey?: ParamsByKey,
 ): CandidateSpec | null {
   if (selected.length === 0) return null;
   if (totalParts(selected, parts) !== TOTAL_PARTS) return null;
@@ -57,7 +57,7 @@ export function buildSpec(
     rule: 'weighted',
     threshold,
     members: selected.map((strategy): CandidateMember => {
-      const params = paramsByKey[strategyKey(strategy)] ?? defaultParams(strategy);
+      const params = paramsByKey?.[strategyKey(strategy)] ?? defaultParams(strategy);
       return {
         id: strategy.id,
         version: strategy.version,
