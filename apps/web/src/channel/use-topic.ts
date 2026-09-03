@@ -27,6 +27,25 @@ export function useChannelStatus(): ChannelStatus {
   return status;
 }
 
+// Fires on every message the socket receives, regardless of topic — a proxy for "the
+// channel is actively delivering data" that a status panel can show without knowing
+// about any particular chart's candles. socket.io's reserved lifecycle events (connect,
+// disconnect, ...) aren't routed through onAny, so this only reflects server messages.
+export function useLastUpdatedAt(): number | null {
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    const socket = channel();
+    const mark = () => setLastUpdatedAt(Date.now());
+    socket.onAny(mark);
+    return () => {
+      socket.offAny(mark);
+    };
+  }, []);
+
+  return lastUpdatedAt;
+}
+
 export function useTopic(
   topic: string | null,
   onMessage: (message: ServerMessage) => void,

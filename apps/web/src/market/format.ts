@@ -53,3 +53,10 @@ export function formatDatasetRange(from: number, to: number): string {
 export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
   return side.toUpperCase() === 'BUY' ? 'Mua' : 'Bán';
 }
+
+export function latency(ms: number): string {
+  if (ms < 1000) return '<1s';
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}

@@ -6,6 +6,7 @@ import { Dashboard } from '../market/Dashboard';
 import { TimeframeSelect } from '../market/TimeframeSelect';
 import { RecentTicks } from '../market/RecentTicks';
 import { Annotations } from '../market/Annotations';
+import { ConnectionStatusPanel } from '../market/ConnectionStatusPanel';
 
 // Reading order of the 2x2 grid: [5m, 15m] on row one, [1h, 4h] on row two.
 const DEFAULT_LAYOUT: Timeframe[] = ['5m', '15m', '1h', '4h'];
@@ -38,6 +39,7 @@ export function RealtimeScreen() {
         </div>
 
         <div className="screen-side">
+          <ConnectionStatusPanel />
           <RecentTicks pair={pair} />
           <Annotations />
         </div>
