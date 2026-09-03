@@ -10,8 +10,10 @@ import {
   CandlestickSeries,
   createChart,
   HistogramSeries,
+  TickMarkType,
   type IChartApi,
   type ISeriesApi,
+  type Time,
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { apiFetch } from '../api/request';
@@ -76,6 +78,46 @@ function toVolumeBar(candle: Candle, upColor: string, downColor: string) {
   };
 }
 
+// The library places its own timestamps into the chart as bare UTCTimestamp seconds,
+// with no timezone attached — left alone, both the crosshair label and the axis tick
+// marks render in UTC, 7 hours behind Vietnam. These formatters convert only at the
+// display layer; the timestamps fed to the series above are untouched.
+const HCM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+const CROSSHAIR_TIME_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+const AXIS_DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const AXIS_TIME_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+function timeFormatter(time: Time): string {
+  return CROSSHAIR_TIME_FORMAT.format(new Date((time as UTCTimestamp) * 1000));
+}
+
+function tickMarkFormatter(time: Time, tickMarkType: TickMarkType): string {
+  const date = new Date((time as UTCTimestamp) * 1000);
+  return tickMarkType <= TickMarkType.DayOfMonth
+    ? AXIS_DATE_FORMAT.format(date)
+    : AXIS_TIME_FORMAT.format(date);
+}
+
 function appendCandle(candles: Candle[], candle: Candle): Candle[] {
   const last = candles[candles.length - 1];
   if (last && last.openTime === candle.openTime) return [...candles.slice(0, -1), candle];
@@ -126,9 +168,10 @@ export function CandleChart({ pair, timeframe }: CandleChartProps) {
         vertLines: { color: token('--line') },
         horzLines: { color: token('--line') },
       },
+      localization: { timeFormatter },
       // Off by default in lightweight-charts — without it the axis shows the date
       // only, at every zoom level, even when zoomed into a single hour.
-      timeScale: { rightOffset: 4, timeVisible: true, secondsVisible: false },
+      timeScale: { rightOffset: 4, timeVisible: true, secondsVisible: false, tickMarkFormatter },
     });
     const upColor = token('--ok');
     const downColor = token('--bad');

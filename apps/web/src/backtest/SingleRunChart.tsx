@@ -6,6 +6,7 @@ import {
   createSeriesMarkers,
   HistogramSeries,
   LineSeries,
+  TickMarkType,
   type IChartApi,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
@@ -34,6 +35,46 @@ function toBar(candle: Candle) {
     low: Number(candle.low),
     close: Number(candle.close),
   };
+}
+
+// The library places its own timestamps into the chart as bare UTCTimestamp seconds,
+// with no timezone attached — left alone, both the crosshair label and the axis tick
+// marks render in UTC, 7 hours behind Vietnam. These formatters convert only at the
+// display layer; the timestamps fed to the series above are untouched.
+const HCM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+const CROSSHAIR_TIME_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+const AXIS_DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  day: '2-digit',
+  month: '2-digit',
+});
+
+const AXIS_TIME_FORMAT = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: HCM_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+function timeFormatter(time: Time): string {
+  return CROSSHAIR_TIME_FORMAT.format(new Date((time as UTCTimestamp) * 1000));
+}
+
+function tickMarkFormatter(time: Time, tickMarkType: TickMarkType): string {
+  const date = new Date((time as UTCTimestamp) * 1000);
+  return tickMarkType <= TickMarkType.DayOfMonth
+    ? AXIS_DATE_FORMAT.format(date)
+    : AXIS_TIME_FORMAT.format(date);
 }
 
 function token(name: string): string {
@@ -80,7 +121,8 @@ export function SingleRunChart({
         vertLines: { color: token('--line') },
         horzLines: { color: token('--line') },
       },
-      timeScale: { rightOffset: 6, timeVisible: true, secondsVisible: false },
+      localization: { timeFormatter },
+      timeScale: { rightOffset: 6, timeVisible: true, secondsVisible: false, tickMarkFormatter },
     });
 
     const upColor = token('--ok');
