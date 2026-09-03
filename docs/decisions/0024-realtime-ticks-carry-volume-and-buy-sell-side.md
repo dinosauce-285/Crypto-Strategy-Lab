@@ -1,48 +1,19 @@
-# Realtime ticks carry volume and buy/sell side
+# Khớp lệnh realtime mang theo khối lượng volume và bên mua/bán
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The realtime screen's ticks panel is meant to show what section 2's realtime example
-shows — a trade as it happens — but a bare price repeated every second reads as noise,
-not a trade tape. A trade tape is only useful with size (was it a big order or a small
-one) and direction (was the market being bought or sold into), which is exactly what
-Binance's combined trade stream already carries on every frame: `q` (quantity) and `m`
-(whether the buyer was the resting order). We were already parsing this frame in
-`binance-stream.adapter.ts` and discarding both fields.
+Bảng khớp lệnh tức thời (ticks panel) trên màn hình realtime nhằm mục đích thể hiện đúng ví dụ thực tế trong mục 2 của đề bài — các giao dịch diễn ra ngay khoảnh khắc thực tế. Tuy nhiên, một con số giá đơn độc lặp lại mỗi giây chỉ giống như một chuỗi số nhiễu chứ không phải một bảng khớp lệnh (trade tape). Một bảng khớp lệnh chỉ thực sự hữu ích khi có thông tin về khối lượng (đây là một lệnh lớn hay lệnh nhỏ) và chiều hướng giao dịch (thị trường đang bị bên mua hay bên bán áp đảo). Đó chính xác là những gì luồng dữ liệu khớp lệnh của Binance (`trade stream`) đã mang theo trên từng gói tin: trường `q` (quantity - khối lượng) và trường `m` (isBuyerMaker - bên mua có phải là lệnh chờ resting order hay không). Trước đây adapter `binance-stream.adapter.ts` đã parse gói tin này nhưng lại bỏ qua hai trường đó.
 
-`0017` settled that a socket message is shaped for a screen, not for whatever the
-exchange happened to send — so this isn't "pass Binance's fields through," it's " the
-screen's contract gains the two fields the screen needs," derived from Binance's frame
-inside the adapter the same way price and candles already are. `side` is derived, not
-copied: Binance's `m` is `isBuyerMaker`, and a `true` there means the resting order was
-a buy, so the trade that matched it was a sell from the taker's side — the adapter does
-that translation once, so nothing downstream has to know what `m` means.
+ADR `0017` đã quy định rằng tin nhắn socket được thiết kế phục vụ màn hình hiển thị chứ không phụ thuộc vào những gì sàn tình cờ gửi về — vì vậy đây không phải là việc "chuyển tiếp nguyên xi các trường của Binance", mà là "hợp đồng của màn hình được bổ sung thêm hai trường cần thiết", được adapter trích xuất và chuyển đổi từ gói tin của Binance tương tự như giá và nến. Trường `side` (bên mua/bán) là giá trị được suy luận chứ không sao chép nguyên bản: cờ `m` của Binance là `isBuyerMaker`, và giá trị `true` ở đây có nghĩa là lệnh chờ sẵn trong sổ lệnh là lệnh mua, do đó lệnh khớp chủ động (taker) là lệnh bán — adapter thực hiện việc chuyển đổi này một lần duy nhất, đảm bảo các thành phần phía sau không cần bận tâm cờ `m` nghĩa là gì.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**A separate `Trade` message alongside `MarketPrice`.** Keeps `MarketPrice` minimal for
-consumers that only want the number (there are none today, but there could be), at the
-cost of two subscriptions and two handlers everywhere a screen wants both — every
-existing consumer of `market:PAIR:price` (the price display, now the ticks panel) wants
-the same trade, just projected differently. One message the ticks panel reads three
-fields from and the price display reads one field from is the same information, sized
-once.
+**Tách thành một loại tin nhắn `Trade` riêng biệt bên cạnh `MarketPrice`** — giữ cho `MarketPrice` nhẹ nhàng cho những bên tiêu thụ chỉ cần giá. Nhưng cái giá phải trả là hai lượt subscribe và hai bộ xử lý handler ở mọi nơi màn hình cần cả hai thông tin. Hiện tại mọi bên tiêu thụ `market:PAIR:price` (ô hiển thị giá, và bảng khớp lệnh) đều cần thông tin từ cùng một giao dịch, chỉ khác ở cách hiển thị. Một tin nhắn duy nhất mà bảng khớp lệnh đọc 3 trường còn ô giá đọc 1 trường là giải pháp đồng nhất và hiệu quả hơn.
 
-**Compute volume/side in `MarketService` instead of the adapter.** `MarketService` is
-exchange-ignorant by design (`ExchangeStreamPort` exists so it never has to parse a
-Binance frame) — moving the `isBuyerMaker` translation there would mean teaching the
-one exchange-agnostic module what one exchange's flag means, which is the inversion
-`0020`'s ports already argue against.
+**Tính toán volume và side trong `MarketService` thay vì trong adapter** — `MarketService` được thiết kế hoàn toàn không phụ thuộc vào sàn cụ thể (`ExchangeStreamPort` tồn tại để nó không bao giờ phải parse gói tin của Binance). Đưa logic dịch `isBuyerMaker` vào đó sẽ bắt một module độc lập với sàn phải học hiểu cờ của riêng một sàn giao dịch, điều mà kiến trúc phân cổng của ADR `0020` đã ngăn chặn.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-`MessagePayloads[MarketPrice]` is bigger now for every consumer, including ones that
-only ever wanted the price — the live price display in `Dashboard`'s cells reads `at`
-and `price` and now silently receives `volume`/`side` it ignores. Small payload, so this
-costs bytes on the wire, not a real budget, but it is the direction this trades away
-from a leaner, single-purpose message.
+Payload `MessagePayloads[MarketPrice]` giờ đây lớn hơn một chút cho mọi bên tiêu thụ, kể cả những nơi chỉ cần mức giá đơn thuần. Dù vậy đây là mức tăng dung lượng rất nhỏ trên đường truyền mạng.
 
-`side` is an inference (matched order's resting side), not a labelled fact Binance
-asserts — for the combined trade stream this is the standard, documented reading of
-`isBuyerMaker`, but it is still a derived value baked into the wire contract rather than
-raw exchange data, which is one more thing a reader has to trust the adapter got right.
+Trường `side` là một giá trị suy luận logic (bên chủ động khớp lệnh) chứ không phải một trường chữ có sẵn do Binance gán nhãn — đối với stream giao dịch tổng hợp của Binance thì đây là cách đọc chuẩn mực đã được tài liệu hóa, nhưng nó vẫn là giá trị phái sinh được đưa vào hợp đồng đường truyền.

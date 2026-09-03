@@ -1,54 +1,19 @@
-# the search worker evaluates and records experiments through EvaluatorPort, not its own repository
+# Search worker đánh giá và ghi nhận thực nghiệm thông qua EvaluatorPort, không dùng repository riêng của nó
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-BUG-01: every Search candidate failed at the evaluation step (15 tried, 15 failed, all
-with the same error). `BacktestProcessor` (T12's worker) depended on `RunEvaluator`
-(`score(trades, datasetId): Promise<Metrics>`), an abstract port with zero implementations
-anywhere in the repo, and nothing bound it in `backtest-worker.module.ts`. T13's real
-evaluator, `EvaluatorService`, implements a different port entirely — `EvaluatorPort`,
-with `computeMetrics`, `evaluateAndRecord` (computes and persists atomically), and
-`recordFailed`. The two never got reconciled while T12 and T13 were built in parallel.
+BUG-01: mọi ứng viên Search đều thất bại ở bước đánh giá (thử 15, hỏng cả 15, đều cùng một lỗi). `BacktestProcessor` (worker của T12) phụ thuộc vào `RunEvaluator` (`score(trades, datasetId): Promise<Metrics>`), một port trừu tượng hoàn toàn không có lớp triển khai nào trong repository, và không có gì ràng buộc nó trong `backtest-worker.module.ts`. Trình đánh giá thực sự của T13, `EvaluatorService`, triển khai một port hoàn toàn khác — `EvaluatorPort`, với `computeMetrics`, `evaluateAndRecord` (tính toán và lưu trữ nguyên tử), và `recordFailed`. Hai bên chưa bao giờ được dung hòa trong khi T12 và T13 được phát triển song song.
 
-`EvaluatorPort` was already the correct contract: `BacktestService.runSingle` (the
-single-run screen) already injects it directly and works. The worker's own persistence,
-`ExperimentRepository`, was a byte-for-byte duplicate of `EvaluationRepository` — both
-write the same `Experiment`/`Trade` rows. `EvaluationRepository`'s own comment calls
-itself "the only place the evaluation module touches the database," which the worker's
-copy was already quietly violating. `EvaluatorPort` including `recordFailed` was the
-signal that the evaluation module was meant to own all experiment persistence, not just
-the completed-run half of it.
+`EvaluatorPort` vốn dĩ đã là hợp đồng chính xác: `BacktestService.runSingle` (màn hình chạy đơn lẻ) đã inject trực tiếp nó và hoạt động tốt. Tầng lưu trữ riêng của worker, `ExperimentRepository`, là một bản sao chép từng byte của `EvaluationRepository` — cả hai đều ghi cùng các hàng `Experiment`/`Trade`. Đoạn chú thích của chính `EvaluationRepository` tự gọi mình là "nơi duy nhất module evaluation chạm vào cơ sở dữ liệu", điều mà bản sao chép của worker đã âm thầm vi phạm. Việc `EvaluatorPort` bao gồm `recordFailed` chính là tín hiệu cho thấy module evaluation được thiết kế để sở hữu toàn bộ việc lưu trữ thực nghiệm, chứ không chỉ riêng phần lượt chạy đã hoàn thành.
 
-So the fix is to retarget the worker onto `EvaluatorPort`, the same way the single-run
-path already does, and delete the two files that existed only to route around a port
-mismatch: `RunEvaluator` and `ExperimentRepository`.
+Vì vậy cách khắc phục là chuyển worker sang nhắm vào `EvaluatorPort`, cùng cách mà luồng chạy đơn lẻ đã làm, và xóa hai file chỉ tồn tại để đi đường vòng qua sự không khớp của port: `RunEvaluator` và `ExperimentRepository`.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**A local adapter implementing `RunEvaluator` that delegates to `EvaluatorPort`
-internally** — keeps `RunEvaluator` alive as a second shape for the same concept
-(scoring trades against a dataset) and leaves `ExperimentRepository`'s duplicate
-persistence in place. It would have made the immediate bug go away with a smaller diff,
-but it papers over the mismatch instead of removing it, and the next person touching
-either port would still have to figure out which one is real.
+**Một adapter cục bộ triển khai `RunEvaluator` ủy quyền nội bộ cho `EvaluatorPort`** — giữ cho `RunEvaluator` tiếp tục tồn tại như một hình thái thứ hai cho cùng một khái niệm (chấm điểm các giao dịch theo một dataset) và giữ nguyên tầng lưu trữ trùng lặp của `ExperimentRepository`. Điều này sẽ làm biến mất lỗi trước mắt với một diff nhỏ hơn, nhưng nó che đậy sự không khớp thay vì loại bỏ nó, và người tiếp theo chạm vào một trong hai port sẽ vẫn phải bối rối tìm hiểu xem port nào mới là thực sự.
 
-**Keep `ExperimentRepository`, use only `EvaluatorPort.computeMetrics()` as a pure
-function** — the worker would compute metrics through the shared calculator but keep
-writing `Experiment`/`Trade` rows itself. This avoids extending `EvaluatorPort`, but
-leaves two independent code paths writing to the same table, which is exactly the kind
-of duplication `EvaluationRepository`'s own database-ownership comment was written to
-rule out. Any change to how a completed or failed experiment is recorded would need to
-land in both places or drift.
+**Giữ lại `ExperimentRepository`, chỉ sử dụng `EvaluatorPort.computeMetrics()` như một hàm thuần túy** — worker sẽ tính toán các chỉ số thông qua bộ tính toán dùng chung nhưng vẫn tự ghi các hàng `Experiment`/`Trade`. Cách này tránh phải mở rộng `EvaluatorPort`, nhưng để lại hai đường dẫn mã độc lập cùng ghi vào một bảng, chính xác là kiểu trùng lặp mà chú thích về quyền sở hữu cơ sở dữ liệu của `EvaluationRepository` được viết ra để loại trừ. Bất kỳ thay đổi nào đối với cách ghi lại một thực nghiệm đã hoàn thành hoặc thất bại đều sẽ phải đưa vào cả hai nơi hoặc bị lệch pha.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-`EvaluatorPort` gains an `isRecorded(datasetId, specHash)` method it didn't have before,
-purely to preserve the worker's existing optimization of skipping an already-tried
-candidate before running its backtest simulation — `BacktestService.runSingle` doesn't
-need this (a single interactive run isn't re-trying candidates), so the port now carries
-a method only one of its two consumers uses. The worker process (`backtest-worker.module.ts`)
-now depends on `EvaluationModule`, which pulls in `PrismaModule` a second time — harmless,
-`PrismaModule` is `@Global()` and the worker already depended on it directly, but it is
-one more module in the graph a reader has to trace. `ExperimentRepository` and
-`RunEvaluator` are deleted outright rather than deprecated, on the basis that BUG-01
-proved nothing depended on the working state of either.
+`EvaluatorPort` có thêm phương thức `isRecorded(datasetId, specHash)` mà trước đây nó không có, hoàn toàn là để bảo toàn tối ưu hóa hiện có của worker: bỏ qua một ứng viên đã được thử nghiệm trước khi chạy mô phỏng backtest của nó — `BacktestService.runSingle` không cần điều này (một lượt chạy tương tác đơn lẻ không bao giờ thử lại ứng viên), do đó port này giờ đây mang theo một phương thức mà chỉ một trong hai đối tượng tiêu thụ sử dụng. Tiến trình worker (`backtest-worker.module.ts`) giờ đây phụ thuộc vào `EvaluationModule`, kéo `PrismaModule` vào lần thứ hai — vô hại vì `PrismaModule` là `@Global()` và worker vốn đã trực tiếp phụ thuộc vào nó, nhưng đó là thêm một module trong đồ thị mà người đọc phải theo dõi. `ExperimentRepository` và `RunEvaluator` bị xóa hoàn toàn thay vì đánh dấu deprecated, dựa trên cơ sở BUG-01 đã chứng minh rằng không có gì phụ thuộc vào trạng thái hoạt động của cả hai.

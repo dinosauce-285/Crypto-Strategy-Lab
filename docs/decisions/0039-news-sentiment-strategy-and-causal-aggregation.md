@@ -1,21 +1,21 @@
-# News sentiment strategy plugs into the strategy registry with causal aggregation
+# Chiến lược sentiment tin tức cắm vào registry chiến lược với tổng hợp quan hệ nhân quả
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 30 of the project brief states that news sentiment can become a trading strategy, giving the concrete example:
-`Average sentiment over 1 hour > 0.7 -> BUY`, `Average sentiment < -0.7 -> SELL`. Section 17 introduces the `Information` group to accommodate strategies derived from non-price information sources, and Section 46 Steps 9–10 specify including `SentimentStrategy` in the search space to compose candidates like `MA + RSI + News Sentiment`.
+Section 30 của bản mô tả dự án nêu rõ tâm lý tin tức (news sentiment) có thể trở thành một chiến lược giao dịch, đưa ra ví dụ cụ thể:
+`Điểm tâm lý trung bình trong 1 giờ > 0.7 -> BUY`, `Điểm tâm lý trung bình < -0.7 -> SELL`. Section 17 giới thiệu nhóm `Information` để đáp ứng các chiến lược bắt nguồn từ các nguồn thông tin phi giá cả, và Section 46 Bước 9–10 chỉ định việc đưa `SentimentStrategy` vào không gian tìm kiếm để tạo ra các ứng viên tổng hợp như `MA + RSI + News Sentiment`.
 
-To fulfill this while maintaining strict architectural boundaries (AGENTS.md, ADR 0008, ADR 0012):
-1. `SentimentStrategy` implements the standard `Strategy` interface and declares its data requirements via `requires(params)` as `{ source: 'sentiment', params: { windowHours } }`.
-2. The strategy contains trading logic only: it evaluates signals from precomputed sentiment scores provided via `StrategyContext.get()` and never reaches into the database or third-party APIs directly.
-3. Causal sentiment aggregation is computed by `SentimentCalculator` (`name: 'sentiment'`), strictly enforcing that for any candle at `openTime`, only news articles with `publishedAt <= openTime` and within the lookback window `[openTime - windowMs, openTime]` are aggregated. This eliminates lookahead bias in backtests (ADR 0034).
+Để đáp ứng yêu cầu này trong khi vẫn duy trì các ranh giới kiến trúc nghiêm ngặt (AGENTS.md, ADR 0008, ADR 0012):
+1. `SentimentStrategy` triển khai giao diện `Strategy` chuẩn và khai báo các yêu cầu dữ liệu của nó thông qua `requires(params)` dưới dạng `{ source: 'sentiment', params: { windowHours } }`.
+2. Chiến lược chỉ chứa logic giao dịch thuần túy: nó đánh giá tín hiệu từ các điểm số tâm lý đã được tính toán trước do `StrategyContext.get()` cung cấp và không bao giờ tự truy cập trực tiếp vào cơ sở dữ liệu hoặc API bên thứ ba.
+3. Việc tổng hợp tâm lý theo luật nhân quả được tính toán bởi `SentimentCalculator` (`name: 'sentiment'`), thực thi nghiêm ngặt rằng đối với bất kỳ cây nến nào tại `openTime`, chỉ các bài báo tin tức có `publishedAt <= openTime` và nằm trong cửa sổ nhìn lại `[openTime - windowMs, openTime]` mới được tổng hợp. Điều này loại bỏ hoàn toàn thiên lệch nhìn trước tương lai (lookahead bias) trong các đợt backtest (ADR 0034).
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Letting the strategy query the News table directly** — this would violate the core architectural invariant forbidding strategies from accessing the database (Section 44 anti-pattern). It would also break reproducibility across candidate runs and prevent caching.
+**Để chiến lược truy vấn trực tiếp bảng News** — điều này sẽ vi phạm bất biến kiến trúc cốt lõi nghiêm cấm các chiến lược truy cập cơ sở dữ liệu (phản mẫu Section 44). Nó cũng sẽ phá vỡ tính tái lập giữa các lượt chạy ứng viên và ngăn chặn việc lưu bộ nhớ đệm (caching).
 
-**Hardcoding sentiment signals outside the strategy registry** — handling news sentiment as a separate heuristic layer outside `StrategyRegistry` and `DomainGuidedCandidateGenerator`. This was rejected because the brief specifically requires sentiment to be a standard composable strategy in the search space (Section 30, Section 46).
+**Hardcode tín hiệu tâm lý bên ngoài registry chiến lược** — xử lý tâm lý tin tức như một tầng heuristic riêng biệt bên ngoài `StrategyRegistry` và `DomainGuidedCandidateGenerator`. Phương án này bị bác bỏ vì bản đặc tả yêu cầu cụ thể rằng tâm lý phải là một chiến lược chuẩn có thể kết hợp được trong không gian tìm kiếm (Section 30, Section 46).
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-The rolling sentiment series must be prepared per dataset and candle timeline, adding a calculator pass in `IndicatorService`. However, because sentiment calculations are pure and cached, the overhead across candidate iterations is minimal.
+Chuỗi dữ liệu tâm lý trượt (rolling sentiment series) phải được chuẩn bị cho mỗi dataset và mốc thời gian nến, bổ sung thêm một lượt tính toán trong `IndicatorService`. Tuy nhiên, vì các tính toán tâm lý là hàm thuần túy và được lưu cache, chi phí phụ trội qua các lần lặp ứng viên là rất nhỏ.

@@ -1,62 +1,27 @@
-# The leaderboard is computed from experiments on every read
+# Bảng xếp hạng được tính toán lại trực tiếp từ các experiment trên mỗi lần đọc
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 35 asks this one directly and asks for the reasoning, so the reasoning is the
-deliverable more than the choice is.
+Mục 35 của đề bài hỏi trực tiếp về vấn đề này và yêu cầu nêu rõ lập luận kỹ thuật, vì vậy lập luận thuyết phục chính là sản phẩm bàn giao quan trọng hơn bản thân lựa chọn.
 
-The argument is section 21. It requires the overall score formula to be spelled out,
-and a formula that has to be written down and defended is a formula that will be
-adjusted several times before hand-in — weights moved, drawdown penalised harder, a
-minimum trade count added. Under a stored score and rank, each adjustment means
-re-scoring every experiment in the store before the board is honest again. Under
-recomputation, it means changing one query and reloading the page.
+Căn cứ cốt lõi bắt nguồn từ mục 21. Đề bài yêu cầu phải nêu rõ công thức tính điểm tổng hợp, và một công thức khi được viết ra và phải bảo vệ trước hội đồng chắc chắn sẽ bị điều chỉnh nhiều lần trước khi nộp bài — thay đổi trọng số, phạt nặng hơn mức sụt giảm drawdown, bổ sung số lượng giao dịch tối thiểu. Nếu lưu sẵn điểm số và thứ hạng vào database, mỗi lần điều chỉnh công thức sẽ buộc chúng ta phải chạy một đợt cập nhật chấm điểm lại toàn bộ các thử nghiệm trong kho dữ liệu trước khi bảng xếp hạng hiển thị trung thực trở lại. Nếu tính toán lại trực tiếp (recomputation), việc này chỉ đơn giản là sửa một câu truy vấn SQL và tải lại trang web.
 
-The load is small. A leaderboard is a top-K over the experiments of one dataset,
-which is an `ORDER BY` with a `LIMIT` over a few thousand rows — the kind of query
-Postgres answers without being asked twice. Nothing about the shape of this project
-suggests that changes: experiments accumulate in the thousands, not the millions.
+Tải tính toán thực tế là rất nhỏ. Bảng xếp hạng là một câu truy vấn Top-K trên các experiment của một dataset cụ thể, thực chất chỉ là một lệnh `ORDER BY` kèm `LIMIT` trên vài nghìn dòng dữ liệu — loại câu lệnh mà PostgreSQL phản hồi trong chớp mắt mà không tốn tài nguyên. Không có yếu tố nào trong đồ án này vượt quá quy mô đó: các experiment tích lũy ở mức hàng nghìn chứ không phải hàng triệu.
 
-No cache for now. The recommendation this page inherited was "recompute, add a cache
-when it feels slow", and the second half is the part being deferred deliberately: a
-cache adds a copy that can be stale, and a stale leaderboard is a bug nobody sees,
-because a wrong ranking still looks like a ranking. Adding one is a decision to make
-against a measurement, and it gets its own record when it happens.
+Chưa sử dụng cache ở giai đoạn này. Khuyến nghị ban đầu là "tính toán lại, chỉ thêm cache khi thấy chậm", và vế sau là phần được chủ động trì hoãn có chủ đích: lớp cache tạo ra một bản sao dữ liệu có thể bị cũ (stale), và một bảng xếp hạng bị cũ là lỗi không ai nhận ra được, bởi vì một thứ hạng sai trông vẫn y hệt như một thứ hạng đúng. Việc thêm cache là một quyết định cần dựa trên số liệu đo đạc thực tế, và sẽ có bản ghi ADR riêng khi điều đó xảy ra.
 
-This also keeps `0003` honest. A finished candidate publishes `backtest.completed` and
-`strategy.evaluated` on the bus; the ranking module listens and tells the UI which board
-moved, never what it now holds; the UI re-reads. Nothing stores a rank, so nothing can
-hold a rank that disagrees with the experiments it came from.
+Điều này cũng giúp giữ cho ADR `0003` luôn trung thực. Một ứng viên chạy xong sẽ phát sự kiện `backtest.completed` và `strategy.evaluated` lên bus; module ranking lắng nghe và thông báo cho giao diện biết bảng nào vừa có biến động, tuyệt đối không gửi kèm nội dung bảng hiện tại; giao diện sẽ tự động đọc lại. Không thành phần nào lưu cứng thứ hạng, do đó không thể xảy ra tình trạng thứ hạng mâu thuẫn với các experiment đã sinh ra nó.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Store the score and the rank** — the fastest read, and the obvious answer if the
-formula were fixed. Two costs sank it. Every formula change re-runs a scoring pass
-over the whole store, and during that pass the board is wrong. And a stored rank is a
-second source of truth: it can disagree with the experiments it was derived from, and
-when it does there is nothing to tell you.
+**Lưu cứng điểm số và thứ hạng vào bảng** — tốc độ đọc nhanh nhất, và là câu trả lời hiển nhiên nếu công thức tính điểm là bất biến. Nhưng hai chi phí đã đánh chìm phương án này: Mỗi lần đổi công thức sẽ phải quét tính điểm lại toàn bộ cơ sở dữ liệu, và trong suốt quá trình đó bảng xếp hạng sẽ bị sai. Và một thứ hạng lưu cứng là nguồn sự thật thứ hai (second source of truth): nó có thể không khớp với các experiment gốc, và khi xảy ra lệch pha thì không có gì cảnh báo cho bạn biết.
 
-**Recompute plus a cache from day one** — the compromise, and defensible. We start one
-step earlier because a cache introduced before there is a slow query is a moving part
-added to solve nothing, and the specific failure it can produce — a stale copy read as
-current — is the hardest kind to notice on a page of numbers.
+**Tính toán lại kết hợp gắn cache ngay từ ngày đầu** — phương án dung hòa và có thể biện minh được. Nhưng chúng ta bắt đầu trước một bước vì việc đưa cache vào trước khi có một truy vấn thực sự chậm là thêm một bộ phận chuyển động thừa thãi không giải quyết được gì, và lỗi đặc thù mà nó sinh ra — một bản sao cũ bị tưởng nhầm là dữ liệu mới nhất — là dạng lỗi khó phát hiện nhất trên một trang đầy số liệu.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Every read scans the experiments of a dataset. We are asserting that this is
-negligible at a few thousand rows rather than proving it, and the assertion has not
-been measured on real data yet. If a search runs far longer than planned, this is the
-decision that gets revisited first.
+Mỗi lần đọc đều phải quét qua các experiment của một dataset. Chúng ta đang giả định rằng việc này không đáng kể ở quy mô vài nghìn dòng dữ liệu thay vì chứng minh bằng số đo thực tế. Nếu một lượt tìm kiếm kéo dài hơn nhiều so với dự tính, đây sẽ là quyết định đầu tiên cần phải xem xét lại.
 
-Because the score is computed rather than stored, changing the formula silently
-reorders every past result. That is correct — all rows are then scored the same way —
-but it means a leaderboard screenshot from last week cannot be reproduced today. This
-paragraph used to end by saying the formula needed a version of its own, the way `0009`
-gave one to strategy code, and that it did not have one. `0036` gave it one: the score is
-stamped `v1` and every entry carries the version it was scored under. The reordering is
-still silent — what changed is that a reader can now tell which formula they are looking
-at, and the screen says so rather than describing a formula it may no longer be using.
+Bởi vì điểm số được tính toán lại thay vì lưu cứng, việc thay đổi công thức sẽ âm thầm sắp xếp lại toàn bộ kết quả trong quá khứ. Điều này đúng về mặt logic — mọi dòng dữ liệu khi đó đều được chấm theo cùng một thang đo — nhưng đồng nghĩa với việc ảnh chụp màn hình bảng xếp hạng tuần trước không thể tái hiện lại y hệt hôm nay. ADR `0036` đã bổ sung giải pháp cho việc này: công thức tính điểm được đánh phiên bản `v1` và mỗi mục hiển thị đều mang theo phiên bản công thức đã chấm nó. Việc sắp xếp lại vẫn diễn ra, nhưng người đọc giờ đây biết rõ mình đang nhìn vào công thức nào thay vì màn hình hiển thị một công thức mà hệ thống không còn dùng nữa.
 
-The board is only as coherent as its dataset filter: it must always be read for one
-dataset, never across several, or it compares runs judged by different rules — which
-is what `0010` exists to make visible.
+Bảng xếp hạng chỉ nhất quán khi đi kèm bộ lọc dataset: nó bắt buộc phải luôn được đọc cho một dataset cụ thể, không bao giờ đọc gộp nhiều dataset, nếu không nó sẽ so sánh các lượt chạy bị phán quyết bởi các quy tắc khác nhau — điều mà ADR `0010` sinh ra để ngăn chặn.

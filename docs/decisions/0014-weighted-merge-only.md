@@ -1,100 +1,46 @@
-# Signals are combined by weighted score only
+# Các tín hiệu chỉ được kết hợp thông qua tính điểm có trọng số (weighted score)
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Three strategies look at one candle. MA says buy, RSI says sell, support/resistance
-says buy. The composite has to answer once.
+Ba chiến lược cùng quan sát một cây nến: MA báo Mua, RSI báo Bán, Hỗ trợ/Kháng cự báo Mua. Tổ hợp chiến lược bắt buộc phải đưa ra một câu trả lời duy nhất.
 
-Section 13 raises vote counting and section 14 spells out the weighted alternative:
-encode buy as +1 and sell as −1, multiply by that strategy's weight, add up, compare
-against a threshold. Section 14 requires the weighted form and requires the
-calculation to be written out, so weighted is not optional.
+Mục 13 của đề bài nêu ra cơ chế đếm phiếu biểu quyết (vote counting) và mục 14 mô tả chi tiết phương án kết hợp có trọng số (weighted alternative): mã hóa mua là +1 và bán là -1, nhân với trọng số của từng chiến lược, cộng dồn lại, và so sánh với một ngưỡng quyết định (threshold). Mục 14 bắt buộc phải có dạng tính điểm có trọng số và bắt buộc công thức tính phải được viết ra thành văn bản, vì vậy phương án có trọng số là không thể thiếu.
 
-The question was only whether vote counting joins it, and it does not. `0006` decided
-a signal carries a strength so a sentiment score of 0.82 is not flattened into a bare
-BUY. Vote counting discards that number at the moment of combination, which would
-leave the report describing a weighted combination the code does not perform.
-Supporting both would mean one rule that uses strength and one that throws it away,
-with no honest way to compare their results on one leaderboard.
+Câu hỏi đặt ra là liệu có nên hỗ trợ song song cả cơ chế đếm phiếu biểu quyết hay không, và câu trả lời là không. ADR `0006` đã quyết định tín hiệu mang theo độ mạnh (strength) để điểm sentiment ví dụ 0.82 không bị làm phẳng thô bạo thành chữ `BUY`. Cơ chế đếm phiếu sẽ vứt bỏ con số độ mạnh đó ngay khoảnh khắc kết hợp, khiến báo cáo mô tả một phép kết hợp có trọng số trong khi code thực tế lại không làm như vậy. Việc hỗ trợ cả hai quy tắc sẽ dẫn đến việc một quy tắc dùng độ mạnh còn một quy tắc vứt bỏ độ mạnh, không có cách nào so sánh trung thực kết quả của chúng trên cùng một bảng xếp hạng leaderboard.
 
-So each member contributes `direction × strength × weight`, and the sum decides:
+Vì vậy, mỗi thành viên đóng góp giá trị bằng `direction × strength × weight`, và tổng điểm sẽ quyết định hành động:
 
 ```
-|score| > threshold   →  act on the sign
-otherwise             →  HOLD
+|score| > threshold   →  hành động theo dấu (dương: BUY, âm: SELL)
+ngược lại              →  HOLD (giữ nguyên)
 ```
 
-One line covers both directions, and the comparison is strict — a score landing
-exactly on the threshold is still at the edge of indecision, which is what the
-threshold was defined to mean.
+Một công thức duy nhất bao quát cả hai chiều mua bán, và phép so sánh là nghiêm ngặt (`>`) — một điểm số rơi trúng vào ngưỡng vẫn được coi là nằm ở ranh giới chưa dứt khoát, đúng như định nghĩa bản chất của ngưỡng threshold.
 
-**The score is rounded to six decimal places first.** Without that, whether a score
-"equals" the threshold is settled by binary floating point: `0.5 - 0.2` is
-`0.30000000000000004`, so the same logical situation — agreement landing exactly on
-the line — resolves differently depending on which weights happened to produce it. It
-stays deterministic, so a re-run matches, but it is arbitrary. Six places, the same
-convention used before hashing.
+**Điểm số được làm tròn đến 6 chữ số thập phân trước khi so sánh.** Nếu không làm tròn, việc điểm số "bằng" ngưỡng hay không sẽ bị chi phối bởi sai số dấu phẩy động nhị phân: phép tính `0.5 - 0.2` trong JavaScript cho ra `0.30000000000000004`, khiến cho cùng một tình huống logic — sự đồng thuận rơi đúng vào ranh giới ngưỡng — lại xử lý khác nhau tùy thuộc vào những trọng số nào vô tình tạo ra nó. Làm tròn 6 chữ số thập phân là quy ước thống nhất với ADR `0009`.
 
-**The composite's own strength is `|score|`.** A composite is a strategy and has to
-answer with a strength like any other. The score already lives in −1..1 and already
-means how convinced the group is, so nothing has to be invented, and a composite
-nested inside a composite works with no extra rule.
+**Độ mạnh của chính tổ hợp là `|score|`.** Bản thân một tổ hợp chiến lược cũng là một chiến lược và phải trả về độ mạnh như mọi chiến lược khác. Điểm số vốn đã nằm trong đoạn -1..1 và thể hiện rõ mức độ đồng thuận của cả nhóm, vì vậy không cần bịa thêm công thức mới, và một tổ hợp lồng bên trong một tổ hợp khác (composite nested inside composite) sẽ tự động hoạt động mà không cần thêm quy tắc bổ sung.
 
-Three properties of the weights follow, and each prevents a failure that is invisible
-once it happens.
+Ba thuộc tính của trọng số được quy định chặt chẽ để ngăn chặn các lỗi âm thầm:
 
-**They sum to 1.** The threshold has to mean the same thing whatever a candidate is
-made of. Unnormalised, two members agreeing score 2 while five agreeing score 5, so a
-fixed threshold gets easier to clear the more members you add and the board fills with
-crowded candidates for a reason nobody can see.
+**Tổng trọng số bằng đúng 1.** Ngưỡng threshold bắt buộc phải giữ nguyên ý nghĩa bất kể ứng viên được cấu thành từ bao nhiêu chiến lược con. Nếu không chuẩn hóa, 2 thành viên đồng thuận cho ra điểm 2 trong khi 5 thành viên đồng thuận cho ra điểm 5, khiến cho ngưỡng cố định càng dễ vượt qua khi càng nhồi thêm nhiều chiến lược và bảng xếp hạng sẽ bị tràn ngập bởi các tổ hợp cồng kềnh vì một lý do không ai nhìn thấy được.
 
-**They are strictly above zero.** A member weighted 0 contributes nothing, making that
-candidate identical in behaviour to the smaller one without it — one strategy holding
-two rows and costing two backtests.
+**Trọng số phải lớn hơn 0 nghiêm ngặt.** Một thành viên có trọng số bằng 0 không đóng góp gì, khiến ứng viên đó hoạt động hoàn toàn y hệt như một ứng viên nhỏ hơn không chứa nó — làm một chiến lược chiếm hai dòng dữ liệu và tốn hai lượt backtest vô ích.
 
-**They sit on a grid of 0.1.** Continuous weights give every draw a different hash, so
-duplicate detection never fires and the board fills with rows differing in the fourth
-decimal. With whole tenths and members above zero there are 9 weight sets for two
-members, 36 for three, 84 for four.
+**Trọng số nằm trên lưới bước nhảy 0.1.** Trọng số liên tục vô hạn sẽ khiến mỗi lượt bốc thăm sinh ra một mã băm khác nhau, cơ chế phát hiện trùng lặp không bao giờ kích hoạt và bảng xếp hạng sẽ bị ngập trong các dòng kết quả chỉ lệch nhau ở số thập phân thứ tư. Với bước nhảy 0.1 và trọng số lớn hơn 0, có 9 bộ trọng số khả dĩ cho 2 thành viên, 36 bộ cho 3 thành viên, và 84 bộ cho 4 thành viên.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Majority vote as a second rule** — the brief itself raises it in section 13, so
-leaving it out has to be said rather than assumed. It is simpler, and a report can
-claim the system supports several combination rules. It loses on the strength question
-above, and on what honesty would cost: results from two rules on one leaderboard are
-not comparable, so either the rule joins the dataset identity or the board silently
-mixes two kinds of thing. Adding it later is one array element.
+**Đưa biểu quyết đa số (majority vote) làm quy tắc thứ hai** — chính đề bài đã gợi ý trong mục 13, nên việc bỏ qua nó cần phải được giải thích rõ. Nó đơn giản hơn và báo cáo có thể tuyên bố hệ thống hỗ trợ nhiều quy tắc kết hợp. Nhưng nó thua ở bài toán độ mạnh tín hiệu, và kết quả của hai quy tắc trên cùng một bảng xếp hạng không thể so sánh tương đương được với nhau, dẫn đến việc bảng xếp hạng sẽ âm thầm trộn lẫn hai bản chất dữ liệu khác nhau. Việc thêm quy tắc này sau này chỉ là thêm một phần tử vào mảng.
 
-**Weights derived from past performance** — let better-scoring strategies earn more
-weight. Attractive, and it is what a learning generator would eventually do. It belongs
-to the generator and its history (`0013`), not to the combination: doing it inside the
-composite would make a candidate's behaviour depend on which runs happened before it,
-so the same candidate would score differently depending on the order of the search.
+**Trọng số tự thích ứng dựa trên hiệu suất quá khứ** — cho phép các chiến lược có điểm số cao hơn tự động nhận trọng số lớn hơn. Rất hấp dẫn và là điều mà một bộ sinh học máy sẽ làm. Nhưng nó thuộc về trách nhiệm của generator và lịch sử của nó (ADR `0013`), không thuộc về logic kết hợp tín hiệu: làm điều đó bên trong tổ hợp sẽ khiến hành vi của một ứng viên phụ thuộc vào những lượt chạy nào diễn ra trước nó, khiến cùng một ứng viên sẽ đạt điểm khác nhau tùy vào thứ tự tìm kiếm.
 
-**Weights as free real numbers** — the widest search, and it makes `specHash` useless
-because nothing ever repeats.
+**Trọng số là các số thực tự do** — không gian tìm kiếm rộng nhất, nhưng biến `specHash` thành vô dụng vì không có gì lặp lại.
 
-**Normalising a member's contribution by how often it speaks** — the fair-sounding
-answer to a crossing being outvoted by a state that holds for twenty candles. It cannot
-be done: at candle N you do not know how often a member will speak without looking
-ahead, which rule 7 forbids, and computing it from what came before makes a candidate's
-result depend on the stretch of data in front of it. The problem is real; `0015` solves
-it a different way.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+Chỉ có một quy tắc kết hợp duy nhất, vì vậy khả năng hoán đổi quy tắc chỉ là khẳng định trên lý thuyết chứ chưa được chứng minh bằng code chạy thực tế. Thêm một giá trị thứ hai chỉ tốn một phần tử mảng, nhưng chừng nào chưa có giá trị thứ hai thì chưa ai chứng minh được ranh giới kỹ thuật này hoàn toàn đứng vững.
 
-There is one merge rule, so the ability to swap it is claimed rather than demonstrated.
-A second value costs one array element, but until one exists nobody has proved the seam
-holds.
+Lưới bước nhảy 0.1 không thể biểu diễn một giá trị tối ưu thực sự như 0.37. Chúng ta đang đặt cược rằng khoảng chênh lệch đó nhỏ hơn độ nhiễu của một lượt backtest.
 
-A grid of tenths cannot express a genuinely better 0.37. We are betting that gap is
-smaller than the noise in a backtest, which is likely and unmeasured.
-
-Normalising means a person typing 2, 1, 1 gets 0.5, 0.25, 0.25 stored, and the numbers
-they see afterwards are not the numbers they typed. It has to happen before hashing, or
-one candidate arrives under two identities.
-
-The strict comparison plus rounding means a candidate can sit just under the threshold
-for a whole run and never trade, showing up on the board as a strategy that did nothing
-rather than as one that nearly acted. Nothing distinguishes those two on the leaderboard.
+Việc chuẩn hóa trọng số đồng nghĩa với việc người dùng gõ 2, 1, 1 sẽ thấy hệ thống lưu và hiển thị là 0.5, 0.25, 0.25 — những con số họ thấy không phải là những con số họ đã gõ vào. Việc này bắt buộc phải diễn ra trước khi băm, nếu không một ứng viên sẽ xuất hiện dưới hai mã định danh khác nhau.

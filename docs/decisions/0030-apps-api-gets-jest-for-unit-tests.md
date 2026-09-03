@@ -1,49 +1,19 @@
-# apps/api gets Jest for unit tests
+# apps/api sử dụng Jest cho unit test
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-T10 is the first piece of `apps/api` that is pure computation with no database, no
-queue, no exchange and no browser to verify against — MA, RSI, Bollinger and
-Support/Resistance are functions of candles in, numbers out. Its own card says so
-directly: build and unit-test it alone, no endpoint exists yet for `BACKEND_CONSTRAINT
-.md`'s usual "call the endpoint once" check to apply to. No test runner exists anywhere
-in this monorepo yet, so this decision is not "which testing feature" but "which
-framework, at all."
+Task T10 là phần đầu tiên trong `apps/api` thuần túy là tính toán toán học không có cơ sở dữ liệu, không có hàng đợi, không gọi sàn và không có màn hình trình duyệt để đối chiếu kiểm tra — các chỉ báo MA, RSI, Bollinger Bands và Hỗ trợ/Kháng cự là các hàm nhận nến vào và trả về các mảng số. Thẻ nhiệm vụ của nó nêu rõ: xây dựng và unit test độc lập, chưa có endpoint nào để áp dụng quy tắc kiểm tra "gọi endpoint một lần" thông thường của `BACKEND_CONSTRAINT.md`. Khi đó monorepo này chưa có bất kỳ test runner nào, vì vậy quyết định này không phải là "chọn tính năng test nào" mà là "chọn framework kiểm thử nào".
 
-Jest is NestJS's own scaffolded default and the framework every Nest tutorial and the
-official docs assume. `IndicatorService` and every calculator in this change are plain
-classes and functions — none of them need `@nestjs/testing`'s `TestingModule` to be
-constructed, they are just instantiated directly — but the rest of `apps/api` leans on
-`@Injectable()` and constructor injection throughout, and the day a test needs to
-bootstrap a real Nest module, Jest is the path with no extra wiring, because
-`@nestjs/testing` is built assuming it.
+Jest là lựa chọn mặc định tích hợp sẵn trong cấu trúc khởi tạo của NestJS và là framework mà mọi tài liệu hướng dẫn chính thức của NestJS đều mặc định sử dụng. Mặc dù `IndicatorService` và các bộ tính toán trong đợt này là các class và hàm thuần túy — không cần dùng `TestingModule` của `@nestjs/testing` mà có thể khởi tạo trực tiếp — nhưng phần còn lại của `apps/api` phụ thuộc sâu sắc vào `@Injectable()` và injection qua constructor, và ngày một bài test cần khởi động một module NestJS thật thì Jest là con đường mượt mà nhất không đòi hỏi cấu hình bổ sung.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Vitest** — faster, ESM-native, and already the pattern this monorepo knows from
-`apps/web`'s Vite setup. It transpiles TypeScript through esbuild by default, which does
-not implement `experimentalDecorators`/`emitDecoratorMetadata` the way `ts-jest` does;
-making Nest's decorator metadata work under Vitest needs an extra plugin
-(`unplugin-swc` or similar) that this repo does not otherwise need. For a codebase built
-entirely around `@Injectable()` classes, picking the runner least likely to fight the
-decorators felt like the safer default, at the cost of a slower, less modern toolchain.
+**Vitest** — nhanh hơn, hỗ trợ ESM tự nhiên, và là pattern mà monorepo này đã quen thuộc từ cấu hình Vite của `apps/web`. Mặc định Vitest biên dịch TypeScript qua esbuild, vốn không hỗ trợ các cờ `experimentalDecorators`/`emitDecoratorMetadata` theo cách mà `ts-jest` làm; khiến việc làm cho decorator metadata của NestJS chạy được dưới Vitest đòi hỏi thêm plugin bên ngoài (`unplugin-swc` hoặc tương đương). Đối với một codebase xây dựng hoàn toàn xoay quanh các class `@Injectable()`, chọn runner ít xung đột nhất với decorators là phương án an toàn hơn, dù chấp nhận một chuỗi công cụ cũ hơn một chút.
 
-**No test runner — verify by hand-running a script** — zero new dependency, and the
-brief itself only asks for correctness, not a coverage number. Rejected because
-`IndicatorService`'s whole job is a set of assertions a human re-checking by eye is bad
-at: warmup boundaries, causality (does candle N ever see candle N+1?), and cache-hit
-behaviour are exactly the kind of thing a regression silently breaks later without a
-test catching it, and there is no browser to notice for this module (Q1's whole point).
+**Không dùng test runner nào — kiểm tra bằng script tự chạy tay** — không thêm dependency nào, và đề bài chỉ yêu cầu tính đúng đắn chứ không chấm điểm độ phủ coverage. Bị từ chối vì toàn bộ nhiệm vụ của `IndicatorService` là một tập hợp các điều kiện bất biến mà mắt người rất tệ trong việc kiểm tra lại: ranh giới nến warm-up, tính nhân quả (nến N có bao giờ nhìn trộm nến N+1 không?), và hành vi cache hit là những thứ rất dễ bị gãy âm thầm nếu thiếu các bài test tự động bảo vệ.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-This is now a monorepo with two different test runners — Jest for `apps/api`, and
-whatever `apps/web` eventually picks (nothing yet). That is one more thing a new
-contributor has to learn per app rather than one convention repo-wide, and it is the
-direct cost of matching each app's own framework default instead of picking one runner
-for consistency's sake.
+Monorepo này giờ đây có hai môi trường công cụ khác nhau — Jest cho `apps/api`, và các công cụ khác cho `apps/web`. Đây là chi phí trực tiếp của việc tuân thủ mặc định của framework từng ứng dụng thay vì gượng ép dùng chung một runner duy nhất.
 
-Jest's TypeScript path (`ts-jest`) type-checks and transpiles per file at run time,
-which is slower than Vitest's esbuild pipeline. For a project this size that cost is
-invisible today; it would not stay invisible if this became a codebase with thousands of
-tests.
+Cơ chế xử lý TypeScript của Jest (`ts-jest`) kiểm tra kiểu và biên dịch từng file lúc chạy, chậm hơn so với pipeline esbuild của Vitest. Với quy mô dự án hiện tại, sự chênh lệch này chưa đáng kể.

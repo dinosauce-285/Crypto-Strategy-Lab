@@ -1,71 +1,33 @@
-# A dataset is a record with its own id, and the backtest rules are part of it
+# Dataset là một bản ghi có id riêng, mang theo toàn bộ quy tắc backtest
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A leaderboard is only meaningful if the rows on it were produced the same way. Two
-things decide that: the data a run used, and the rules it was judged by. Neither can
-be left implicit.
+Một bảng xếp hạng (leaderboard) chỉ có ý nghĩa khi các kết quả trên đó được tạo ra theo cùng một phương pháp đo lường. Có hai yếu tố quyết định điều đó: dữ liệu thị trường mà lượt chạy sử dụng, và các quy tắc mà nó bị phán quyết. Cả hai yếu tố này đều không thể để ngầm định.
 
-The data half is section 33's triple — pair, date range, timeframe. Carrying those as
-three loose fields alongside every run means every leaderboard filter compares three
-values, and one day it compares two. Nothing errors; a board simply mixes January and
-July and goes on looking normal. A `Dataset` row with its own id turns that filter
-into one comparison, and an experiment that points at an id cannot half-point at it.
+Nửa dữ liệu thị trường là bộ ba thông tin mà mục 33 của đề bài quy định — cặp coin, khoảng thời gian ngày tháng, và khung thời gian (timeframe). Nếu lưu trữ ba thông tin này dưới dạng các trường rời rạc bên cạnh mỗi lượt chạy, bộ lọc bảng xếp hạng sẽ phải so sánh ba giá trị cùng lúc, và một ngày nào đó ai đó sẽ vô tình chỉ so sánh hai. Hệ thống không báo lỗi; bảng xếp hạng sẽ âm thầm trộn lẫn dữ liệu tháng 1 với tháng 7 mà thoạt nhìn vẫn bình thường. Một bản ghi `Dataset` với id riêng biến bộ lọc đó thành một phép so sánh id duy nhất, và một experiment trỏ đến id đó thì không thể trỏ chập chờn một nửa.
 
-The rules half is the part the brief does not name and the part that is easier to
-regret. Whether a position opens at the signal candle's close or the next candle's
-open, whether fees are deducted, how many candles are skipped as warm-up, whether
-profit is summed or compounded, whether drawdown is measured at close or per candle —
-change any one and every number produced before the change stops being comparable
-with every number after it. They are as much a part of "how this was judged" as the
-date range is.
+Nửa quy tắc phán quyết là phần mà đề bài không nêu tên rõ ràng nhưng lại là phần dễ gây hối tiếc nhất nếu làm sai: Lệnh được mở tại giá đóng cửa của cây nến phát tín hiệu hay mở tại giá mở cửa của cây nến tiếp theo? Có trừ phí giao dịch hay không? Bỏ qua bao nhiêu cây nến đầu tiên làm warm-up? Lợi nhuận tính theo lãi cộng dồn hay lãi kép? Mức sụt giảm tài khoản drawdown được đo tại giá đóng cửa hay quét từng nến? — Chỉ cần thay đổi một trong các quy tắc này, toàn bộ các con số tạo ra trước đó sẽ không còn so sánh được với các con số sinh ra sau đó nữa. Chúng gắn liền với bản chất "kết quả này được đánh giá như thế nào" không kém gì khoảng thời gian ngày tháng.
 
-So they live in the dataset. The consequence is the reason: changing a rule produces a
-**new** dataset, with a new id and an empty leaderboard, and every old result stays
-valid inside the dataset it was made in. The alternative is not that old results are
-wrong — it is that they are wrong and still sitting on the board, indistinguishable
-from the new ones, until someone notices months later.
+Vì vậy, toàn bộ các quy tắc đó nằm trọn vẹn bên trong Dataset. Hệ quả kéo theo cũng chính là lý do kiến trúc: việc thay đổi một quy tắc phán quyết sẽ sinh ra một **Dataset mới**, với một id mới và một bảng xếp hạng mới tinh, trong khi toàn bộ các kết quả cũ vẫn giữ nguyên tính hợp lệ bên trong thế giới dataset mà chúng được sinh ra. Nguy cơ của phương án ngược lại không phải là kết quả cũ bị sai — mà là chúng bị sai nhưng vẫn nằm chễm chệ trên cùng một bảng xếp hạng, không thể phân biệt được với kết quả mới, cho đến khi có người nhận ra sau nhiều tháng.
 
-The cost of a new dataset is small because a dataset does not hold candles. Candles
-live in their own table keyed by pair, timeframe and time; a dataset names a window
-into them. A fee change writes one row, not a re-download.
+Chi phí tạo một dataset mới rất nhẹ nhàng vì dataset không trực tiếp chứa các cây nến. Nến nằm trong bảng riêng có khóa là (pair, timeframe, openTime); dataset chỉ định danh một cửa sổ nhìn vào tập nến đó. Thay đổi mức phí chỉ là ghi thêm một dòng dữ liệu, không phải tải lại dữ liệu từ sàn.
 
-Without this, whoever takes T12 and T13 has to freeze the rules before the first
-search runs, and can never revisit them.
+Nếu không làm điều này, bất kỳ ai phụ trách task T12 và T13 sẽ buộc phải đóng băng cứng các quy tắc trước khi lượt tìm kiếm đầu tiên chạy, và không bao giờ có cơ hội điều chỉnh lại chúng.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Three loose parameters per run** — no new record and no lookup step before a run.
-It fails at the only place it is used: the filter. Three fields compared every time is
-three chances to miss one, and the failure is silent by construction.
+**Lưu ba tham số rời rạc cho mỗi lượt chạy** — không cần bảng mới, không cần bước tra cứu id trước khi chạy. Nhưng nó thất bại ở vị trí duy nhất nó được dùng: bộ lọc. Ba trường phải so sánh mỗi lần là ba cơ hội để bỏ sót, và lỗi này xảy ra trong im lặng tuyệt đối.
 
-**A dataset with an id, but the rules kept outside as run-time configuration** — this
-is the version most teams end up with, and it keeps the dataset small. It is exactly
-the case the decision exists to prevent: a rule lives in a config value, the config
-changes, and no row anywhere records that it did. The board then holds two populations
-with one identity.
+**Dataset có id riêng, nhưng các quy tắc để bên ngoài dưới dạng cấu hình lúc chạy (runtime config)** — đây là cách hầu hết các nhóm hay làm theo thói quen, giúp bảng dataset gọn nhẹ. Nhưng đây chính là trường hợp mà quyết định này sinh ra để ngăn chặn: quy tắc nằm trong file config, config bị sửa, và không có dòng dữ liệu nào trong database ghi lại sự thay đổi đó. Bảng xếp hạng khi đó chứa hai tập kết quả khác nhau dưới cùng một vỏ bọc.
 
-**A separate `RuleSet` id carried alongside the `Dataset` id** — more precise, since
-changing the fee does not change which candles were used, and it would let the same
-rules be reused across date ranges. Rejected because the leaderboard filter goes back
-to comparing two fields instead of one, which is the problem being solved, and because
-one cheap row per rule change is not a cost worth a second concept. Worth revisiting
-if the number of rule variants ever makes duplicated dataset rows hard to read.
+**Tạo thêm id `RuleSet` riêng đi kèm id `Dataset`** — chuẩn xác hơn về mặt lý thuyết, vì đổi mức phí không làm thay đổi tập nến đã dùng, và cho phép tái sử dụng cùng một bộ quy tắc trên nhiều khoảng thời gian. Phương án này bị loại bỏ vì bộ lọc leaderboard lại quay về việc so sánh hai trường thay vì một, và một dòng dữ liệu nhẹ trong database cho mỗi lần đổi quy tắc là chi phí quá rẻ, không đáng để đẻ thêm một khái niệm thực thể thứ hai.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-The rules have to be settled now, before T12 and T13 are written, by people who have
-not yet done that work. A rule chosen badly is not editable in place — it means a new
-dataset and re-running what mattered.
+Các quy tắc phán quyết bắt buộc phải được thiết kế và chốt ngay từ bây giờ, trước khi T12 và T13 được viết, bởi những người lúc đó chưa trực tiếp bắt tay vào code phần đó. Một quy tắc chọn chưa chuẩn sẽ không thể sửa đè tại chỗ — nó đồng nghĩa với việc tạo dataset mới và chạy lại các thử nghiệm quan trọng.
 
-The name is now slightly wrong. A dataset holds what the data was *and* how it was
-judged, which is two ideas under one word. We accept the imprecision rather than carry
-two ids.
+Tên gọi giờ đây mang nghĩa rộng hơn một chút: một "dataset" vừa chứa thông tin dữ liệu là gì *vừa* chứa thông tin nó được đánh giá như thế nào — hai khái niệm nằm chung dưới một từ ngữ. Chúng ta chấp nhận sự chưa hoàn hảo về mặt ngôn từ để đổi lấy sự đơn giản của một khóa định danh duy nhất.
 
-Rule changes multiply rows, and a person looking at the list will see several datasets
-that differ only in a fee. The UI has to show which dataset a leaderboard belongs to,
-or the board becomes confusing in a new way instead of a silent way.
+Các thay đổi quy tắc sẽ làm tăng số lượng dòng trong bảng dataset, và người dùng nhìn vào danh sách sẽ thấy nhiều dataset chỉ khác nhau mỗi mức phí giao dịch. Giao diện người dùng bắt buộc phải hiển thị rõ bảng xếp hạng đang thuộc về dataset cụ thể nào để tránh gây nhầm lẫn.
 
-And the guarantee is only as good as the list: any judging rule that is *not* in the
-dataset is a rule that can change invisibly. Adding one later means every existing
-dataset predates it, with no record of what it was.
+Và cam kết kiến trúc này chỉ chuẩn xác chừng nào danh sách quy tắc được liệt kê đầy đủ: bất kỳ quy tắc đánh giá nào *không* nằm trong dataset sẽ là quy tắc có thể bị âm thầm thay đổi. Việc bổ sung thêm một quy tắc mới sau này đồng nghĩa với việc toàn bộ các dataset cũ đều ra đời trước quy tắc đó và không có bản ghi nào lưu lại trạng thái trước đây của nó.

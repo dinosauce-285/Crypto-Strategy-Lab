@@ -1,91 +1,34 @@
-# The web UI adopts an exchange-terminal visual system: dark ground, one amber accent, dense data tables
+# Giao diện web UI áp dụng hệ thống hình ảnh terminal sàn giao dịch: nền tối, một màu nhấn hổ phách, bảng dữ liệu đậm đặc
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The screen is judged in a fifteen-minute demo, and the audience already knows what a
-trading terminal looks like. The previous system — a warm off-white "instrument face" with
-a blue accent and one monospace family for every word — was internally consistent but read
-as a spreadsheet about crypto rather than a place where crypto gets traded. Asked for the
-look of a professional exchange, we took it literally and replaced the palette, the type
-pairing and the shell.
+Màn hình được đánh giá trong một buổi demo mười lăm phút, và khán giả đã biết trước một terminal giao dịch trông như thế nào. Hệ thống trước đây — một mặt giao diện công cụ "instrument face" màu trắng ngà ấm áp với màu nhấn xanh lam và một họ phông chữ monospace cho mọi con chữ — tuy nhất quán nội bộ nhưng lại tạo cảm giác như một bảng tính excel về crypto hơn là nơi tiền điện tử thực sự được giao dịch. Được yêu cầu mang lại diện mạo của một sàn giao dịch chuyên nghiệp, chúng tôi đã nghiêm túc tiếp thu và thay thế toàn bộ bảng màu, cặp phông chữ và lớp khung giao diện (shell).
 
-Concretely:
+Cụ thể:
 
-- **Ground `#181a20`, panel `#1e2329`, raised `#2b3139`.** Three planes, darkest at the
-  back. A dark ground is what every reader of this category expects, and candlesticks in
-  green and red have their highest contrast against it.
-- **One accent, amber `#fcd535`.** Primary action, current tab, current selection, the
-  MA overlay, the top three ranks. Nothing else.
-- **IBM Plex Sans for words, IBM Plex Mono for figures.** One superfamily in two genres,
-  so labels read as prose and columns of numbers still align. The old mono-everything
-  setting made a sentence look like output.
-- **Top bar instead of a side rail,** with a live ticker rail under it. It buys back a
-  10.5rem column for the charts and puts the last trade on every screen, which is what the
-  category does and what this product's own "the number is the subject" principle wants.
-- **One red and one green,** `#f6465d` and `#0ecb81`, for marks and for text alike. The
-  red measures 4.48:1 on the panel plane, 0.02 under the AA floor this app binds itself
-  to. The first cut of this system dodged that with a second, lighter pair for text; the
-  product owner looked at both and kept the exchange's own value, because a red that is
-  not the category's red costs more than the 0.02 does. `UI_CONSTRAINT.md` now names and
-  bounds that exception rather than being quietly violated by the code.
+- **Nền `#181a20`, panel `#1e2329`, lớp nổi `#2b3139`.** Ba mặt phẳng, tối nhất ở phía sau. Một nền tối là điều mà mọi người xem thể loại này mong đợi, và các cây nến màu xanh lá và đỏ có độ tương phản cao nhất trên nền này.
+- **Một màu nhấn duy nhất, vàng hổ phách `#fcd535`.** Dành cho hành động chính, tab hiện tại, mục chọn hiện tại, lớp phủ chỉ báo MA, top 3 bảng xếp hạng. Không dùng cho bất cứ thứ gì khác.
+- **IBM Plex Sans cho chữ viết, IBM Plex Mono cho các con số.** Một đại gia đình phông chữ trong hai thể loại, để các nhãn đọc mượt mà như văn xuôi và các cột số liệu vẫn căn thẳng hàng hoàn hảo. Thiết lập cũ dùng mono cho tất cả mọi thứ khiến một câu văn trông giống như đầu ra của dòng lệnh terminal.
+- **Thanh bar trên đỉnh thay vì thanh ray bên hông,** với một thanh ray ticker trực tiếp nằm ngay bên dưới. Điều này lấy lại được cột không gian 10.5rem cho các biểu đồ và đưa giao dịch gần nhất lên mọi màn hình, đó là điều mà thể loại ứng dụng này hướng tới và là điều mà nguyên lý "con số là chủ thể" của chính sản phẩm này đòi hỏi.
+- **Một màu đỏ và một màu xanh lá,** `#f6465d` và `#0ecb81`, dùng chung cho cả các ký hiệu đánh dấu lẫn văn bản. Màu đỏ đo được tỷ lệ tương phản 4.48:1 trên mặt phẳng panel, thấp hơn 0.02 so với mức sàn chuẩn AA mà ứng dụng này tự cam kết. Bản thảo đầu tiên của hệ thống này đã né tránh điều đó bằng một cặp màu thứ hai sáng hơn cho văn bản; Product Owner đã xem xét cả hai và quyết định giữ lại giá trị chuẩn của sàn giao dịch, vì một màu đỏ không phải là màu đỏ đặc trưng của thể loại này sẽ gây mất mát nhiều hơn so với mức chênh lệch 0.02 đó. `UI_CONSTRAINT.md` giờ đây gọi tên và khoanh vùng ngoại lệ đó một cách công khai thay vì bị mã nguồn vi phạm trong âm thầm.
+- **Các mảng màu rửa (wash) tối hơn mặt phẳng phía sau chúng,** chứ không phải là sắc thái mờ trong suốt của màu. Một lớp phủ 12% sẽ làm sáng nền ngay dưới văn bản mà nó có nhiệm vụ làm nổi bật; nó từng khiến nhãn phụ bị mờ trên thẻ chiến lược được chọn chỉ đạt tỷ lệ 4.01:1. Ba nền tối phẳng (`#10251d`, `#2a1a1e`, `#2a2413`) đưa mọi huy hiệu pill và mọi thẻ được chọn vượt trở lại mức trên 4.5:1.
 
-- **Washes are darker than the plane behind them,** not a transparent tint of the colour.
-  A 12% tint lightens the ground under the very text it is meant to set off; it had the
-  muted sub-label on a selected strategy card at 4.01:1. Three flat dark grounds
-  (`#10251d`, `#2a1a1e`, `#2a2413`) put every pill and every selected card back over 4.5:1.
+`docs/UI_CONSTRAINT.md` giữ nguyên mọi quy tắc khác — token mang mọi giá trị màu sắc, bốn trạng thái cho mỗi màn hình, một bộ icon duy nhất, một chiều cao điều khiển duy nhất cho mỗi hàng — và bổ sung ngoại lệ tương phản có ranh giới ở trên. `DESIGN.md`, hệ thống thị giác sinh ra từ quy tắc đó, đã được viết lại. Câu văn định vị thương hiệu của `PRODUCT.md` cũng được viết lại: "một công cụ chuyên dụng chứ không phải một sàn giao dịch ồn ào" từng được viết dựa trên hệ thống giao diện sáng, và bản thay thế trung thực phân tách rõ *bề mặt giao diện* (giờ đây chủ ý mang phong cách của sàn giao dịch) khỏi *tác phong làm việc* (vẫn là một bàn thí nghiệm nghiêm túc, không phải một sới bạc).
 
-`docs/UI_CONSTRAINT.md` keeps every other rule unchanged — tokens carry every colour, four
-states per screen, one icon family, one control height per row — and gains the bounded
-contrast exception above. `DESIGN.md`, the visual system that law produced, was rewritten.
-`PRODUCT.md`'s brand sentence was rewritten too: "an instrument rather than a trading
-floor" was written against the light system, and the honest replacement separates the
-*surface* (which is now deliberately the category's) from the *manner* (which is still a
-bench, not a venue).
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-## What else we looked at
+**Giữ nguyên mặt giao diện công cụ màu sáng và chỉ siết chặt lại.** Rẻ nhất, và nó giữ lại một hệ thống vốn đã có lập luận được ghi chép đầy đủ. Bị từ chối vì yêu cầu rõ ràng là mang lại diện mạo sàn giao dịch, và không có mức độ tinh chỉnh nào đối với màu trắng ngà ấm áp có thể đạt được điều đó.
 
-**Keep the light instrument face and only tighten it.** Cheapest, and it kept a system
-whose reasoning was already written down. Rejected because the request was explicitly for
-the exchange look, and no amount of tightening a warm off-white gets there.
+**Nền tối, giữ màu nhấn xanh lam.** Sẽ bảo toàn được một quyết định thay vì phải thay thế cả hai. Bị từ chối vì màu xanh lam trên nền tối trông giống như một bảng quản trị admin thông thường; màu hổ phách chính là thứ làm cho thể loại này dễ nhận diện trong nháy mắt, và ứng dụng vốn đã dành riêng màu xanh lá và đỏ cho chiều hướng tăng giảm, vì vậy một sắc thái thứ ba sẽ phải mang một ý nghĩa đặc biệt nào đó.
 
-**Dark ground, keep the blue accent.** Would have preserved one decision instead of
-replacing two. Rejected because blue-on-dark reads as a generic admin panel; the amber is
-what makes the category legible at a glance, and the app already reserves green and red
-for direction so a third hue would have had to mean something.
+**Sao chép trực tiếp tài sản của Binance** — thương hiệu từ ngữ của họ, logo của họ, CSS thành phần của họ. Bị từ chối: việc mạo danh danh tính của một công ty khác không phải là thứ chúng tôi được phép phát hành. Những gì được học hỏi là ngôn ngữ thiết kế (terminal tối, màu nhấn hổ phách, bảng dữ liệu đậm đặc, các pill trạng thái có sắc thái màu), vốn là ngôn ngữ chung của thể loại này; biểu tượng thương hiệu được vẽ tại đây, trong bộ icon riêng của ứng dụng, và favicon cũng là hình vẽ đó.
 
-**Copy Binance's assets outright** — their wordmark, their logo, their component CSS.
-Rejected: passing off another company's identity is not ours to ship. What is copied is
-the design language (dark terminal, amber accent, dense tables, tinted status pills),
-which is common to the category; the brand mark is drawn here, in the app's own icon
-family, and the favicon is the same drawing.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+**Theme giờ đây là cánh cửa một chiều đối với file token, chứ không phải đối với các component.** Mọi màu sắc vẫn được phân giải thông qua `--bg` / `--surface` / `--ink` / `--accent`, và `lightweight-charts` đọc cùng các biến đó tại thời điểm khởi tạo, do đó chế độ sáng trong tương lai chỉ là một khối giá trị token thứ hai — chứ không phải một đợt rà soát quét lại toàn bộ JSX. Điều *không* miễn phí là việc quay trở lại: lập luận của bảng màu sáng giờ đây chỉ còn sống trong lịch sử git và bản ghi quyết định này.
 
-**The theme is now a one-way door for the token file, not for the components.** Every
-colour still resolves through `--bg` / `--surface` / `--ink` / `--accent`, and
-`lightweight-charts` reads the same variables at construction time, so a future light mode
-is a second block of token values — not a sweep through JSX. What is *not* free is going
-back: the light palette's reasoning now lives only in git history and this record.
+**Một sự thiếu hụt khả năng tiếp cận đã được đo lường, được ghi nhận công khai.** `--bad` đạt 4.48:1 trên panel và 3.72:1 trên hàng bảng được hover, so với quy tắc 4.5:1 mà dự án này tự đặt ra. Không có điều gì trong quy tắc Never-Alone làm cho điều đó trở nên miễn phí: một người đọc có thị lực kém vẫn phải nhìn vất vả hơn vào một con số màu đỏ so với một con số màu trắng, và "từ ngữ bên cạnh mang ý nghĩa" chỉ giải quyết sự thấu hiểu chứ không giải quyết độ dễ đọc. Những gì nó mang lại là một bảng màu đặc trưng đúng chuẩn của thể loại này thay vì một sự xấp xỉ gần đúng, và một token duy nhất thay vì hai. Nếu có ai xem xét lại điều này, đòn bẩy rẻ nhất là panel: `--surface` là thứ mà màu đỏ được đo lường đối chiếu, và việc làm tối nó thêm một nấc sẽ vượt qua ngưỡng chuẩn mà không cần chạm vào màu đỏ.
 
-**A measured accessibility shortfall, on the record.** `--bad` is 4.48:1 on a panel and
-3.72:1 on a hovered table row, against a 4.5:1 rule this project wrote for itself. Nothing
-about the Never-Alone rule makes that free: a reader with low vision still has to work
-harder on a red figure than on a white one, and "the word beside it carries the meaning"
-answers comprehension, not legibility. What it buys is a palette that is the category's
-rather than an approximation of it, and one token instead of two. If anyone revisits this,
-the cheapest lever is the panel: `--surface` is what the red is measured against, and
-darkening it a step clears the bar without touching the red.
+**Độ đậm đặc dịch chuyển về phía terminal và rời xa khỏi màn hình máy chiếu.** Cỡ chữ phần thân là 14px và chữ trong bảng là 13px, trong khi hệ thống cũ lập luận cho các con số lớn hơn "có thể đọc được từ phía cuối phòng". Đặt cược ở đây là một bảng màu tối đậm đặc sẽ dễ đọc trên máy chiếu hơn một bảng màu nhạt, và buổi demo sẽ được điều khiển trực tiếp trên laptop. Nếu một căn phòng nào đó không đồng tình, cách khắc phục duy nhất là thang tỷ lệ kiểu chữ trong `tokens.css` và không có gì khác.
 
-**Density moved toward the terminal and away from the projector.** Body type is 14px and
-table type 13px, where the old system argued for larger figures "readable from the back of
-the room". The bet is that a dense dark table is more legible on a projector than a pale
-one, and that the demo will be driven at a laptop. If a room ever disagrees, the fix is the
-type scale in `tokens.css` and nothing else.
-
-**The brand sentence now has to do more work.** "A working terminal rather than a
-showroom" draws the line between borrowing the category's surface and borrowing its
-manner, and the second half of that is not enforceable by a linter the way a colour token
-is. Nothing stops a future screen from being an exchange in the way this record says it
-must not be — a celebratory badge, a countdown, a figure enlarged because it is good news
-— except somebody noticing in review. The old sentence was easier to hold to precisely
-because it forbade the whole aesthetic.
+**Câu văn thương hiệu giờ đây phải gánh vác nhiều trách nhiệm hơn.** "Một terminal làm việc thực thụ chứ không phải một phòng trưng bày" vạch ra ranh giới giữa việc mượn bề mặt của thể loại và việc mượn tác phong của nó, và vế thứ hai không thể được thực thi bởi một công cụ linter theo cách mà một token màu sắc làm được. Không có gì ngăn cản một màn hình trong tương lai trở thành một sàn giao dịch theo cách mà bản ghi này nói rằng nó không được phép — một huy hiệu ăn mừng, một đồng hồ đếm ngược, một con số được phóng to vì đó là tin tốt — ngoại trừ việc ai đó nhận ra điều này trong quá trình review mã nguồn. Câu văn cũ dễ tuân thủ hơn chính xác là vì nó nghiêm cấm hoàn toàn toàn bộ phong cách thẩm mỹ đó.

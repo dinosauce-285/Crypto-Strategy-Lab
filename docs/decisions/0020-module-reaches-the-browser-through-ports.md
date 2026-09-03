@@ -1,70 +1,29 @@
-# A module reaches the browser through the channel's ports
+# Module kết nối tới trình duyệt qua các cổng port của kênh, không qua bus
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-`0017` settled what a message looks like and `0003` settled how modules notify each
-other, and between them sits a question neither answers: when the market module has a
-price tick, how does it actually reach the socket. Three modules after this one — T18,
-T20, T21 — will ask the same question, and whatever the first one does is what the other
-three copy.
+ADR `0017` đã chốt cấu trúc của một tin nhắn và ADR `0003` đã chốt cách các module thông báo cho nhau, nhưng ở giữa chúng tồn tại một câu hỏi chưa ai trả lời: khi module dữ liệu thị trường (market) có một tick giá mới, làm thế nào nó thực sự đến được với socket? Ba module phát triển sau đó — T18 (Leaderboard), T20 (Search), T21 (Loop) — cũng sẽ gặp đúng câu hỏi này, và cách làm của module đầu tiên sẽ là thứ mà ba module sau sao chép lại.
 
-The channel exports two abstractions and nothing else. `ChannelPublisher` takes an
-envelope and a topic. `TopicAudience` says that a topic just gained its first subscriber,
-or lost its last one, disconnects included. A module that wants to push injects them.
-Dependency runs one way — `market` imports `realtime`, and `realtime` imports nobody —
-which is the arrangement `BACKEND_CONSTRAINT.md` already describes for cross-module
-consumption: an abstract class or token, never a concrete service.
+Module kênh push export duy nhất hai lớp trừu tượng (ports): `ChannelPublisher` nhận vào một phong bì tin nhắn (envelope) và một chủ đề (topic); `TopicAudience` thông báo khi một topic vừa có người đăng ký đầu tiên hoặc vừa mất đi người đăng ký cuối cùng (bao gồm cả trường hợp ngắt kết nối mạng). Một module muốn đẩy dữ liệu ra ngoài sẽ inject các port này. Chiều phụ thuộc đi một chiều duy nhất — `market` import `realtime`, và `realtime` không import bất kỳ ai — đúng theo cấu trúc mà `BACKEND_CONSTRAINT.md` yêu cầu khi giao tiếp liên module: dùng abstract class hoặc token, không inject trực tiếp service cụ thể.
 
-The obvious alternative is to let the channel listen to the bus and translate. It is
-fewer files today and it is wrong in a way that compounds: the channel would have to know
-that `market.candle.closed` exists, what a `Candle` is, and how a market topic is spelled.
-Every later kind of traffic adds another branch inside shared infrastructure — leaderboard
-ids, run ids, loop state — and the count of places that change when the system grows is
-precisely what section 42 measures. Keeping the vocabulary in the module that owns it
-means T18 adds a topic name and no line inside the channel moves.
+Phương án thay thế hiển nhiên là để kênh push tự lắng nghe event bus nội bộ rồi chuyển dịch (translate). Cách đó thoạt nhìn ít file hơn nhưng sai lầm ở chỗ: kênh push khi đó sẽ buộc phải biết sự tồn tại của sự kiện `market.candle.closed`, biết thế nào là một `Candle`, và biết cách đặt tên topic của market. Mỗi loại luồng dữ liệu mới sau này sẽ lại nhồi thêm một nhánh rẽ `switch-case` vào bên trong hạ tầng dùng chung — id của leaderboard, id của lượt search, trạng thái vòng lặp — và số lượng vị trí phải sửa đổi khi hệ thống phình to chính là thứ mà mục 42 đo lường. Giữ từ vựng nghiệp vụ nằm trọn trong module sở hữu nó giúp task T18 chỉ cần thêm một tên topic mà không phải sửa một dòng code nào bên trong module kênh push.
 
-The audience port is the half that is easy to miss. Without it the market module has no
-way to know that anyone is watching, so either it streams every pair forever or someone
-teaches the channel what a pair is. With it, upstream connections follow demand and the
-channel still does not know what it is counting — it reports a string.
+Port `TopicAudience` là nửa phần việc rất dễ bị bỏ quên: Nếu thiếu nó, module market hoàn toàn không biết có ai đang xem biểu đồ hay không, dẫn đến việc hoặc là nó phải stream dữ liệu của tất cả mọi cặp coin mãi mãi, hoặc ai đó phải dạy cho kênh push biết cặp coin là gì. Với port này, các kết nối upstream đến sàn Binance sẽ tự động bật/tắt theo nhu cầu thực tế của người dùng và kênh push vẫn hoàn toàn không cần biết nó đang đếm cái gì — nó chỉ báo cáo một chuỗi string.
 
-None of this replaces the bus. `market` still emits `MarketPriceUpdated` and
-`CandleClosed` on it, because T06's candle store and T09's backfill are modules, not
-screens. The rule is about audience: a module talking to a module uses the bus, a module
-talking to a browser uses the ports, and the same fact often travels both ways for two
-different readers.
+Cơ chế này không thay thế event bus. Module `market` vẫn phát các sự kiện `MarketPriceUpdated` và `CandleClosed` lên bus nội bộ, vì kho lưu nến của T06 và cơ chế bù dữ liệu của T09 là các module backend chứ không phải màn hình trình duyệt. Quy tắc phân định nằm ở đối tượng tiếp nhận: module nói chuyện với module thì dùng event bus, module nói chuyện với trình duyệt thì dùng các cổng port của kênh push.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**The channel subscribes to the bus and translates.** Cheapest today — no ports, no
-injection, and the market module stays ignorant of everything. It puts domain vocabulary
-inside shared infrastructure, which is the cost above. It also makes an internal bus
-payload into the browser's contract by accident, and `0017` names that boundary
-explicitly: a socket message is shaped for a screen, an event is shaped for a module.
+**Kênh push tự subscribe vào bus nội bộ rồi dịch lại dữ liệu** — ít code nhất lúc ban đầu. Nhưng nó nhồi từ vựng nghiệp vụ vào bên trong hạ tầng dùng chung. Nó cũng vô tình biến payload của sự kiện bus nội bộ thành hợp đồng công khai với trình duyệt, vi phạm ranh giới mà ADR `0017` đã phân định rõ: tin nhắn socket được thiết kế cho màn hình, sự kiện bus được thiết kế cho module.
 
-**New bus events for subscription lifecycle** — the channel emits something like
-`channel.topic.subscribed` and interested modules listen. It keeps the two modules
-mutually ignorant, which is prettier on a diagram. It widens the nine-event contract T02
-owns with events that are not domain facts but UI lifecycle, and every module then
-receives every topic event and filters. Two mechanisms would also be doing one job, since
-the publish direction still needs a port or the translation problem comes back.
+**Thêm các sự kiện bus mới cho vòng đời subscription** — kênh push phát ra sự kiện dạng `channel.topic.subscribed` và các module nghiệp vụ tự lắng nghe. Thoạt nhìn có vẻ đẹp trên sơ đồ vì hai bên hoàn toàn không biết nhau. Nhưng nó làm phình hợp đồng 9 sự kiện của toàn hệ thống bằng các sự kiện vòng đời UI thay vì sự kiện nghiệp vụ, và mọi module đều nhận được mọi sự kiện topic rồi phải tự lọc.
 
-**Each feature module owns its own gateway.** No ports, no cross-module injection, and
-every team works alone. It is four transports, four reconnect stories and four things to
-explain — the option `0017` exists to prevent, arriving by a different road.
+**Mỗi module nghiệp vụ tự sở hữu một WebSocket Gateway riêng** — không cần port, không cần cross-module injection. Nhưng nó dẫn đến 4 kết nối socket riêng biệt, 4 logic kết nối lại độc lập và 4 thứ phải giải thích trong tài liệu kiến trúc — chính là thứ mà ADR `0017` sinh ra để ngăn chặn.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A domain module now imports infrastructure, so the arrow points from `market` to
-`realtime`. That is the right direction only as long as the channel stays free of domain
-types. The day someone adds a `Candle` to a port signature to save a line, the dependency
-inverts and the design is gone. Nothing in the build catches it; it is a review rule.
+Một module nghiệp vụ (`market`) giờ đây import hạ tầng (`realtime`). Mũi tên phụ thuộc chỉ đúng chừng nào kênh push hoàn toàn sạch bóng các kiểu dữ liệu nghiệp vụ (domain types). Khoảnh khắc ai đó nhét `Candle` vào chữ ký hàm của port chỉ để tiết kiệm một dòng code, chiều phụ thuộc sẽ bị đảo ngược và thiết kế kiến trúc sẽ sụp đổ.
 
-Two ports is more surface than T07 alone needs. T18, T20 and T21 publish but never need
-to know who is listening, so `TopicAudience` exists for one consumer, and a port with one
-consumer is a generalisation we have not tested.
+Việc hỗ trợ hai port là bề mặt giao tiếp lớn hơn mức mà một mình task T07 cần. Các task T18, T20 và T21 chỉ cần đẩy tin chứ không cần biết ai đang nghe, vì vậy `TopicAudience` tồn tại chỉ phục vụ đúng một bên tiêu thụ (`market`).
 
-Publishing from inside each module means there is no single place where everything sent to
-the browser passes through. Answering "who sent this message" becomes a search across
-modules rather than a log line, and the bus — which does have that property — is no longer
-the thing to grep.
+Việc phát dữ liệu diễn ra phân tán bên trong từng module khiến hệ thống không có một điểm tập trung duy nhất để quan sát mọi thứ được gửi ra trình duyệt.

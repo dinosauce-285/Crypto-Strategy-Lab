@@ -1,102 +1,39 @@
-# A paused run stops spending its budget and holds a lease instead
+# Một lượt chạy bị tạm dừng sẽ ngừng tiêu hao ngân sách và giữ một hợp đồng thuê thay thế
 
-Narrows `0021-a-search-run-declares-its-bound-before-it-starts`, which decided the opposite
-and said so on purpose. The reasoning it gave is kept below, because it was right about the
-danger and wrong only about the choices available.
+Thu hẹp phạm vi của `0021-a-search-run-declares-its-bound-before-it-starts`, vốn đã quyết định điều ngược lại và nêu rõ điều đó có chủ đích. Lập luận mà nó đưa ra được giữ lại bên dưới, vì nó đã đúng về mối nguy hiểm và chỉ sai về các phương án lựa chọn có thể áp dụng.
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A run bounded at twenty seconds, paused at second eight, ended anyway at second twenty with
-`endReason: "duration"`. The twelve seconds it spent paused were charged to a budget that
-exists to limit how much backtesting is done, during which no backtesting was done. Someone
-pausing to read a result loses the rest of their run for having looked at it, which is the
-opposite of what the button is for, and section 24 lists `pause loop` and `resume loop` as
-things this architecture is supposed to make possible.
+Một lượt chạy có giới hạn hai mươi giây, bị tạm dừng ở giây thứ tám, vẫn kết thúc ở giây thứ hai mươi với `endReason: "duration"`. Mười hai giây nó trải qua ở trạng thái tạm dừng đã bị tính vào ngân sách vốn sinh ra để giới hạn khối lượng backtest được thực hiện, trong khi trong suốt khoảng thời gian đó không hề có backtest nào được chạy. Một người tạm dừng để đọc kết quả sẽ mất đi phần còn lại của lượt chạy chỉ vì họ đã nhìn vào nó, trái ngược hoàn toàn với mục đích sinh ra của nút bấm, và Section 24 liệt kê `pause loop` và `resume loop` như những tính năng mà kiến trúc này phải đáp ứng.
 
-The two bounds already disagreed with each other. `maxCandidates` compares against
-`counters.tried`, and a paused run queues nothing, so the candidate budget stops moving
-while paused. `maxDurationMs` compared against `now - startedAt`, so the time budget kept
-moving. Two numbers a caller declares in the same object, meaning the same thing — how much
-this question is allowed to cost — and one of them charged for idleness while the other did
-not. Whatever the right answer is, they cannot both be it.
+Hai giới hạn trước đây đã tự mâu thuẫn với nhau. `maxCandidates` so sánh với `counters.tried`, và một lượt chạy bị tạm dừng sẽ không xếp hàng thêm gì, do đó ngân sách ứng viên ngừng dịch chuyển khi bị tạm dừng. Trong khi đó, `maxDurationMs` lại so sánh với `now - startedAt`, khiến ngân sách thời gian vẫn tiếp tục trôi đi. Hai con số mà phía gọi khai báo trong cùng một đối tượng, mang cùng một ý nghĩa — câu hỏi này được phép tốn kém bao nhiêu — và một bên thì tính phí cho thời gian nhàn rỗi trong khi bên kia thì không. Bất kể câu trả lời đúng là gì, cả hai không thể cùng đúng.
 
-So `maxDurationMs` now measures active time: a run accumulates the milliseconds it spent
-paused and they are subtracted before the bound is checked. A paused run is not asked
-whether it has reached any bound at all; the only things that can end it are a person
-stopping it and the lease below.
+Vì vậy `maxDurationMs` giờ đây đo lường thời gian hoạt động thực tế: một lượt chạy tích lũy số mili-giây mà nó đã trải qua khi bị tạm dừng và trừ đi trước khi kiểm tra giới hạn. Một lượt chạy bị tạm dừng sẽ không bị tra vấn xem liệu nó đã đạt tới bất kỳ giới hạn nào hay chưa; những thứ duy nhất có thể kết thúc nó là một người bấm dừng nó hoặc hợp đồng thuê (lease) bên dưới hết hạn.
 
-The lease is the half `0021` was protecting and it survives intact. A paused run holds a
-lease of `MAX_PAUSE_MS`, and a run still paused when it expires ends with
-`endReason: 'abandoned'`. There is no path by which a run outlives the attention of whoever
-started it, which is the guarantee `0021` exists to make; it is now made by bounding the
-pause rather than by charging for it.
+Hợp đồng thuê là nửa mà `0021` bảo vệ và nó vẫn tồn tại nguyên vẹn. Một lượt chạy bị tạm dừng nắm giữ một lease có thời hạn `MAX_PAUSE_MS`, và một lượt chạy vẫn ở trạng thái tạm dừng khi lease này hết hạn sẽ kết thúc với `endReason: 'abandoned'`. Không có con đường nào để một lượt chạy sống lâu hơn sự chú ý của người đã khởi động nó, đó là sự đảm bảo mà `0021` tồn tại để cam kết; cam kết đó giờ đây được thực hiện bằng cách giới hạn thời gian tạm dừng thay vì tính phí trừ vào ngân sách chạy.
 
-`abandoned` is a sixth value in `RUN_END_REASONS` and it earns the string by the argument
-`0021` itself makes for the other five: a run that reports only "not running" cannot be told
-apart from one that died, and section 32.7 asks. Ending because nobody came back is not the
-same event as a person pressing stop, and a screen that renders them identically is hiding
-the more interesting of the two.
+`abandoned` là giá trị thứ sáu trong `RUN_END_REASONS` và nó xứng đáng nhận chuỗi này theo cùng lập luận mà chính `0021` đưa ra cho năm giá trị kia: một lượt chạy chỉ báo cáo "not running" thì không thể phân biệt được với một lượt chạy đã bị chết, và Section 32.7 đặt câu hỏi về điều đó. Kết thúc vì không ai quay lại không phải là sự kiện giống như việc một người bấm dừng, và một màn hình render chúng giống hệt nhau là đang che giấu sự kiện thú vị hơn trong hai sự kiện.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Leave it as `0021` decided it** — the position being narrowed here, and it is not a silly
-one. It is unambiguous, it needs no new state, and a run cannot possibly outlive its budget.
-It fails on the same evidence that motivated it: `maxCandidates` sitting in the same object
-already behaves the other way, so "elapsed time includes time spent paused" was never a
-consistent rule, only an unexamined one. `0021` reasoned about the danger of an unbounded
-pause and concluded the bound had to keep running, without noticing that bounding the pause
-itself was on the table.
+**Giữ nguyên như `0021` đã quyết định** — lập trường đang được thu hẹp ở đây, và đó không phải là một lập trường ngớ ngẩn. Nó rõ ràng, không cần thêm trạng thái mới, và một lượt chạy hoàn toàn không thể sống vượt quá ngân sách của nó. Nhưng nó thất bại trước chính bằng chứng đã thúc đẩy nó: `maxCandidates` nằm trong cùng đối tượng vốn đã hành xử theo cách ngược lại, vì vậy "thời gian trôi qua bao gồm cả thời gian tạm dừng" chưa từng là một quy tắc nhất quán, mà chỉ là một quy tắc chưa được xem xét kỹ. `0021` đã lý giải về mối nguy hiểm của việc tạm dừng vô hạn và kết luận rằng giới hạn phải tiếp tục chạy, mà không nhận ra rằng việc giới hạn chính khoảng thời gian tạm dừng cũng là một phương án hoàn toàn khả thi.
 
-**Auto-resume when the lease expires** — cheapest of all: no new end reason, no contract
-change, the run simply carries on and ends by the bound it already declared. It was rejected
-for being a hidden actuator. A person pauses to read a result, goes to lunch, and comes back
-to a run that resumed without being asked and may have finished. That trades a predictable
-annoyance for an unpredictable one, and a state transition nobody requested is a worse thing
-to own than the bug being fixed.
+**Tự động tiếp tục (Auto-resume) khi lease hết hạn** — rẻ nhất trong tất cả: không có lý do kết thúc mới, không thay đổi hợp đồng, lượt chạy chỉ đơn giản tiếp tục và kết thúc theo giới hạn mà nó đã khai báo ban đầu. Nó bị từ chối vì là một cơ cấu kích hoạt ngầm. Một người tạm dừng để đọc kết quả, đi ăn trưa, và quay lại thấy một lượt chạy đã tự tiếp tục mà không được yêu cầu và có thể đã kết thúc xong. Điều đó đánh đổi một sự khó chịu có thể đoán trước lấy một sự khó chịu không thể đoán trước, và một sự chuyển đổi trạng thái không ai yêu cầu là thứ tồi tệ hơn nhiều so với con bug đang được sửa.
 
-**Require a `maxPauseMs` on the pause request** — the most faithful reading of `0021`'s own
-move, which was to refuse a request rather than supply a default. It does not transfer.
-`0021` refused a default for the run budget because the budget *is* the question being asked
-and the person asking has an opinion about it. A pause duration is not a question, it is an
-interruption, and demanding a number at the moment somebody wants to stop and look at
-something is ceremony that produces no insight. It also puts a form behind a button whose
-whole value is being instant.
+**Yêu cầu tham số `maxPauseMs` trong yêu cầu tạm dừng** — cách đọc trung thành nhất với bước đi của chính `0021`, vốn từ chối một yêu cầu thay vì cung cấp giá trị mặc định. Nhưng điều này không áp dụng được ở đây. `0021` từ chối giá trị mặc định cho ngân sách lượt chạy vì ngân sách *chính là* câu hỏi đang được đặt ra và người hỏi có chủ kiến về nó. Khoảng thời gian tạm dừng không phải là một câu hỏi, nó là một sự ngắt quãng, và việc đòi hỏi một con số tại thời điểm ai đó muốn dừng lại để xem xét điều gì đó là một thủ tục rườm rà không đem lại hiểu biết nào. Nó cũng đặt một biểu mẫu form chặn trước một nút bấm mà toàn bộ giá trị của nó nằm ở tính tức thì.
 
-**A paused run stops holding the slot, so it needs no lease** — a run can be paused
-indefinitely as long as starting a new one supersedes it. This removes the problem rather
-than solving it, and it removes it by silently destroying a paused run's remaining budget on
-someone else's action, which is a worse surprise than the one being fixed. A paused run also
-still holds queue state, so "harmless" is not quite true.
+**Một lượt chạy bị tạm dừng ngừng giữ slot, do đó không cần lease** — một lượt chạy có thể bị tạm dừng vô thời hạn miễn là việc bắt đầu một lượt chạy mới sẽ thế chỗ nó. Điều này loại bỏ vấn đề thay vì giải quyết nó, và nó loại bỏ bằng cách âm thầm phá hủy ngân sách còn lại của lượt chạy bị tạm dừng dựa trên hành động của người khác, đó là một sự bất ngờ tồi tệ hơn sự cố đang được khắc phục. Một lượt chạy bị tạm dừng cũng vẫn giữ trạng thái hàng đợi, vì vậy nói "vô hại" là không hoàn toàn đúng.
 
-**`MAX_PAUSE_MS` declared per run rather than as a constant** — consistent-looking, and
-premature. `0021`'s objection to defaults is that nobody reads them, and it is right about a
-budget, where the default silently decides what gets spent. A lease is a safety net: nobody
-chooses it, it decides nothing about cost, and its only job is to stop a state from lasting
-forever. It becomes a declared value the first time somebody has a real reason to want a
-longer pause, and that reason will be evidence rather than symmetry.
+**`MAX_PAUSE_MS` được khai báo theo từng lượt chạy thay vì là một hằng số** — trông có vẻ nhất quán, nhưng là quá sớm. Sự phản đối của `0021` đối với các giá trị mặc định là không ai đọc chúng, và điều đó đúng đối với một ngân sách, nơi giá trị mặc định âm thầm quyết định những gì sẽ bị chi tiêu. Một lease là một tấm lưới an toàn: không ai chọn nó, nó không quyết định gì về chi phí, và nhiệm vụ duy nhất của nó là ngăn một trạng thái kéo dài mãi mãi. Nó sẽ trở thành một giá trị được khai báo lần đầu tiên khi ai đó có lý do thực sự để muốn tạm dừng lâu hơn, và lý do đó sẽ là bằng chứng thực tế chứ không phải tính đối xứng hình thức.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-`endedAt - startedAt` no longer equals the budget that was spent, and anything reading those
-two fields to compute how long a run took now gets wall clock rather than work. That is the
-honest number for "how long was this thing alive" and the wrong one for "how much did it
-cost", and the second is not exposed anywhere. Whoever needs it will have to add it, and
-until they do the difference is invisible and will be misread at least once.
+`endedAt - startedAt` không còn bằng với ngân sách đã chi tiêu, và bất cứ thứ gì đọc hai trường đó để tính toán thời gian lượt chạy đã thực hiện giờ đây sẽ nhận được thời gian đồng hồ thực tế thay vì thời gian làm việc. Đó là con số trung thực cho câu hỏi "thứ này đã tồn tại trong bao lâu" nhưng là con số sai cho "nó đã tiêu tốn bao nhiêu chi phí", và vế thứ hai hiện chưa được phơi bày ở bất kỳ đâu. Bất kỳ ai cần nó sẽ phải tự bổ sung, và cho đến lúc đó sự khác biệt này là vô hình và sẽ bị hiểu sai ít nhất một lần.
 
-`RUN_END_REASONS` now has six values, and `0021` warned that this set becomes a contract that
-cannot be quietly extended. It has been extended loudly, which is what that warning asked
-for, and the cost is real: every consumer branching on the reason has a case it has not seen,
-and a screen that renders five reasons will render the sixth as nothing at all.
+`RUN_END_REASONS` giờ đây có sáu giá trị, và `0021` đã cảnh báo rằng tập hợp này trở thành một hợp đồng không thể âm thầm mở rộng. Nó đã được mở rộng một cách công khai, đúng như cảnh báo đó yêu cầu, và chi phí là có thật: mọi nơi tiêu thụ rẽ nhánh theo lý do kết thúc đều gặp một trường hợp mà nó chưa từng thấy, và một màn hình render năm lý do sẽ render lý do thứ sáu thành khoảng trống không có gì.
 
-A run can now end while nobody is watching it and for a reason that is nobody's decision.
-`stopped` has an author; `abandoned` does not, and the difference will matter to whoever is
-asked why a run ended and finds that the honest answer is "it was left alone too long".
+Một lượt chạy giờ đây có thể kết thúc trong khi không có ai theo dõi nó và vì một lý do không phải là quyết định của bất kỳ ai. `stopped` có tác giả rõ ràng; `abandoned` thì không, và sự khác biệt sẽ có ý nghĩa đối với bất kỳ ai được hỏi tại sao một lượt chạy kết thúc và nhận được câu trả lời thành thật là "nó bị bỏ quên quá lâu".
 
-The pause accounting is kept in memory on `ActiveRun`, like the rest of a run's state, so a
-process restart loses it along with the run itself — which `0021` already accepted. It means
-the lease cannot survive a deploy, and a run paused before one is gone rather than abandoned.
+Việc hạch toán thời gian tạm dừng được giữ trong bộ nhớ trên `ActiveRun`, giống như phần còn lại của trạng thái lượt chạy, vì vậy việc khởi động lại tiến trình sẽ làm mất nó cùng với chính lượt chạy đó — điều mà `0021` đã chấp nhận từ trước. Điều đó có nghĩa là lease không thể sống sót qua một đợt deploy, và một lượt chạy bị tạm dừng trước đợt deploy sẽ biến mất thay vì chuyển sang trạng thái abandoned.
 
-`MAX_PAUSE_MS` is one number chosen with no evidence, exactly the kind of number `0021`
-refuses elsewhere. The defence is that being wrong costs a paused run that ends earlier than
-someone wanted, which is recoverable by starting another, rather than an unbounded loop,
-which is not.
+`MAX_PAUSE_MS` là một con số được chọn mà không có bằng chứng, chính xác là kiểu con số mà `0021` từ chối ở những nơi khác. Lời biện minh ở đây là việc chọn sai chỉ làm một lượt chạy bị tạm dừng kết thúc sớm hơn mong muốn của ai đó, điều có thể khắc phục được bằng cách bắt đầu một lượt chạy khác, chứ không dẫn đến một vòng lặp vô hạn, điều không thể cứu vãn.

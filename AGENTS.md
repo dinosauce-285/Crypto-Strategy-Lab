@@ -1,40 +1,34 @@
 # AGENTS.md — Crypto Strategy Lab
 
-Universal instructions for any AI coding agent (Claude, Codex, Cursor, Windsurf...).
-This is the canonical source of truth. Tool-specific machinery is local and untracked.
-Fresh clones should ask their agent to read `docs/agent-harness.md` and create the
-right local harness for that tool.
+Quy chuẩn và chỉ dẫn chung cho bất kỳ AI coding agent nào (Claude, Codex, Cursor, Windsurf...).
+Đây là nguồn sự thật chuẩn mực (canonical source of truth). Mọi cấu hình công cụ chuyên biệt chỉ mang tính cục bộ và không được theo dõi trong git.
+Khi mới clone dự án về máy, hãy yêu cầu agent đọc `docs/agent-harness.md` để tự thiết lập môi trường (harness) cục bộ phù hợp với công cụ đó.
 
-## What this project is
+## Bản chất của dự án (What this project is)
 
-A laboratory for combining crypto trading strategies: plug in analysis methods,
-combine them automatically, backtest each combination, score it, rank it, repeat.
+Một phòng thí nghiệm (laboratory) kết hợp các chiến lược giao dịch tiền mã hóa: cắm ghép các phương pháp phân tích, tự động kết hợp chúng, kiểm thử lịch sử (backtest) từng tổ hợp, tính điểm đánh giá, xếp hạng và lặp lại tìm kiếm.
 
-**What is graded is the architecture, not the returns.** The measure is how many
-places have to change when a new strategy, a new search algorithm, or a new
-exchange is added. One new file = good. Six edits across the system = bad.
+**Trọng tâm chấm điểm là kiến trúc phần mềm, không phải mức lợi nhuận đạt được.** Thước đo chất lượng là số lượng vị trí phải chỉnh sửa khi bổ sung một chiến lược mới, một thuật toán tìm kiếm mới hoặc một sàn giao dịch mới. Thêm 1 file mới = Tốt. Chỉnh sửa 6 vị trí rải rác trên hệ thống = Kém.
 
-Full brief breakdown: `docs/project-breakdown.html` (29 tasks / 6 vertical slices).
-Open decisions: `docs/decisions-to-lock.html`.
+Bản phân rã chi tiết đề bài: `docs/project-breakdown.html` (29 nhiệm vụ / 6 vertical slice).
+Các quyết định mở cần chốt: `docs/decisions-to-lock.html`.
 
-## Stack
+## Ngăn xếp công nghệ (Stack)
 
-TypeScript end to end. NestJS API, React + Vite web, one shared types package that both
-import. PostgreSQL through Prisma 7. An in-process event bus for notification, a Redis-backed
-queue for work. Sentiment classification through a hosted model behind a provider interface.
+TypeScript toàn diện từ đầu đến cuối (end to end). NestJS cho API, React + Vite cho giao diện Web, cùng một package kiểu dữ liệu dùng chung (`packages/contracts`) được cả hai phía import. Cơ sở dữ liệu PostgreSQL quản lý qua Prisma 7. Bus sự kiện nội tiến trình (in-process event bus) cho việc phát thông báo, hàng đợi BullMQ trên Redis cho các tác vụ nặng. Phân loại cảm xúc tin tức qua mô hình host trên Groq đứng sau một interface provider.
 
-Each of those is a decision with a record in `docs/decisions/` explaining what it cost.
+Mỗi lựa chọn kỹ thuật trên đều có một bản ghi quyết định tương ứng trong `docs/decisions/` giải thích rõ cái giá phải trả và lý do lựa chọn.
 
 ```
-apps/api            NestJS — modules are the architecture
-apps/web            React + Vite — renders, never computes
-packages/contracts  shared types, imported by both
+apps/api            NestJS — kiến trúc được thể hiện qua các module
+apps/web            React + Vite — chỉ render hiển thị, tuyệt đối không tính toán logic
+packages/contracts  chứa kiểu dữ liệu chung (shared types), được cả hai phía import
 ```
 
-Two folders carry their own binding constraints, and they win inside their folder:
-`apps/api/docs/BACKEND_CONSTRAINT.md` and `apps/web/docs/UI_CONSTRAINT.md`.
+Hai thư mục con có tài liệu ràng buộc bắt buộc riêng, có mức ưu tiên cao nhất bên trong phạm vi thư mục đó:
+`apps/api/docs/BACKEND_CONSTRAINT.md` và `apps/web/docs/UI_CONSTRAINT.md`.
 
-## Architecture
+## Sơ đồ Kiến trúc (Architecture)
 
 ```
 Frontend  ──API/WebSocket──►  Backend
@@ -43,165 +37,127 @@ Frontend  ──API/WebSocket──►  Backend
                                  └── News Service ──► Providers ──► Sentiment Service
 ```
 
-Dependency direction is one-way, left to right. Nothing downstream imports anything upstream.
+Chiều phụ thuộc đi một chiều duy nhất, từ trái sang phải. Tuyệt đối không có thành phần phía sau nào import ngược lại thành phần phía trước.
 
-## Iron Rules
+## Các quy tắc bất khả xâm phạm (Iron Rules)
 
-1. **Every architectural decision gets an ADR before the code merges.** See
-   *Decision records* below. A decision made in chat and never written down does
-   not exist — the report is what is marked.
-2. A strategy contains trading logic only. No exchange calls, no database access,
-   no chart code, no notifications inside it.
-3. Adding a strategy = one new file + one registration line. If a change needs
-   more than that, the registry is wrong — fix the registry, not the caller.
-4. Evaluation is separate from implementation. A strategy emits signals; it never
-   computes its own profit.
-5. Business logic never lives in the frontend. No strategy maths, no backtesting,
-   no profit or ranking calculation in React.
-6. The frontend never talks to an exchange directly, and never polls for prices —
-   the server pushes.
-7. A backtest may never read data later than the candle it is standing on, and
-   re-running one must produce an identical result.
-8. No unbounded loops. The search loop must have an explicit stop condition.
-9. Conventional commits, scope = module. Quality gates pass before any commit.
+1. **Mọi quyết định kiến trúc đều phải có một tệp ADR trước khi merge mã nguồn.** Xem mục *Bản ghi quyết định* bên dưới. Một quyết định chỉ bàn qua chat mà không được viết thành văn bản thì xem như không tồn tại — báo cáo kiến trúc là phần được chấm điểm.
+2. Một chiến lược chỉ chứa duy nhất logic giao dịch. Không gọi trực tiếp API sàn, không truy vấn database, không chứa mã vẽ biểu đồ, không gửi notification bên trong chiến lược.
+3. Thêm một chiến lược = Thêm 1 file mới + Đăng ký 1 dòng. Nếu một thay đổi đòi hỏi nhiều hơn mức này, kiến trúc registry đang có vấn đề — hãy sửa lại registry, không sửa bên gọi.
+4. Tách biệt hoàn toàn việc đánh giá (evaluation) khỏi cài đặt thực thi (implementation). Chiến lược chỉ phát tín hiệu (signal); tuyệt đối không tự tính toán lợi nhuận của chính mình.
+5. Logic nghiệp vụ không bao giờ được đặt ở frontend. Không tính toán toán học chiến lược, không chạy backtest, không tính toán lợi nhuận hay xếp hạng bên trong React.
+6. Frontend không bao giờ gọi trực tiếp đến sàn giao dịch, và không bao giờ polling hỏi giá liên tục — server sẽ chủ động đẩy dữ liệu qua push stream.
+7. Một lượt backtest tuyệt đối không được đọc dữ liệu tương lai vượt quá cây nến hiện tại đang xét, và khi chạy lại trên cùng tập dữ liệu phải cho ra kết quả y hệt nhau.
+8. Không có vòng lặp vô tận (unbounded loops). Vòng lặp tìm kiếm bắt buộc phải có điều kiện dừng tường minh (giới hạn ứng viên, thời gian).
+9. Sử dụng Conventional Commits, phạm vi (scope) = tên module. Vượt qua toàn bộ kiểm tra chất lượng (quality gates) trước khi commit.
 
-## Forbidden (these cost marks — brief section 44)
+## Những điều bị nghiêm cấm (Mất điểm đồ án — theo mục 44 đề bài)
 
-| Anti-pattern | What it looks like |
+| Anti-pattern | Biểu hiện vi phạm |
 | --- | --- |
-| God Service | one service fetching data, computing indicators, crawling news, running ML, backtesting, ranking and pushing WebSocket messages |
-| Hard-coded strategy | `if MA && RSI … else if MA && Bollinger …` |
-| Logic in the frontend | React computing profit, ranking or signals |
-| Strategy touching the DB | `RSIStrategy` opening a database connection |
-| Crawler welded to ML | the news crawler calling the sentiment model |
+| **God Service** | Một service ôm đồm tất cả: vừa lấy dữ liệu, vừa tính indicator, vừa crawl tin tức, vừa chạy ML, vừa backtest, vừa xếp hạng và vừa push WebSocket |
+| **Hard-coded strategy** | Viết cứng điều kiện: `if MA && RSI … else if MA && Bollinger …` |
+| **Logic in the frontend** | Đưa logic vào React để tính toán lợi nhuận, xếp hạng hoặc sinh tín hiệu |
+| **Strategy touching the DB** | `RSIStrategy` tự ý mở kết nối trực tiếp đến database |
+| **Crawler welded to ML** | Module crawl tin tức gọi thẳng vào model phân loại cảm xúc mà không qua tầng phân tách |
 
-## Decision records
+## Bản ghi quyết định kiến trúc (Decision records)
 
-Location: `docs/decisions/`. One file per decision.
+Vị trí lưu trữ: `docs/decisions/`. Mỗi quyết định một tệp tin.
 
-**Write one when a change does any of these:**
+**Bắt buộc phải viết một bản ghi khi thay đổi thực hiện bất kỳ điều nào sau đây:**
 
-- introduces or changes a shared type, interface or event contract
-- changes the database schema
-- changes how modules communicate (direct call ↔ event ↔ queue)
-- adds a dependency, service or piece of infrastructure
-- changes backtest or scoring rules (entry price, fees, drawdown maths)
-- picks one of the open decisions listed in `docs/decisions-to-lock.html`
+- Giới thiệu mới hoặc sửa đổi một shared type, interface hoặc event contract.
+- Thay đổi cấu trúc cơ sở dữ liệu (database schema).
+- Thay đổi cách các module giao tiếp với nhau (gọi trực tiếp ↔ phát event ↔ đẩy hàng đợi queue).
+- Thêm mới một thư viện phụ thuộc (dependency), một service hoặc một thành phần hạ tầng.
+- Thay đổi quy tắc backtest hoặc công thức tính điểm (giá vào lệnh, phí giao dịch, công thức sụt giảm tài khoản drawdown).
+- Chốt một trong các quyết định còn mở liệt kê tại `docs/decisions-to-lock.html`.
 
-**Each record answers three things and nothing else:**
+**Mỗi bản ghi trả lời duy nhất ba câu hỏi cốt lõi:**
 
-1. **Why we chose this** — the reasoning, and which requirement it serves.
-2. **What else we looked at** — the real alternatives, and what each would have
-   cost us here. Include the option a reader would expect us to pick; leaving it
-   out looks like we never thought of it.
-3. **Trade-offs** — what we give up in return. A record with nothing here has not
-   been thought through.
+1. **Why we chose this (Tại sao chọn phương án này)** — Lý do đưa ra quyết định, và phục vụ yêu cầu nào của đề bài.
+2. **What else we looked at (Các phương án khác đã cân nhắc)** — Những lựa chọn thực tế khác và lý do chúng bị loại bỏ. Phải bao gồm cả phương án mà người đọc tự nhiên sẽ nghĩ đến; nếu bỏ qua sẽ tạo cảm giác nhóm chưa từng nghĩ tới.
+3. **Trade-offs (Đánh đổi)** — Những gì phải đánh đổi khi chọn phương án này. Bất kỳ quyết định thực tế nào cũng có cái giá của nó; một bản ghi không nêu phần này là chưa được cân nhắc thấu đáo.
 
-Start from `docs/decisions/0000-template.md`.
+Bắt đầu từ tệp mẫu `docs/decisions/0000-template.md`.
 
-## Workflow
+## Quy trình làm việc (Workflow)
 
-Work is cut into **vertical slices**, not layers. Every slice ends in something
-clickable. Do not open the next slice until the current one closes.
+Công việc được chia thành các **lát cắt dọc (vertical slices)**, không chia theo tầng kỹ thuật. Mỗi slice kết thúc bằng một tính năng thực tế có thể thao tác/bấm được trên giao diện. Không bắt đầu slice tiếp theo cho đến khi slice hiện tại hoàn tất.
 
 ```
-Slice 0 Foundation → 1 Realtime charts → 2 Run one strategy
-      → 3 Search combinations → 4 News & sentiment → 5 Hand-in
+Slice 0 Nền tảng → 1 Biểu đồ Realtime → 2 Chạy một chiến lược
+       → 3 Tìm kiếm tổ hợp → 4 Tin tức & Sentiment → 5 Bàn giao & Báo cáo
 ```
 
-Within a slice, backend tasks run in parallel; the task that closes the slice is
-the one with a screen. Task IDs (`T01`…`T29`) match `docs/project-breakdown.html`
-and the Trello board, and are used as branch and commit scopes.
+Trong cùng một slice, các task backend có thể chạy song song; task đóng lại slice thường là task hoàn thiện màn hình giao diện tương ứng. Mã công việc (`T01`…`T29`) khớp với `docs/project-breakdown.html` và bảng Trello, đồng thời được dùng làm scope cho nhánh và commit.
 
-## How to write documents here
+## Tiêu chuẩn trình bày tài liệu
 
-Documents record **reasoning**, not process. Applies to decision records,
-the architecture document, the README, everything.
+Mọi tài liệu phải tập trung ghi lại **lập luận và lý do kỹ thuật (reasoning)**, không sa đà vào thủ tục hành chính. Áp dụng chung cho cả ADR, tài liệu kiến trúc, README và toàn bộ tài liệu khác:
 
-- No status fields, owners, dates, ticket IDs or approval ceremony unless someone
-  genuinely reads them. They rot faster than the content and nobody checks them.
-- Do not explain the folder layout or how the document is structured. Explain the
-  thing. A reader who wants the layout can look.
-- Say what was given up, not only what was gained. A page with no cost in it reads
-  as marketing and gets discounted.
-- Plain sentences over tables of metadata. Use a table when comparing options,
-  not to make prose look organised.
-- Shorter is better, but never at the price of the *why*. Cut the scaffolding,
-  keep the argument.
+- Không đưa vào các trường trạng thái, người phụ trách, ngày tháng, mã ticket hay thủ tục duyệt rườm rà trừ khi có người thực sự đọc. Chúng lỗi thời rất nhanh và không ai kiểm tra lại.
+- Không giải thích lại cấu trúc thư mục hay dàn ý của tài liệu. Hãy đi thẳng vào nội dung chính. Người đọc muốn xem cấu trúc có thể tự nhìn vào cây thư mục.
+- Nêu rõ cái giá phải trả (đánh đổi), không chỉ ca ngợi lợi ích đạt được. Tài liệu không nêu chi phí sẽ giống văn phong quảng cáo và bị đánh giá thấp.
+- Sử dụng câu văn gãy gọn thay vì các bảng metadata hình thức. Chỉ dùng bảng khi so sánh đối chiếu các lựa chọn.
+- Càng ngắn gọn súc tích càng tốt, nhưng tuyệt đối không được đánh đổi lý do "tại sao" (*why*). Lược bỏ phần rườm rà, giữ lại lập luận cốt lõi.
 
-## Agent harness
+## Thiết lập Agent Harness
 
-The repo commits project law, not one vendor's runtime config. A Claude, Codex,
-Cursor, Windsurf or other setup must be generated locally from the same source:
+Kho lưu trữ chỉ commit quy tắc chung của dự án, không commit file cấu hình máy ảo riêng của từng bên. Các cấu hình cho Claude, Codex, Cursor, Windsurf hoặc các công cụ khác phải được sinh cục bộ từ cùng một nguồn:
 
-1. Read this file first.
-2. Read `docs/agent-harness.md` for the required harness shape.
-3. Read nested constraints before touching their folders:
-   `apps/api/docs/BACKEND_CONSTRAINT.md` and `apps/web/docs/UI_CONSTRAINT.md`.
-4. Create tool-specific local files only in ignored paths, such as `.claude/`,
-   `.codex/`, `.cursor/` or the equivalent for that agent.
+1. Đọc tệp này (`AGENTS.md`) trước tiên.
+2. Đọc `docs/agent-harness.md` để nắm cấu trúc harness bắt buộc.
+3. Đọc các tài liệu ràng buộc chuyên biệt trước khi thao tác trong thư mục tương ứng:
+   `apps/api/docs/BACKEND_CONSTRAINT.md` và `apps/web/docs/UI_CONSTRAINT.md`.
+4. Chỉ tạo các file cấu hình công cụ trong các đường dẫn đã được gitignore, ví dụ `.claude/`, `.codex/`, `.cursor/` hoặc thư mục tương đương của agent đó.
 
-The local harness may add hooks, subagents, memories, skills or prompt files, but it
-must not replace these rules or weaken the gates in `.githooks/`.
-Before committing, every contributor must confirm their own agent runtime files are
-ignored and untracked. If a personal harness file appears in `git status`, stop and
-move it under an ignored path or remove it from the index with `git rm --cached`.
+Harness cục bộ có thể thêm hooks, subagents, memories, skills hoặc file prompt riêng, nhưng tuyệt đối không được thay đổi các quy tắc cốt lõi này hoặc làm suy yếu các chốt kiểm soát trong `.githooks/`.
+Trước khi commit, mỗi thành viên phải xác nhận các file runtime của agent cá nhân đã được gitignore và không bị theo dõi. Nếu một file harness cá nhân xuất hiện trong `git status`, phải dừng lại và chuyển nó vào đường dẫn bị bỏ qua hoặc xóa khỏi index bằng lệnh `git rm --cached`.
 
-## Development discipline
+## Kỷ luật phát triển mã nguồn (Development discipline)
 
-Detail lives in `docs/agent-harness.md`. The short version:
+Chi tiết được mô tả trong `docs/agent-harness.md`. Tóm tắt các nguyên tắc:
 
-- YAGNI / KISS / DRY — three similar lines beat a premature abstraction
-- ~200-line file limit — split into focused modules, don't grow files
-- No narration comments — the commit message is where "why I changed this" belongs
-- No mocks that hide the real failure
-- Naming: kebab-case for files, PascalCase for types and components
-- Every finding or review comment carries a `file:line` citation
+- YAGNI / KISS / DRY — ba dòng code tương tự nhau vẫn tốt hơn một abstraction vội vàng, gượng ép.
+- Giới hạn ~200 dòng mỗi file — chia nhỏ thành các module rõ trách nhiệm, không để file phình to.
+- Không viết comment trần thuật kể lể — lý do "tại sao sửa dòng này" thuộc về nội dung commit message.
+- Không dùng mock giả lập che giấu lỗi thất bại thực tế.
+- Quy chuẩn đặt tên: `kebab-case` cho tên file, `PascalCase` cho types và React components.
+- Mọi nhận xét phản biện hoặc ghi chú review phải kèm dẫn chứng vị trí `file:line` cụ thể.
 
-## Commands
+## Các câu lệnh chính (Commands)
 
 ```bash
-pnpm dev          API on :3001, web on :5173
-pnpm worker       a backtest worker — its own process, ADR 0004. Run as many as you like
-pnpm build        contracts, then api, then web
-pnpm lint         both apps plus the UI token check
-pnpm commit       guided conventional commit — use this, not git commit
-pnpm db:generate  regenerate the Prisma client after a schema change
+pnpm dev          API chạy cổng :3001, web chạy cổng :5173
+pnpm worker       Một backtest worker — tiến trình độc lập, ADR 0004. Có thể bật nhiều worker tùy ý
+pnpm build        Build contracts, sau đó đến api, rồi đến web
+pnpm lint         Kiểm tra lint cả hai ứng dụng kèm kiểm tra token giao diện
+pnpm commit       Tạo commit chuẩn Conventional Commits — dùng lệnh này, không dùng git commit trực tiếp
+pnpm db:generate  Sinh lại mã nguồn Prisma client sau khi cập nhật schema
 ```
 
-Postgres runs in the local `ai_erp_db` container on 5432, in its own database
-`crypto_strategy_lab`. Nothing is shared but the server process. Redis runs in the local
-`redis` container on 6379 and carries the backtest queue. Without it the API still starts
-and every other screen works; starting a search run answers 503 rather than hanging, which
-is the difference between a missing service and a broken one.
+Postgres chạy trong container local `ai_erp_db` trên cổng 5432, với database riêng biệt `crypto_strategy_lab`. Chỉ dùng chung tiến trình máy chủ server, không chia sẻ bảng với dự án khác. Redis chạy trong container local `redis` trên cổng 6379 và phụ trách hàng đợi backtest. Nếu không có Redis, API vẫn khởi động được và các màn hình khác vẫn dùng bình thường; khi bắt đầu một search run hệ thống sẽ phản hồi lỗi 503 thay vì bị treo, giúp phân biệt rõ ràng giữa dịch vụ thiếu và lỗi logic chương trình.
 
-## Environment
+## Biến môi trường (Environment)
 
-**One `.env` per app.** `apps/api/.env` holds server secrets; `apps/web/.env` holds
-browser values. There is no `.env` at the workspace root.
+**Mỗi ứng dụng có một file `.env` riêng biệt.** `apps/api/.env` chứa các bí mật máy chủ; `apps/web/.env` chứa các giá trị dành cho trình duyệt. Không có file `.env` ở thư mục gốc workspace.
 
-The split exists because Vite inlines every variable it loads into the shipped bundle.
-So the rule is not about tidiness, it is a boundary:
+Sự tách biệt này bắt buộc vì Vite sẽ nhúng thẳng mọi biến môi trường mà nó nạp vào gói bundle gửi cho người dùng. Do đó đây là một ranh giới bảo mật nghiêm ngặt:
 
-- `apps/api/.env` — `DATABASE_URL`, `GROQ_API_KEY`, exchange URLs. Never leaves the server.
-- `apps/web/.env` — **`VITE_`-prefixed names only**, and everything in it is public by
-  definition. A key, a token, a password or a database URL in this file is a leak waiting
-  for the next build.
+- `apps/api/.env` — `DATABASE_URL`, `GROQ_API_KEY`, các URL kết nối sàn. Tuyệt đối không bao giờ rời khỏi server.
+- `apps/web/.env` — **Chỉ các biến có tiền tố `VITE_`**, và mọi thứ trong file này đều là công khai. Bất kỳ API key, secret token, password hay chuỗi kết nối database nào đặt vào file này đều sẽ bị lộ ngay trong lần build tiếp theo.
 
-The session-start hook enforces that boundary: it flags any non-`VITE_` name in the web
-env file, and reports either app's `.env` drifting from its `.env.example`.
+Hook kiểm tra khi bắt đầu phiên làm việc sẽ thực thi ranh giới này: cảnh báo bất kỳ biến nào không có tiền tố `VITE_` trong file env của web, và báo cáo nếu `.env` của bất kỳ ứng dụng nào bị lệch so với `.env.example`.
 
-Only the examples are committed. Both plaintext files are gitignored.
+Chỉ các file `.env.example` mới được commit lên git. Cả hai file cấu hình thực tế dạng plaintext đều nằm trong gitignore.
 
-**The API env is committed encrypted.** `apps/api/.env` is encrypted with `age` into
-`envs/api.env.age`, which *is* in git. The private key `.env.key` never is — a teammate
-hands it over once through a private channel.
+**File env của API được commit dưới dạng mã hóa.** `apps/api/.env` được mã hóa bằng công cụ `age` thành `envs/api.env.age` và file này *được* lưu trong git. Khóa bí mật `.env.key` không bao giờ đưa lên git — đồng đội sẽ chuyển giao một lần duy nhất qua kênh bảo mật.
 
 ```bash
-pnpm env:decrypt    # after cloning, or when someone pushed new values
-pnpm env:encrypt    # after changing a value, before committing
+pnpm env:decrypt    # sau khi clone dự án, hoặc khi có thành viên cập nhật giá trị mới
+pnpm env:encrypt    # sau khi chỉnh sửa một giá trị, trước khi thực hiện commit
 ```
 
-The reason is not tidiness. Without this, the way a key actually reaches a teammate is a
-chat message — and that is how it ends up somewhere permanent. `apps/web/.env` is not
-encrypted because everything in it ships to the browser anyway; there is nothing to hide.
+Mục đích không phải để cho gọn gàng. Nếu không làm cách này, cách thức các thành viên chia sẻ key thực tế sẽ là dán qua tin nhắn chat — và đó là cách các thông tin mật bị rò rỉ vĩnh viễn. Tệp `apps/web/.env` không cần mã hóa vì mọi giá trị trong đó đằng nào cũng được gửi thẳng tới trình duyệt người dùng; không có gì cần phải giấu.

@@ -1,70 +1,35 @@
-# Every strategy describes itself, and three parts of the system read that description
+# Mọi chiến lược tự mô tả metadata, ba thành phần của hệ thống đọc mô tả đó
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Three places need to know what a strategy is before anyone can use it: the parameter
-form in T14, the search space in T17, and the selection list in T20. They can learn it
-in one of two ways — someone types the answer into all three, or the strategy says it
-once and they read it.
+Có ba vị trí trong hệ thống cần biết một chiến lược là gì trước khi bất kỳ ai có thể sử dụng nó: form cấu hình tham số trong task T14, không gian tìm kiếm trong task T17, và danh sách lựa chọn chiến lược trong task T20. Chúng có thể biết điều đó theo một trong hai cách — ai đó gõ tay thông tin vào cả ba nơi, hoặc chiến lược tự công bố một lần duy nhất và cả ba nơi tự đọc.
 
-Typing it into all three is the hard-coded strategy the brief lists among the design
-faults in section 44, and it is what section 41 is written to expose: adding a
-Support/Resistance strategy would mean editing a form, a search space and a list, and
-the scenario would find all three inside a minute.
+Gõ tay vào cả ba nơi chính là biểu hiện của anti-pattern viết cứng chiến lược (hard-coded strategy) mà đề bài liệt kê trong danh sách các lỗi thiết kế ở mục 44, và là điều mà kịch bản mục 41 được viết ra để vạch trần: việc thêm một chiến lược Hỗ trợ/Kháng cự mới sẽ đòi hỏi phải sửa một form nhập liệu, một không gian tìm kiếm và một danh sách chọn, và kịch bản chấm thi sẽ tìm ra cả ba vị trí vi phạm đó chỉ trong vòng một phút.
 
-So a strategy declares itself:
+Vì vậy, một chiến lược sẽ tự khai báo chính mình:
 
 ```
 id, name, group, params[]
 ```
 
-alongside what earlier decisions already put in the same place — the warm-up length
-from `0006`, the data needs from `0008`, the code version from `0009`. Four records now
-ride on one declaration, which is the argument for it being one declaration rather than
-four conventions.
+cùng với những thông tin mà các quyết định trước đó đã đặt vào cùng vị trí — độ dài warm-up từ ADR `0006`, nhu cầu dữ liệu từ ADR `0008`, phiên bản mã nguồn từ ADR `0009`. Bốn bản ghi ADR giờ đây cùng vận hành trên một bản khai báo duy nhất, đó là lý do nó nên là một bản khai báo thống nhất thay vì bốn quy ước rời rạc.
 
-A parameter is described as `{ name, type, min, max, step, default }`. The form needs
-`type` and `default` to render a control; the search engine needs `min`, `max` and
-`step` to enumerate a space at all — section 15's example of MA at 10/20, 20/50, 50/200
-is exactly a range walked by a step. Leaving the range out would mean the search engine
-inventing bounds for parameters it knows nothing about.
+Một tham số được mô tả cấu trúc gồm `{ name, type, min, max, step, default }`. Form nhập liệu cần `type` và `default` để render thành phần giao diện phù hợp; search engine cần `min`, `max` và `step` để có thể quét duyệt không gian tham số — ví dụ ở mục 15 về các cặp MA ở 10/20, 20/50, 50/200 chính là một dải giá trị được duyệt theo bước nhảy (`step`). Nếu bỏ qua dải giá trị này, search engine sẽ buộc phải tự bịa ra biên giới hạn cho các tham số mà nó hoàn toàn không hiểu bản chất.
 
-`group` is one of Trend, Momentum, Volatility, Structure, Information — the five
-functional groups of section 17. It is in the declaration because the domain-guided
-search of T17 is defined in terms of it: *one trend strategy plus one momentum strategy
-plus one structure strategy* is a rule that cannot be expressed without the field, and
-inferring it from a strategy's name is guessing.
+Trường `group` là một trong năm nhóm chức năng của mục 17: Trend (Xu hướng), Momentum (Động lượng), Volatility (Biến động), Structure (Cấu trúc thị trường), Information (Thông tin tin tức). Nó nằm trong bản khai báo vì thuật toán tìm kiếm định hướng miền (domain-guided search) trong task T17 được định nghĩa trực tiếp dựa trên các nhóm này: quy tắc *một chiến lược xu hướng + một chiến lược động lượng + một chiến lược cấu trúc* là quy tắc không thể biểu diễn nếu thiếu trường này, và việc cố đoán nhóm từ tên chiến lược chỉ là sự phỏng đoán mò mẫm.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Hard-coded lists in each screen** — no mechanism to build. It is listed here mainly
-to record that we considered it and know where it breaks, because a record that never
-names the obvious option reads as though the obvious option was never seen.
+**Viết cứng danh sách trong từng màn hình** — không cần tốn công xây dựng cơ chế tự động. Phương án này được nêu ở đây chủ yếu để khẳng định nhóm đã xem xét và biết rõ nó sẽ gãy ở đâu, vì một bản ghi không bao giờ nhắc tới phương án hiển nhiên sẽ tạo cảm giác như thể người viết chưa từng nghĩ tới nó.
 
-**Metadata in a separate config file or database table** — keeps the class small, and
-lets ranges be tuned without touching code. Rejected because it creates two things that
-must agree with nothing holding them together: the file says `period` runs 2 to 50, the
-code renamed the parameter last week, and neither the compiler nor a test notices. On
-the class, the declaration sits beside the code it describes and travels with it.
+**Lưu metadata trong file cấu hình riêng hoặc bảng cơ sở dữ liệu** — giúp class chiến lược gọn nhẹ, và cho phép chỉnh dải tham số mà không sửa code. Bị loại bỏ vì nó tạo ra hai thứ bắt buộc phải khớp nhau mà không có gì ràng buộc chúng: file config ghi `period` chạy từ 2 đến 50, nhưng code bên trong đã đổi tên tham số từ tuần trước, và cả trình biên dịch lẫn bài test đều không nhận ra. Đặt trực tiếp trên class giúp bản khai báo nằm ngay cạnh đoạn code mà nó mô tả và luôn đi cùng nhau.
 
-**Deriving the parameter list from the constructor by reflection** — the version with no
-duplication at all. TypeScript erases types at run time, so it needs decorators to
-survive, and the parts that matter most here — a range and a step — are not expressible
-as types in the first place.
+**Tự động suy luận danh sách tham số từ constructor qua kỹ thuật Reflection** — phiên bản không có bất kỳ sự lặp lại nào. Nhưng TypeScript xóa sạch kiểu dữ liệu lúc runtime (type erasure), vì vậy nó đòi hỏi decorators phức tạp, và những phần quan trọng nhất ở đây — dải giá trị min/max và bước nhảy step — vốn dĩ không thể biểu diễn được dưới dạng kiểu dữ liệu TypeScript.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A wrong declaration fails silently. Declare `min: 2, max: 50` for an indicator whose
-code needs at least 14 candles and the form happily offers 3, the search engine spends
-draws on candidates that cannot produce a signal, and nothing anywhere complains. This
-is the same class of failure `0008` accepts for data needs, and it has the same partial
-answer: the strategy's golden test only covers the values the fixture uses.
+Một bản khai báo sai sẽ thất bại trong im lặng. Khai báo `min: 2, max: 50` cho một chỉ báo mà mã nguồn thực tế cần ít nhất 14 cây nến, form nhập liệu vẫn vui vẻ cho người dùng chọn 3, search engine vẫn lãng phí các lượt bốc thăm vào các ứng viên không thể phát ra tín hiệu, và không có cảnh báo nào xuất hiện. Đây là cùng loại rủi ro mà ADR `0008` chấp nhận cho nhu cầu dữ liệu, và nó có cùng giải pháp từng phần: bộ golden test của chiến lược chỉ kiểm tra các giá trị mà tệp fixture mẫu sử dụng.
 
-The parameters now appear twice — once in the declaration, once where the code reads
-them — which is the duplication `0008` already accepted for the data a strategy needs.
-It is the price of self-description, paid a second time.
+Các tham số giờ đây xuất hiện hai lần — một lần trong bản khai báo metadata, một lần tại nơi code thực tế đọc chúng — đây là sự trùng lặp mà ADR `0008` đã chấp nhận cho nhu cầu dữ liệu. Đó là cái giá của khả năng tự mô tả (self-description).
 
-The ranges are guesses when they are first written, and the quality of the search space
-depends on them more than on the search algorithm. Nobody will know whether they were
-good bounds until candidates have been scored, and by then they are baked into the
-experiments already run.
+Các khoảng min/max ban đầu chỉ là phỏng đoán của người viết, và chất lượng của không gian tìm kiếm phụ thuộc vào các khoảng này nhiều hơn là vào thuật toán tìm kiếm. Không ai biết chắc liệu chúng có phải là các biên giới hạn tối ưu hay không cho đến khi các ứng viên được chấm điểm, và khi đó chúng đã được ghi cứng vào các thử nghiệm đã chạy trong database.

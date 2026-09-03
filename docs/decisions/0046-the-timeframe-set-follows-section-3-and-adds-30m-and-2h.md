@@ -1,67 +1,29 @@
-# The timeframe set covers every example in the brief
+# Tập hợp khung thời gian bao quát mọi ví dụ trong bản mô tả yêu cầu
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The brief names timeframes three times and every one of them is an illustration.
+Bản mô tả yêu cầu (brief) nhắc đến các khung thời gian ba lần và mỗi lần trong số đó đều mang tính chất minh họa.
 
-Section 3 walks a user through swapping each chart — `5m → 1m`, `15m → 30m`, `1h → 2h`,
-`4h → 1d` — to make the point that changing one chart does not reload the system. Section 4
-lists six under `Ví dụ:` while describing what historical data is for. Section 5 draws the
-picker as `[1m] [5m] [15m] [1h] [4h] [1d]`, also under `Ví dụ:`, while saying each chart must
-be able to change its own timeframe.
+Section 3 hướng dẫn người dùng qua việc hoán đổi từng biểu đồ — `5m → 1m`, `15m → 30m`, `1h → 2h`, `4h → 1d` — để làm rõ quan điểm rằng việc thay đổi một biểu đồ không làm tải lại toàn bộ hệ thống. Section 4 liệt kê sáu khung thời gian dưới mục `Ví dụ:` trong khi mô tả dữ liệu lịch sử dùng để làm gì. Section 5 vẽ bộ chọn dưới dạng `[1m] [5m] [15m] [1h] [4h] [1d]`, cũng dưới mục `Ví dụ:`, đồng thời nêu rõ mỗi biểu đồ phải có khả năng thay đổi khung thời gian của chính nó.
 
-Nowhere does the brief specify the set. Every mention sits behind the word "example", and
-each is making a point about something else — hot-swapping, storage, per-chart independence.
+Không có nơi nào bản mô tả chỉ định tập hợp này là một đặc tả cố định. Mọi đề cập đều nằm sau từ "ví dụ", và mỗi lần đều nhằm làm rõ một điểm khác — hoán đổi nóng, lưu trữ, tính độc lập theo từng biểu đồ.
 
-That matters because it removes the question this record first tried to answer. There is no
-contradiction to adjudicate and no need to decide which section outranks which. Six
-satisfies sections 4 and 5 and leaves section 3's example unreachable. Eight satisfies all
-three, because the six are a subset of the eight: every picker the brief draws can still be
-drawn, and the swap section 3 describes can actually be performed.
+Điều đó rất quan trọng vì nó xóa bỏ câu hỏi mà bản ghi quyết định này ban đầu cố gắng trả lời. Không hề có mâu thuẫn nào cần phân xử và không cần quyết định xem section nào có thứ bậc cao hơn section nào. Sáu khung thời gian thỏa mãn Section 4 và 5 nhưng khiến ví dụ của Section 3 không thể thực hiện được. Tám khung thời gian thỏa mãn cả ba, vì sáu khung kia là tập con của tám khung: mọi bộ chọn mà bản mô tả vẽ ra đều vẫn có thể vẽ được, và việc hoán đổi mà Section 3 mô tả thực sự có thể thực hiện được.
 
-So the set is `1m, 5m, 15m, 30m, 1h, 2h, 4h, 1d` — the smallest set that covers every
-example the brief gives. Both new values are Binance intervals, and the adapters pass the
-timeframe through as the `interval` query parameter unchanged, so nothing has to learn how
-long a `30m` candle is. The two places that map every timeframe to a number are
-`Record<Timeframe, …>`, so the compiler names them rather than letting one silently miss a
-case.
+Vì vậy tập hợp là `1m, 5m, 15m, 30m, 1h, 2h, 4h, 1d` — tập hợp nhỏ nhất bao quát mọi ví dụ mà bản mô tả đưa ra. Cả hai giá trị mới đều là các interval hợp lệ của Binance, và các adapter truyền khung thời gian qua tham số truy vấn `interval` một cách nguyên vẹn, do đó không có gì phải tự tính xem một cây nến `30m` kéo dài bao lâu. Hai nơi ánh xạ mọi khung thời gian thành một số là `Record<Timeframe, …>`, vì vậy trình biên dịch sẽ chỉ rõ chúng thay vì để một trường hợp nào bị bỏ sót một cách âm thầm.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Ship the six and treat section 3 as a contradiction to note in the report** — the reading
-this record originally took, and it was wrong twice over. It missed that section 4 also
-lists six, so the count was never the 1-1 tie it was argued as. More importantly it treated
-section 5's list as a specification when the line above it says `Ví dụ:`. Having decided a
-contradiction existed, it then had to declare section 5 wrong about the system — a sentence
-that would have to be written into the report and defended out loud, invented entirely to
-justify a conflict that was not there. Nothing about eight timeframes contradicts an example
-that shows six.
+**Chỉ triển khai sáu khung và coi Section 3 là một mâu thuẫn cần lưu ý trong báo cáo** — cách hiểu mà bản ghi quyết định này ban đầu theo đuổi, và nó đã sai đến hai lần. Nó bỏ lỡ việc Section 4 cũng liệt kê sáu khung, vì vậy tỷ số chưa bao giờ là hòa 1-1 như đã lập luận. Quan trọng hơn, nó đã coi danh sách của Section 5 như một đặc tả cứng trong khi dòng ngay phía trên nó ghi rõ `Ví dụ:`. Khi đã quyết định rằng có mâu thuẫn tồn tại, sau đó nó phải tuyên bố Section 5 viết sai về hệ thống — một câu văn sẽ phải viết vào báo cáo và bảo vệ công khai, được phát minh hoàn toàn để biện minh cho một xung đột vốn không hề có. Không có điều gì ở tám khung thời gian mâu thuẫn với một ví dụ chỉ hiển thị sáu khung.
 
-**Add every Binance interval** — `3m` through `1M`, fifteen of them, free at the adapter.
-Not free where it counts: each becomes a button in the selector, a row in every
-`Record<Timeframe, …>`, and a partition of candle history with its own backfill. A picker
-with fifteen options answers "which chart am I looking at" worse than one with eight, and
-section 5's instinct to keep the set short is right even where its list is only an example.
+**Bổ sung mọi interval của Binance** — từ `3m` đến `1M`, tất cả mười lăm khung, miễn phí ở tầng adapter. Nhưng không hề miễn phí ở nơi quan trọng: mỗi khung trở thành một nút bấm trong bộ chọn, một hàng trong mỗi `Record<Timeframe, …>`, và một phân vùng lịch sử nến với đợt backfill riêng. Một bộ chọn với mười lăm tùy chọn trả lời câu hỏi "tôi đang xem biểu đồ nào" kém hơn nhiều so với bộ chọn có tám tùy chọn, và trực giác của Section 5 trong việc giữ cho tập hợp ngắn gọn là đúng đắn ngay cả khi danh sách của nó chỉ là một ví dụ.
 
-**Make the set configurable** — read it from the environment so it stops being a contract.
-It moves the choice somewhere nobody reviews and it destroys what makes `Timeframe` worth
-having: a union the compiler can check exhaustively. A configurable set is a `string`, and a
-`string` is how a chart ends up asking Binance for an interval that does not exist.
+**Cho phép cấu hình tập hợp khung thời gian** — đọc nó từ biến môi trường để nó không còn là một hợp đồng cứng. Điều này di chuyển sự lựa chọn vào một nơi không ai xem xét và phá hủy điều làm cho `Timeframe` đáng giá: một kiểu union mà trình biên dịch có thể kiểm tra toàn diện. Một tập hợp có thể cấu hình là một `string`, và một `string` chính là cách mà một biểu đồ kết thúc bằng việc yêu cầu Binance một interval không hề tồn tại.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Eight timeframes is eight partitions of candle history rather than six, each backfilled
-independently on first use. Nothing that exists today gets slower; what changes is that two
-more can be created, so a user who visits all eight has stored a third more than one who
-visits all six — for two timeframes that may never be clicked.
+Tám khung thời gian là tám phân vùng lịch sử nến thay vì sáu, mỗi phân vùng được backfill độc lập trong lần đầu sử dụng. Không có gì hiện tại bị chậm đi; điều thay đổi là có thêm hai phân vùng có thể được tạo ra, vì vậy một người dùng xem cả tám khung sẽ lưu trữ nhiều hơn một phần ba so với người chỉ xem sáu khung — cho hai khung thời gian có thể không bao giờ được nhấp vào.
 
-`Timeframe` is a contract both apps import, and widening a union is only safe in one
-direction. Everything already persisted stays valid, and the two exhaustive maps are
-`Record`s, so the compiler caught them. Anything that had handled all six some other way — a
-`switch`, a chain of comparisons — would now have an uncovered case and no error to say so.
-None exists today; this paragraph is the warning for the next one.
+`Timeframe` là một hợp đồng mà cả hai ứng dụng đều import, và việc mở rộng một union chỉ an toàn theo một hướng. Mọi dữ liệu đã lưu trữ vẫn giữ nguyên giá trị hợp lệ, và hai bảng ánh xạ toàn diện là các `Record`, do đó trình biên dịch đã bắt được chúng. Bất cứ thứ gì trước đây xử lý cả sáu khung theo cách khác — một khối `switch`, một chuỗi so sánh — giờ đây sẽ có một trường hợp không được xử lý và không có lỗi biên dịch nào cảnh báo. Hiện tại không có đoạn mã nào như vậy; đoạn này là lời cảnh báo cho đoạn mã tiếp theo.
 
-The picker now shows eight buttons where the brief's example shows six, and somebody will
-ask why. The answer is section 3, which is a good answer and still a question that has to be
-fielded. A shorter picker is easier to read, and two of these eight exist to satisfy four
-lines of an example rather than because anyone asked to trade on a 2-hour candle.
+Bộ chọn giờ đây hiển thị tám nút bấm nơi ví dụ của bản mô tả chỉ vẽ sáu, và ai đó sẽ thắc mắc tại sao. Câu trả lời là Section 3, đó là một câu trả lời tốt và vẫn là một câu hỏi cần phải được giải đáp. Một bộ chọn ngắn hơn sẽ dễ đọc hơn, và hai trong số tám nút này tồn tại chỉ để thỏa mãn bốn dòng của một ví dụ minh họa chứ không phải vì có ai đó yêu cầu giao dịch trên nến 2 giờ.

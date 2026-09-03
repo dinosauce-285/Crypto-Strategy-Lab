@@ -1,71 +1,31 @@
-# A run reports the candidate being tested right now
+# Một lượt chạy báo cáo ứng viên đang được thử nghiệm ngay lúc này
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 46 step 4 describes what the screen shows while a search is running, and it is three
-lines: how many candidates have been tested, which one is being tested now, and that a
-backtest is in progress. The panel had the first and nothing else. `RunStatus` carried
-counters and a best-so-far, and no field named the candidate a worker was holding, so the
-screen could not have shown it however it was written.
+Section 46 bước 4 mô tả màn hình hiển thị những gì trong khi tìm kiếm đang chạy, và nó gồm ba dòng: bao nhiêu ứng viên đã được thử nghiệm, ứng viên nào đang được thử nghiệm lúc này, và một lượt backtest đang diễn ra. Panel trước đây chỉ có dòng đầu tiên và không có gì khác. `RunStatus` mang các bộ đếm và kết quả tốt nhất tính đến hiện tại, và không có trường nào gọi tên ứng viên mà worker đang xử lý, do đó màn hình không thể hiển thị nó dù được viết như thế nào.
 
-The missing line is the one that makes the other two mean something. `Đã thử 125` with a
-frozen strategy list beside it reads the same whether the loop is working or wedged — it is a
-number that was true at some point. Naming the candidate in flight is what turns a status
-panel into evidence that the machine is alive, and it is the difference section 32.7 is
-asking about when it asks whether the loop is running.
+Dòng còn thiếu chính là dòng làm cho hai dòng kia có ý nghĩa. `Đã thử 125` với một danh sách chiến lược đứng im bên cạnh đọc lên như nhau bất kể vòng lặp đang hoạt động hay đã bị treo — đó là một con số từng đúng ở một thời điểm nào đó. Việc gọi tên ứng viên đang xử lý chính là điều biến bảng trạng thái thành bằng chứng cho thấy cỗ máy đang sống, và đó là sự khác biệt mà Section 32.7 đang muốn biết khi hỏi liệu vòng lặp có đang chạy hay không.
 
-So `RunStatus` gains `current`, holding the specification and its hash. It sits on
-`RunStatus` beside `state` rather than inside `counters`, because `counters` answers the five
-questions of section 32.7 and this is not one of them: it is not a count, it is what the run
-is doing at this instant, which is what `state` is for.
+Vì vậy `RunStatus` nhận thêm trường `current`, lưu giữ đặc tả và mã băm của nó. Nó nằm trên `RunStatus` bên cạnh `state` thay vì nằm bên trong `counters`, vì `counters` trả lời năm câu hỏi của Section 32.7 và đây không phải là một trong số đó: nó không phải là một số đếm, nó là những gì lượt chạy đang làm ngay tại thời điểm này, và đó là mục đích của `state`.
 
-It carries the whole `CandidateSpec` rather than a rendered string. The panel needs member
-ids and their parameters to write `MA20 + RSI14 + SR`, the spec is already in memory as the
-pending entry the job was queued with, and a label composed on the server would be a second
-place that decides how a candidate is named — the leaderboard already has the first.
+Nó mang toàn bộ `CandidateSpec` thay vì một chuỗi văn bản đã được render sẵn. Panel cần các id thành viên và các tham số của chúng để viết `MA20 + RSI14 + SR`, đặc tả đã nằm sẵn trong bộ nhớ dưới dạng mục chờ mà job được đưa vào hàng đợi cùng với nó, và một nhãn được ghép trên máy chủ sẽ là nơi thứ hai quyết định cách một ứng viên được đặt tên — bảng xếp hạng vốn đã là nơi thứ nhất.
 
-Several workers may be testing at once, so `current` is the most recently started of them
-rather than the only one. That is a simplification and it is stated in the contract, because
-the alternative reads as a lie to anyone running three workers.
+Nhiều worker có thể đang thử nghiệm cùng một lúc, vì vậy `current` là ứng viên được bắt đầu gần đây nhất trong số chúng thay vì là ứng viên duy nhất. Đó là một sự đơn giản hóa và điều này được nêu rõ trong hợp đồng, vì phương án ngược lại sẽ giống như một sự dối trá đối với bất kỳ ai đang chạy ba worker.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Derive it in the browser from the events already published** — `BacktestStarted` carries a
-`specHash` and crosses the channel today, so the panel could hold the last one it saw. It
-fails on arrival: a screen opened mid-run has seen no events and would show nothing until the
-next candidate starts, and a reconnect resets it. Status is a thing you can ask for; an event
-stream is a thing you can miss the start of, and section 46 step 4 describes what a screen
-shows, not what it accumulated.
+**Suy diễn nó trong trình duyệt từ các sự kiện đã phát ra** — `BacktestStarted` mang một `specHash` và truyền qua kênh kết nối hiện nay, do đó panel có thể lưu giữ mã băm cuối cùng mà nó nhìn thấy. Nhưng nó thất bại ngay khi vừa tới: một màn hình được mở giữa chừng lượt chạy không nhìn thấy sự kiện nào trước đó và sẽ không hiển thị gì cho đến khi ứng viên tiếp theo bắt đầu, và việc kết nối lại cũng thiết lập lại trạng thái này. Status là thứ bạn có thể truy vấn; một luồng sự kiện là thứ bạn có thể bỏ lỡ phần đầu, và Section 46 bước 4 mô tả những gì màn hình hiển thị, chứ không phải những gì nó đã tích lũy.
 
-**Send only the `specHash`** — smaller, and the browser already shortens hashes elsewhere.
-`hash: a3f9c1b2` is not what section 46 asks for, and a hash names a candidate only to
-somebody holding the table it came from. The point of the line is that a person reading it
-recognises the combination.
+**Chỉ gửi mỗi `specHash`** — nhỏ gọn hơn, và trình duyệt đã rút ngắn mã băm ở những nơi khác. Nhưng `hash: a3f9c1b2` không phải là thứ Section 46 yêu cầu, và một mã băm chỉ gọi tên một ứng viên đối với người đang nắm giữ bảng dữ liệu sinh ra nó. Mục đích của dòng này là để một người đọc nhận ra sự kết hợp của các chiến lược.
 
-**Send a finished label like `"MA20 + RSI14 + SR"`** — exactly what the screen needs, no
-composition in the browser. It puts naming on the server, where the leaderboard's naming is
-not, so the same candidate would be described by two pieces of code that will drift. It also
-freezes the format: a UI that later wants the parameters in a tooltip has to change a
-contract to get them.
+**Gửi một nhãn hoàn chỉnh như `"MA20 + RSI14 + SR"`** — chính xác là những gì màn hình cần, không phải ghép chuỗi trong trình duyệt. Nhưng nó đặt việc đặt tên lên máy chủ, trong khi việc đặt tên của bảng xếp hạng lại không nằm ở đó, khiến cho cùng một ứng viên lại được mô tả bởi hai đoạn mã có nguy cơ bị lệch pha. Nó cũng đóng băng định dạng: một giao diện người dùng sau này muốn hiển thị các tham số trong tooltip sẽ phải thay đổi một hợp đồng để lấy được chúng.
 
-**Add a `substate` field for "backtesting"** — the third line of section 46 step 4, spelled
-out. It is already implied: `state === 'running'` with a `current` present is what
-backtesting means, and a field that can be derived from two others is a field that can
-disagree with them.
+**Bổ sung trường `substate` cho trạng thái "backtesting"** — dòng thứ ba của Section 46 bước 4, được viết tường minh. Nhưng nó đã được ngầm định sẵn: `state === 'running'` với sự hiện diện của `current` chính là ý nghĩa của việc đang backtest, và một trường có thể suy diễn từ hai trường khác là một trường có thể mâu thuẫn với chúng.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-`RunStatus` is published on every queue event, and `current` makes each of those messages
-carry a full specification rather than a handful of numbers. For a run at the queue depth
-this is a few hundred bytes several times a second — nothing here, and the first thing to
-reconsider if the panel is ever pointed at a run with many workers.
+`RunStatus` được xuất bản trên mọi sự kiện hàng đợi, và `current` làm cho mỗi tin nhắn đó mang một đặc tả đầy đủ thay vì chỉ một vài con số. Đối với một lượt chạy ở độ sâu hàng đợi thông thường, điều này tiêu tốn thêm vài trăm byte vài lần mỗi giây — hoàn toàn không đáng kể ở đây, và là điều đầu tiên cần xem xét lại nếu panel này được trỏ vào một lượt chạy với rất nhiều worker.
 
-`current` is the last candidate to start, and with several workers the screen will name one
-of several while implying it is the one. A user watching a three-worker run sees a name that
-changes faster than candidates complete and does not correspond to what finishes next. The
-contract says so, but a contract comment is not on the screen.
+`current` là ứng viên cuối cùng được bắt đầu, và với nhiều worker, màn hình sẽ hiển thị tên của một trong số nhiều ứng viên trong khi tạo cảm giác nó là ứng viên duy nhất. Một người dùng theo dõi một lượt chạy có ba worker sẽ thấy một cái tên thay đổi nhanh hơn tốc độ ứng viên hoàn thành và không tương ứng với cái kết thúc tiếp theo. Hợp đồng có nêu rõ điều này, nhưng một ghi chú hợp đồng thì không xuất hiện trên màn hình.
 
-The field is optional and absent between candidates, so the line it feeds appears and
-disappears as jobs turn over. A panel that renders it naively will flicker, and the fix is
-presentation — hold the last value while the run is still running — which means the browser
-now keeps a small piece of state the server also has.
+Trường này là tùy chọn (optional) và vắng mặt giữa các ứng viên, do đó dòng thông tin mà nó cấp dữ liệu có thể xuất hiện rồi biến mất khi các tác vụ luân chuyển. Một panel render nó một cách ngây thơ sẽ bị nhấp nháy, và cách khắc phục thuộc về tầng trình bày — giữ lại giá trị cuối cùng trong khi lượt chạy vẫn đang chạy — điều này có nghĩa là trình duyệt hiện giữ một mẩu trạng thái nhỏ mà máy chủ cũng có.

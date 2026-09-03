@@ -1,26 +1,27 @@
-# Backtest execution rules for entry price, trading fees, and warmup periods
+# Quy tắc thực thi backtest cho giá vào lệnh, phí giao dịch và warm-up
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Backtest simulation must accurately reflect real trading conditions while maintaining absolute reproducibility and causality (Iron Rule 7, brief sections 19 & 36). ADR 0010 decided that backtest execution rules reside inside the `Dataset` record rather than in global engine constants. For T12's Backtest Engine, we establish the concrete execution mechanics for the three core rules:
+Mô phỏng backtest phải phản ánh chính xác điều kiện giao dịch thực tế đồng thời bảo toàn tính tái lập tuyệt đối và tính nhân quả (Quy tắc bất khả xâm phạm số 7, mục 19 & 36 đề bài). ADR `0010` đã quyết định rằng các quy tắc thực thi backtest nằm bên trong bản ghi `Dataset` chứ không nằm trong các hằng số toàn cục của engine. Đối với Backtest Engine của task T12, chúng ta thiết lập cơ chế thực thi cụ thể cho ba quy tắc cốt lõi:
 
-1. **Entry price timing**:
-   - `next-open` (default): A signal emitted at candle $t$ enters at the open price of candle $t+1$. This is the standard, realistic assumption because a signal computed on candle $t$'s close cannot be executed until candle $t$ has finalized and candle $t+1$ begins.
-   - `signal-close`: A signal enters at the close price of candle $t$. Supported for theoretical zero-latency models.
-2. **Trading fees**:
-   - Fees are deducted per-side (entry and exit) based on `dataset.rules.feeRate` (e.g. `"0.001"` for Binance's standard 0.1% spot fee).
-   - Net profit for a trade accounts for both entry and exit fee deductions: $\text{profit} = \text{grossProfit} - (\text{entryFee} + \text{exitFee})$.
-3. **Warmup resolution**:
-   - Effective warmup candles $\text{warmup} = \max(\text{dataset.rules.warmupCandles}, \text{strategy.meta.warmup})$.
-   - The engine ensures that historical candle indices prior to $\text{warmup}$ are fed to indicator calculators to stabilize series (e.g. 14-period RSI, 200-period SMA), but no trade entries are generated before index $\text{warmup}$.
+1. **Thời điểm khớp giá vào lệnh (Entry price timing)**:
+   - `next-open` (mặc định): Một tín hiệu phát ra ở cây nến $t$ sẽ vào lệnh tại giá mở cửa của cây nến $t+1$. Đây là giả định chuẩn mực và thực tế nhất, bởi vì một tín hiệu tính toán dựa trên giá đóng cửa của nến $t$ chỉ có thể được thực thi sau khi nến $t$ đã đóng hoàn toàn và nến $t+1$ bắt đầu mở ra.
+   - `signal-close`: Tín hiệu vào lệnh ngay tại giá đóng cửa của chính cây nến $t$. Hỗ trợ cho các mô hình lý thuyết giả định độ trễ bằng 0.
+2. **Phí giao dịch (Trading fees)**:
+   - Phí được khấu trừ ở cả hai chiều vào lệnh và đóng lệnh (entry và exit) dựa trên tỷ lệ `dataset.rules.feeRate` (ví dụ `"0.001"` tương ứng với phí spot chuẩn 0.1% của Binance).
+   - Lợi nhuận ròng của một giao dịch tính cả hai chiều phí: $\text{profit} = \text{grossProfit} - (\text{entryFee} + \text{exitFee})$.
+3. **Số nến làm ấm dữ liệu (Warmup resolution)**:
+   - Số nến warm-up thực tế $\text{warmup} = \max(\text{dataset.rules.warmupCandles}, \text{strategy.meta.warmup})$.
+   - Engine đảm bảo các nến lịch sử trước mốc $\text{warmup}$ vẫn được nạp vào các bộ tính toán chỉ báo để làm ổn định chuỗi dữ liệu (ví dụ RSI 14 chu kỳ, SMA 200 chu kỳ), nhưng tuyệt đối không sinh ra bất kỳ lệnh giao dịch nào trước mốc index $\text{warmup}$.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Fixed engine constants** — hardcoding `next-open`, 0.1% fee, and 50 warmup candles in the backtester code. This was rejected because different exchanges and asset classes carry different fee structures (e.g. VIP tiers, maker vs taker), and different timeframes require different warmup lengths. Putting rules in the dataset (ADR 0010) prevents silent invalidation of historical experiment leaderboards.
+**Ghi cứng các hằng số trong mã nguồn engine** — viết cứng `next-open`, phí 0.1%, và 50 nến warm-up trong code của backtester. Phương án này bị loại bỏ vì các sàn giao dịch và các lớp tài sản khác nhau có biểu phí khác nhau, và các khung thời gian khác nhau đòi hỏi độ dài warm-up khác nhau. Đặt quy tắc trong dataset (ADR `0010`) ngăn chặn việc âm thầm làm sai lệch bảng xếp hạng các thử nghiệm trong quá khứ.
 
-**Instantaneous execution on intra-candle ticks** — simulating sub-candle tick movements during backtesting. This was rejected because the dataset granularity is candle-based (OHLCV). Simulating intra-candle execution without full order book L2/L3 data introduces synthetic look-ahead assumptions and nondeterminism across runs.
+**Mô phỏng khớp lệnh tức thời theo từng tick bên trong cây nến** — mô phỏng biến động giá chi tiết bên trong cây nến trong lúc backtest. Bị loại bỏ vì độ hạt của dữ liệu dataset là cấp độ nến (OHLCV). Mô phỏng khớp lệnh bên trong nến khi không có dữ liệu sổ lệnh cấp độ L2/L3 đầy đủ sẽ tạo ra các giả định nhìn trước tương lai nhân tạo và làm mất tính tất định giữa các lượt chạy.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-- `next-open` execution requires that the dataset contains at least one candle after the signal candle to execute the trade entry.
-- Max-combining dataset and strategy warmup values means datasets with smaller declared warmup than a complex multi-indicator strategy will automatically defer trading until the highest required indicator warmup is reached.
+Quy tắc khớp lệnh `next-open` đòi hỏi tập dữ liệu dataset phải có ít nhất thêm một cây nến sau cây nến phát tín hiệu thì mới có thể thực hiện vào lệnh.
+
+Việc lấy giá trị lớn nhất ($\max$) giữa warm-up của dataset và warm-up của chiến lược đồng nghĩa với việc các dataset khai báo warm-up nhỏ hơn một chiến lược đa chỉ báo phức tạp sẽ tự động hoãn việc vào lệnh cho đến khi đạt đủ số nến warm-up lớn nhất mà chỉ báo yêu cầu.

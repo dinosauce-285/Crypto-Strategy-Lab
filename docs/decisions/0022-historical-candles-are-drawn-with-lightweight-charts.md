@@ -1,60 +1,25 @@
-# Historical candles are drawn with lightweight-charts
+# Biểu đồ nến được vẽ bằng thư viện TradingView Lightweight Charts
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Candle data already arrives shaped for financial charting — `Candle` carries pair,
-timeframe, open time and OHLC as decimal strings. T06's "done means" is explicit that
-the screen shows a candlestick chart, not a generic line or bar chart, and
-`apps/web/docs/UI_CONSTRAINT.md` fixes whatever gets picked here as the only chart
-library for the whole app: T08's 4-chart dashboard, and any later equity-curve or
-leaderboard chart, inherit it rather than choosing their own.
+Dữ liệu nến khi truyền về đã có cấu trúc định hình sẵn cho biểu đồ tài chính — `Candle` mang theo cặp coin, khung thời gian, thời gian mở nến và các mức giá OHLC dưới dạng chuỗi số thập phân. Yêu cầu hoàn thành của task T06 nêu rõ màn hình phải hiển thị biểu đồ nến Nhật (candlestick chart), không phải biểu đồ đường hay cột thông thường, và `apps/web/docs/UI_CONSTRAINT.md` cố định thư viện được chọn ở đây là thư viện biểu đồ duy nhất cho toàn bộ ứng dụng: dashboard 4 biểu đồ của T08 và các biểu đồ đường cong vốn chủ sở hữu (equity curve) sau này đều phải kế thừa nó thay vì tự chọn thư viện khác.
 
-The frontend renders what the backend computed and derives nothing (Iron Rule 5,
-`UI_CONSTRAINT.md`). A library that already knows how to draw a candle — body, wick,
-up/down colour — keeps that boundary. Hand-building candle geometry on a generic
-primitives library would mean writing chart logic in React, which is the anti-pattern
-itself, not an implementation detail of avoiding it.
+Frontend chỉ render những gì backend đã tính toán và tuyệt đối không tự tính toán logic (Quy tắc bất khả xâm phạm số 5, `UI_CONSTRAINT.md`). Một thư viện đã biết sẵn cách vẽ nến — thân nến, bấc nến, màu xanh tăng / đỏ giảm — giúp bảo toàn ranh giới kiến trúc đó. Nếu tự vẽ hình học cây nến trên một thư viện đồ họa nguyên thủy thông thường đồng nghĩa với việc phải viết logic biểu đồ bên trong React component, vốn chính là anti-pattern cần tránh.
 
-`lightweight-charts` (TradingView, MIT licence, ~45KB gzipped) ships a candlestick
-series and line/area series from one package: T06 needs the former, and later screens
-(T14's equity curve, T20's search results) can reuse the same per-panel pattern with the
-latter, without a second dependency. It is canvas-based, so the 1000 candles per pair
-`0023` backfills render and pan without the per-node DOM cost a library built from SVG
-shapes per candle would carry, and that matters once T08 puts four of these on screen
-at once.
+Thư viện `lightweight-charts` (TradingView, giấy phép mã nguồn mở MIT, dung lượng ~45KB gzipped) cung cấp cả chuỗi nến candlestick lẫn chuỗi đường/vùng line/area trong cùng một package: T06 cần chuỗi nến, và các màn hình sau này (đường cong vốn T14, kết quả tìm kiếm T20) có thể tái sử dụng cùng pattern mà không cần cài thêm dependency thứ hai. Thư viện này vẽ trên nền HTML5 Canvas, vì vậy 1000 cây nến mỗi cặp coin mà ADR `0023` nạp bù có thể render và cuộn pan mượt mà mà không phải chịu chi phí DOM node nặng nề như các thư viện render từng cây nến bằng phần tử SVG, điều này cực kỳ quan trọng khi task T08 đặt cùng lúc 4 biểu đồ trên một màn hình.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**A generic charting library (Recharts, or primitives such as visx).** Flexible for the
-line and bar charts T14/T20/T24 will eventually want, but none of them ship an OHLC
-candlestick series out of the box — drawing wicks and bodies would mean writing that
-geometry in React, exactly the anti-pattern above. It would also mean picking a second,
-differently-shaped library later for anything that isn't a candle, which
-`UI_CONSTRAINT.md`'s "only one chart library" rule forbids outright.
+**Các thư viện biểu đồ thông dụng (Recharts, hoặc thư viện nguyên thủy như visx)** — linh hoạt cho biểu đồ đường và cột, nhưng không thư viện nào hỗ trợ sẵn chuỗi nến tài chính OHLC. Tự vẽ thân nến và bấc nến đồng nghĩa với việc đưa logic vẽ hình học vào React. Nó cũng dẫn đến việc sau này phải chọn thêm một thư viện thứ hai khác loại, vi phạm quy tắc "chỉ dùng duy nhất một thư viện biểu đồ" của `UI_CONSTRAINT.md`.
 
-**Chart.js with a financial plugin (`chartjs-chart-financial`).** Closer fit, but the
-candlestick type lives in a community plugin with a far smaller maintenance footprint
-than the core library, and rendering is still DOM/SVG-per-point under the hood — costlier
-at 1000+ candles across four simultaneous charts than a renderer built for exactly this.
+**Chart.js kết hợp plugin tài chính (`chartjs-chart-financial`)** — gần gũi hơn, nhưng loại biểu đồ nến nằm trong một plugin cộng đồng có mức độ duy trì thấp hơn nhiều so với thư viện lõi, và cơ chế render bên dưới vẫn là DOM/SVG cho từng điểm dữ liệu — chi phí rất đắt đỏ khi hiển thị hơn 1000 nến trên 4 biểu đồ chạy đồng thời.
 
-**TradingView's full `charting_library`.** The most capable option, and the one every
-trader recognises, but it isn't npm-installable — it's a separate licence agreement and a
-self-hosted bundle, disproportionate to what T06 needs (one candlestick series plus a
-live update) and it adds a licensing decision nobody asked for.
+**Thư viện đầy đủ của TradingView (`charting_library`)** — phương án mạnh mẽ nhất mà mọi trader đều quen thuộc, nhưng không thể cài qua npm — nó đòi hỏi thỏa thuận cấp phép riêng và gói bundle tự host cồng kềnh, quá mức so với nhu cầu thực tế của task T06 và kéo theo vấn đề bản quyền không cần thiết.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-`lightweight-charts` is single-purpose: it draws price series well and nothing else. Any
-indicator overlay T10 wants (a moving average line, a Bollinger band) has to be added as
-an extra series on the same chart rather than configured through a plugin system — more
-explicit, but more code per indicator than a library with built-in technical-analysis
-overlays.
+Thư viện `lightweight-charts` là thư viện đơn mục đích: nó vẽ các chuỗi giá tài chính xuất sắc và không làm gì khác. Bất kỳ đường chỉ báo nào mà task T10 muốn vẽ chồng lên (đường MA, dải Bollinger Bands) đều phải được thêm dưới dạng một chuỗi dữ liệu (series) bổ sung trên cùng biểu đồ thay vì cấu hình qua hệ thống plugin — tường minh hơn nhưng tốn code hơn trên mỗi chỉ báo.
 
-It has no built-in drawing tools or multi-pane layouts — volume in its own pane, RSI
-below the price. T08's dashboard and any later indicator panel hand-roll that
-arrangement out of multiple chart instances or panes rather than getting it from the
-library.
+Nó không tích hợp sẵn công cụ vẽ tự do của người dùng hoặc bố cục đa khung hình (multi-pane layout) — ví dụ khối lượng volume ở khung riêng, RSI ở khung bên dưới giá. Dashboard của T08 và các panel chỉ báo sau này phải tự sắp xếp bố cục bằng nhiều instance biểu đồ ghép lại.
 
-Locking this in for the whole app means a future screen that genuinely wants something
-`lightweight-charts` doesn't do well — a scatter plot of search results, say — still has
-to fit inside it, or argue an explicit exception when that screen is built.
+Khóa chặt thư viện này cho toàn bộ ứng dụng đồng nghĩa với việc các màn hình trong tương lai muốn vẽ các dạng biểu đồ đặc thù khác (ví dụ biểu đồ phân tán scatter plot cho kết quả search) vẫn phải tìm cách thể hiện qua nó, hoặc phải giải trình một ngoại lệ kiến trúc tường minh khi xây dựng màn hình đó.

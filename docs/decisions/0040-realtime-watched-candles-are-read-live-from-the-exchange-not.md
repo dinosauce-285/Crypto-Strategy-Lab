@@ -1,60 +1,23 @@
-# Realtime-watched candles are read live from the exchange, not persisted
+# Các cây nến được theo dõi thời gian thực được đọc trực tiếp từ sàn, không lưu trữ vĩnh viễn
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-`0023` tied two things together that don't actually need each other: backfilling a
-pair/timeframe on first watch, and persisting it forever afterward. The persistence
-half was there to serve backtesting — `0023`'s own reasoning is entirely about T19's
-rate limit and Iron Rule 7's reproducibility guarantee, neither of which the Realtime
-tab needs. A chart being looked at right now doesn't need to be replayable next month.
+`0023` đã gắn chặt hai việc không thực sự cần đi cùng nhau: bù đắp dữ liệu (backfilling) cho một cặp tiền/khung thời gian khi lần đầu theo dõi, và lưu trữ dữ liệu đó vĩnh viễn sau đó. Nửa lưu trữ được sinh ra là để phục vụ backtest — lập luận của chính `0023` hoàn toàn xoay quanh giới hạn tần suất (rate limit) của T19 và bảo đảm tính tái lập của Iron Rule 7, cả hai điều này tab Realtime đều không cần. Một biểu đồ đang được xem ngay lúc này không cần phải có khả năng phát lại vào tháng sau.
 
-`0032` already made this exact argument once, for the reconnect cursor specifically:
-its rejected "database-backed stream cursor" alternative says persisting every stream
-tick "creates write contention and storage bloat for transient UI viewing without
-architectural benefit... process memory is fast, isolated, and sufficient." That
-reasoning doesn't stop at the cursor — it applies just as well to the candles
-themselves. Nothing about showing someone a live chart requires keeping the data
-around after they close the tab.
+`0032` đã từng đưa ra chính xác lập luận này một lần, dành riêng cho con trỏ kết nối lại (reconnect cursor): phương án thay thế bị từ chối của nó là "database-backed stream cursor" chỉ ra rằng việc lưu trữ từng tick stream vào DB "tạo ra xung đột ghi và làm phình to dung lượng lưu trữ chỉ để xem UI tạm thời mà không đem lại lợi ích kiến trúc nào... bộ nhớ tiến trình là nhanh, cô lập và đủ dùng." Lập luận đó không dừng lại ở con trỏ — nó cũng áp dụng hoàn hảo cho chính các cây nến. Không có điều gì trong việc hiển thị cho ai đó một biểu đồ trực tiếp đòi hỏi phải giữ dữ liệu lại sau khi họ đóng tab.
 
-With no retention policy anywhere in the system, the practical consequence of tying
-persistence to watching was a `Candle` table with no upper bound: it grows for as long
-as anyone leaves a pair open, whether or not that data is ever backtested. Now that
-`0041` gives Dataset creation its own explicit, scoped fetch, persistence has a real
-owner — a Dataset — and Realtime watching goes back to being what `0032` always treated
-it as: a transient view, served live.
+Khi không có chính sách giữ dữ liệu (retention policy) nào trong toàn hệ thống, hậu quả thực tế của việc gắn việc lưu trữ với việc theo dõi trực tiếp là một bảng `Candle` không có giới hạn trên: nó phình to chừng nào còn có người mở một cặp tiền, bất kể dữ liệu đó có bao giờ được backtest hay không. Giờ đây khi `0041` cấp cho việc tạo Dataset lệnh nạp tường minh và có phạm vi riêng của nó, việc lưu trữ đã có một chủ sở hữu thực sự — một Dataset — và việc theo dõi Realtime quay trở lại đúng bản chất mà `0032` luôn đối xử: một khung nhìn tạm thời, được phục vụ trực tiếp.
 
-`GET /market/candles`'s "most recent N" mode (no `from`/`to`) now calls
-`ExchangeHistoryPort.fetchKlines` directly. The `from`/`to` range mode is untouched —
-that's `0026`'s storage-only invariant, still true, still serving Dataset-backed reads.
-Live ticks and candle closes keep streaming over the same WebSocket channel (`0017`,
-`0019`) exactly as before; only the database write on each close is removed.
+Chế độ "N nến gần nhất" của `GET /market/candles` (không có `from`/`to`) giờ đây gọi trực tiếp `ExchangeHistoryPort.fetchKlines`. Chế độ khoảng `from`/`to` vẫn giữ nguyên — đó là bất biến chỉ đọc từ kho lưu trữ của `0026`, vẫn đúng và vẫn phục vụ các lượt đọc dựa trên Dataset. Các tick trực tiếp và sự kiện đóng nến tiếp tục truyền qua cùng một kênh WebSocket (`0017`, `0019`) chính xác như trước; chỉ có thao tác ghi vào cơ sở dữ liệu trên mỗi lần đóng nến là được gỡ bỏ.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Keep persisting, add a retention/pruning job instead.** Bounds the growth without
-touching the read path. Rejected because it solves the wrong problem: the data being
-pruned was never needed for viewing in the first place, and pruning candles a Dataset
-might still reference (even one with no Experiments yet) risks exactly the
-reproducibility failure `0023`'s Iron Rule 7 exists to prevent. Not persisting
-unwatched, unbacktested data at all is simpler than persisting it and later deciding
-whether it's safe to delete.
+**Tiếp tục lưu trữ, bổ sung tác vụ dọn dẹp/cắt tỉa (retention/pruning job).** Giới hạn sự tăng trưởng mà không ảnh hưởng tới luồng đọc. Bị từ chối vì giải quyết sai vấn đề: dữ liệu bị cắt tỉa vốn dĩ ngay từ đầu chưa từng cần thiết cho việc xem, và việc cắt tỉa các cây nến mà một Dataset có thể vẫn đang tham chiếu (ngay cả Dataset chưa có Thực nghiệm nào) có nguy cơ gây ra lỗi mất tính tái lập mà Iron Rule 7 của `0023` sinh ra để ngăn chặn. Hoàn toàn không lưu trữ dữ liệu chưa được theo dõi, chưa được backtest sẽ đơn giản hơn việc lưu trữ rồi sau đó phải phân vân quyết định xem xóa có an toàn hay không.
 
-**Keep the current backfill-on-watch behavior, let Datasets read whatever's already
-there.** The status quo. Rejected because it's exactly the bug this whole change
-started from: a Dataset's data availability becomes an accident of Realtime browsing
-history instead of a deliberate request, and storage grows for reasons nobody chose.
+**Giữ hành vi backfill-khi-theo-dõi hiện tại, để Datasets đọc bất cứ thứ gì có sẵn.** Hiện trạng cũ. Bị từ chối vì đó chính xác là lỗi mà toàn bộ thay đổi này bắt đầu giải quyết: tính khả dụng của dữ liệu Dataset trở thành một sự ngẫu nhiên của lịch sử duyệt web Realtime thay vì một yêu cầu có chủ đích, và dung lượng lưu trữ tăng lên vì những lý do không ai chủ động chọn.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Every Realtime tab open now costs one REST call to Binance instead of a Postgres read
-— slightly higher latency on first paint, and a small, ongoing piece of the request
-budget that scales with how many people have the tab open, not with how much has been
-backfilled once. At current usage this is nowhere near Binance's rate limit (see
-`0041`'s weight math), but it's a different cost shape than before and worth watching
-if concurrent viewers ever grow much.
+Mỗi lần mở tab Realtime giờ đây tiêu tốn một lệnh gọi REST tới Binance thay vì đọc Postgres — độ trễ cao hơn một chút ở lần hiển thị đầu tiên (first paint), và chiếm một phần nhỏ liên tục trong hạn mức yêu cầu theo tỷ lệ số người đang mở tab, chứ không phải theo lượng dữ liệu đã được backfill một lần. Ở mức sử dụng hiện tại, điều này còn cách rất xa giới hạn tần suất của Binance (xem tính toán trọng số của `0041`), nhưng đây là một hình thái chi phí khác trước đây và cần theo dõi nếu lượng người xem đồng thời tăng cao.
 
-The reconnect gap-repair cursor (`0032`) now seeds itself from a single cheap
-`fetchKlines(pair, timeframe, 1)` call instead of reading a pre-existing backfill row.
-If a client disconnects before that seed call resolves, gap-repair has nothing to
-repair from until the next live candle arrives — an edge case `0032` didn't have to
-consider before, because a backfilled row was always already there.
+Con trỏ vá lỗ hổng khi kết nối lại (`0032`) giờ đây tự khởi tạo giá trị từ một lệnh gọi đơn lẻ `fetchKlines(pair, timeframe, 1)` với chi phí thấp thay vì đọc một hàng backfill có sẵn. Nếu một máy khách ngắt kết nối trước khi lệnh gọi này hoàn tất, việc vá lỗ hổng sẽ không có điểm bắt đầu cho đến khi cây nến trực tiếp tiếp theo đến — một trường hợp biên mà `0032` trước đây không phải bận tâm, vì hàng backfill luôn luôn có sẵn từ trước.

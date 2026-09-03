@@ -1,6 +1,6 @@
 ---
 name: Crypto Strategy Lab
-description: A laboratory for combining, backtesting and ranking crypto trading strategies.
+description: Nền tảng phân tích, kiểm thử lịch sử và xếp hạng các chiến lược giao dịch crypto.
 colors:
   bg: "#181a20"
   surface: "#1e2329"
@@ -109,296 +109,192 @@ components:
     typography: "{typography.data}"
 ---
 
-# Design System: Crypto Strategy Lab
+# Hệ thống Thiết kế (Design System): Crypto Strategy Lab
 
-## 1. Overview
+## 1. Tổng quan (Overview)
 
-**Creative North Star: "The Exchange Terminal"**
+**Kim chỉ nam sáng tạo (Creative North Star): "The Exchange Terminal" (Terminal sàn giao dịch chuyên nghiệp)**
 
-This is the room where the numbers are worked, not a report about them. The ground is the
-near-black an exchange uses because candlesticks in green and red have their highest
-contrast against it, and because the people who read this screen have read a hundred like
-it — the familiarity is the feature. Panels are unbordered slabs a shade lighter than the
-ground; a boundary is a change of plane or a hairline, never a frame drawn for its own
-sake. One amber carries every decision the reader can make.
+Đây là nơi trực tiếp thao tác và làm việc với các con số, không phải là một bài báo cáo màu mè về chúng. Màu nền là màu gần đen (near-black) tương tự các sàn giao dịch tài chính, giúp các cây nến xanh lá và đỏ đạt độ tương phản cao nhất, đồng thời tạo cảm giác quen thuộc cho người dùng vốn đã quen đọc hàng trăm màn hình tương tự — sự quen thuộc chính là tính năng. Các panel là những mặt phẳng không viền sáng hơn màu nền một nấc; ranh giới giữa các khối là sự thay đổi mặt phẳng hoặc đường kẻ mảnh (hairline), tuyệt đối không vẽ khung viền dày chỉ để trang trí. Một sắc hổ phách (amber) duy nhất phụ trách mọi điểm tương tác quyết định của người dùng.
 
-Density serves the task. Body type is 14px, table type 13px, and a screen fills its width
-because a wide table beats a narrow one. Where a figure and a label compete, the figure is
-in mono and the label is in sans, so a column of prices aligns without the sentence beside
-it looking like output.
+Mật độ thông tin phục vụ trực tiếp tác vụ. Cỡ chữ nội dung là 14px, cỡ chữ bảng dữ liệu là 13px, và màn hình chiếm toàn bộ chiều rộng vì một bảng rộng luôn tiện theo dõi hơn một bảng hẹp. Khi một con số và một nhãn chữ đặt cạnh nhau, con số dùng font mono (đơn cách) còn nhãn chữ dùng font sans, giúp cột giá cả thẳng hàng tăm tắp mà câu văn bên cạnh không bị khô khan như output dòng lệnh.
 
-It explicitly rejects the two shapes closest to this subject and nearest to a casino: the
-**neon exchange** — purple-to-cyan gradients, glow, blinking figures, badges that
-celebrate — and the **beginner investing app** — oversized arrows, magnified percentages,
-anything that nudges. Dark and amber is the category's working uniform; gradients and glow
-are its costume.
+Hệ thống kiên quyết từ chối hai phong cách thiết kế tiêu cực gần với chủ đề này: **Sàn giao dịch neon** — dải màu chuyển tím sang lục lam, hiệu ứng phát sáng glow, các con số nhấp nháy, huy hiệu chúc tụng — và **Ứng dụng đầu tư cho người mới bắt đầu** — mũi tên quá khổ, tỷ lệ phần trăm phóng to, các yếu tố hối thúc. Nền tối và sắc hổ phách là bộ đồng phục làm việc nghiêm túc của ngành; dải màu gradient và hiệu ứng phát sáng chỉ là lớp hóa trang lòe loẹt.
 
-**Key Characteristics:**
-- Three planes: ground `#181a20`, panel `#1e2329`, raised control `#2b3139`.
-- One accent, amber `#fcd535` — primary action, current tab, current selection, nothing else.
-- IBM Plex Sans for words, IBM Plex Mono for figures. One superfamily, two genres.
-- A top bar and a live ticker rail; the screen below them is full width.
-- Four states on every surface — loading, empty, error, data — and none of them may be
-  mistaken for another.
+**Đặc điểm chính:**
+- Ba mặt phẳng: nền trang `#181a20`, panel chứa dữ liệu `#1e2329`, khối điều khiển nổi `#2b3139`.
+- Một màu nhấn duy nhất, hổ phách `#fcd535` — nút hành động chính, tab đang chọn, mục đang chọn, không dùng cho mục đích khác.
+- IBM Plex Sans cho chữ văn bản, IBM Plex Mono cho các con số. Cùng một siêu họ font (superfamily), hai phong cách chuyên biệt.
+- Thanh điều hướng trên cùng (top bar) và thanh ticker giá trực tiếp; không gian màn hình bên dưới dàn trải toàn chiều rộng.
+- Bốn trạng thái bắt buộc trên mọi bề mặt — loading, empty, error, data — và không trạng thái nào được phép gây nhầm lẫn với trạng thái khác.
 
-## 2. Colors
+## 2. Màu sắc (Colors)
 
-Three neutral planes, one amber accent, and green/red reserved strictly for direction.
+Ba mặt phẳng trung tính, một màu nhấn hổ phách, và xanh/đỏ chỉ dành riêng cho chiều hướng giao dịch.
 
-### Primary
-- **Amber** (`#fcd535`): the only accent. Primary buttons, the current tab, a selected
-  card's border and wash, the MA overlay, the top three ranks, every focus ring. Its
-  pressed state is `#f0b90b`; text on it is `#202630`.
+### Màu chính (Primary)
+- **Hổ phách (Amber)** (`#fcd535`): màu nhấn duy nhất. Nút bấm chính, tab đang kích hoạt, viền và nền mờ của thẻ được chọn, đường chỉ báo MA chồng lên chart, top 3 bảng xếp hạng, và viền focus. Trạng thái khi bấm (pressed) là `#f0b90b`; chữ hiển thị trên nền này là `#202630`.
 
-### Neutral
-- **Ground** (`#181a20`): the page.
-- **Panel** (`#1e2329`): a surface holding data. No border — the plane change is the edge.
-- **Raised** (`#2b3139`): anything you operate. Buttons, fields, hovered rows, pills.
-- **Ink** (`#eaecef`): body text and every figure.
-- **Muted** (`#848e9c`): labels, column headers, state sentences. 5.2:1 on the ground and
-  4.8:1 on a panel, so it is legible rather than decorative.
-- **Faint** (`#5e6673`): a disabled control's text, and the neutral segment of a bar.
-- **Hairline** (`#2b3139`) and **strong hairline** (`#363a45`): the only dividers, 1px.
+### Màu trung tính (Neutral)
+- **Nền trang (Ground)** (`#181a20`): màu nền toàn trang.
+- **Panel** (`#1e2329`): bề mặt chứa dữ liệu. Không dùng viền bao — sự thay đổi mặt phẳng chính là ranh giới.
+- **Khối nổi (Raised)** (`#2b3139`): bất kỳ thành phần nào có thể tương tác. Nút bấm, ô nhập liệu, dòng đang hover, thẻ pill.
+- **Mực văn bản (Ink)** (`#eaecef`): chữ nội dung và mọi con số.
+- **Mờ (Muted)** (`#848e9c`): nhãn chú thích, tiêu đề cột, câu mô tả trạng thái. Đạt tương phản 5.2:1 trên nền trang và 4.8:1 trên panel, đảm bảo đọc rõ ràng thay vì chỉ để trang trí.
+- **Mờ nhạt (Faint)** (`#5e6673`): chữ của nút bị vô hiệu hóa (disabled), và đoạn trung tính trên thanh tiến trình.
+- **Đường kẻ mảnh (Hairline)** (`#2b3139`) và **Đường kẻ đậm (Strong hairline)** (`#363a45`): đường phân cách duy nhất, độ dày 1px.
 
-### Semantic
-- **Up / buy** (`#0ecb81`) and **down / sell** (`#f6465d`). One value each, for marks and
-  for text alike: candles, volume bars, chart markers and bar segments take the same red
-  and green a reader sees in a profit column. The red measures 4.48:1 on a panel — a
-  hair under the AA floor — and is kept anyway, because the alternative is a red that is
-  not the category's. `UI_CONSTRAINT.md` names and bounds that exception; ADR 0051 records
-  the call.
-- **Washes** (`#10251d`, `#2a1a1e`, `#2a2413`) are the grounds a coloured pill sits on.
-  They are *darker* than the plane behind them, not a transparent tint of the colour: a
-  tint lightens the ground and drags the text on it down with it — which is how the muted
-  sub-label on a selected strategy card ended up at 4.01:1.
+### Màu ngữ nghĩa (Semantic)
+- **Tăng / Mua (Up / buy)** (`#0ecb81`) và **Giảm / Bán (Down / sell)** (`#f6465d`). Mỗi trạng thái đúng một giá trị màu duy nhất, áp dụng chung cho cả điểm đánh dấu lẫn chữ viết: thân nến, cột khối lượng volume, điểm đánh dấu trên biểu đồ và cột lợi nhuận đều dùng chung sắc xanh và đỏ này. Sắc đỏ đạt tương phản 4.48:1 trên panel — thấp hơn một chút so với sàn chuẩn AA (4.5:1) — nhưng vẫn được giữ nguyên vì phương án thay thế là một màu đỏ lệch chuẩn của ngành. Tệp `UI_CONSTRAINT.md` đã ghi nhận rõ ngoại lệ này; ADR 0051 lưu trữ quyết định.
+- **Nền màu mờ (Washes)** (`#10251d`, `#2a1a1e`, `#2a2413`): là màu nền cho các thẻ pill có màu. Chúng *tối hơn* mặt phẳng phía sau, không phải là lớp màu trong suốt: lớp phủ trong suốt sẽ làm sáng màu nền và kéo độ tương phản của chữ xuống.
 
-### Named Rules
+### Các quy tắc đặt tên màu (Named Rules)
 
-**The Meaning-Only Rule.** Colour appears when it carries information and at no other
-time. A heading is not amber because headings look good amber; a panel is not tinted to
-show that it is a panel.
+**Quy tắc Chỉ dùng cho Ý nghĩa (The Meaning-Only Rule).** Màu sắc chỉ xuất hiện khi nó thực sự mang thông tin và không dùng ở bất kỳ nơi nào khác. Tiêu đề không tô màu vàng hổ phách chỉ vì "trông đẹp"; panel không đổi màu chỉ để khoe rằng nó là một panel.
 
-**The Never-Alone Rule.** Green and red never carry meaning by themselves. Buy and sell,
-profit and loss, up and down are readable in greyscale through a word, a shape or a
-position. A colour-blind reader and a black-and-white printout reach the same conclusion.
+**Quy tắc Không đứng đơn độc (The Never-Alone Rule).** Xanh lá và đỏ không bao giờ truyền tải ý nghĩa một mình. Mua và bán, lời và lỗ, tăng và giảm bắt buộc phải đọc hiểu được dưới thang xám thông qua chữ viết, hình khối hoặc vị trí. Một người mù màu hoặc một bản in đen trắng vẫn rút ra kết luận chính xác như nhau.
 
-**The One-Red Rule.** There is one red and one green, and a mark and a sentence use the
-same one. A second value tuned for a background is how a palette starts drifting, and it
-asks every future author to know which of two nearly identical tokens they want.
+**Quy tắc Một màu đỏ duy nhất (The One-Red Rule).** Chỉ có một mã màu đỏ và một mã màu xanh lá, điểm đánh dấu và câu chữ đều dùng chung một mã. Việc tạo thêm mã màu thứ hai chỉ để hợp với nền là khởi đầu cho sự trôi dạt bảng màu và khiến các lập trình viên sau này lúng túng không biết chọn token nào.
 
-## 3. Typography
+## 3. Kiểu chữ (Typography)
 
-**Body / UI font:** IBM Plex Sans (400 / 500 / 600).
-**Figure font:** IBM Plex Mono (400 / 500 / 600).
+**Font nội dung / UI:** IBM Plex Sans (400 / 500 / 600).
+**Font số liệu:** IBM Plex Mono (400 / 500 / 600).
 
-**Character:** one superfamily in two genres. The sans carries every word — headings,
-labels, buttons, sentences — so prose reads as prose. The mono carries every figure, so a
-price changing from `64,231.10` to `9,842.05` does not shift the row under the reader's
-eye. `font-variant-numeric: tabular-nums` is set wherever digits stack.
+**Đặc tính:** Một siêu họ font chia làm hai phong cách. Font sans phụ trách mọi từ ngữ — tiêu đề, nhãn, nút bấm, câu văn — để đọc tự nhiên như văn bản thông thường. Font mono phụ trách mọi con số, đảm bảo khi một mức giá thay đổi từ `64,231.10` thành `9,842.05` thì cả dòng dữ liệu không bị giật hay lệch vị trí dưới mắt người đọc. Thuộc tính `font-variant-numeric: tabular-nums` được kích hoạt ở mọi nơi các chữ số xếp chồng lên nhau.
 
-### Hierarchy
-- **Title** (Sans 600, 1.125rem): the page name. Once per screen, with its subtitle on the
-  same baseline.
-- **Heading** (Sans 600, 0.9375rem): a panel's name, sitting on the hairline that separates
-  it from its content.
-- **Body** (Sans 400, 0.875rem): sentences, capped at 65–75ch.
-- **Reading** (Mono 500, 1rem): a metric's value.
-- **Data** (Mono 400, 0.8125rem): table cells. Figures right, the first column left.
-- **Label** (Sans 400, 0.75rem, Muted): column headers, a figure's caption, provenance.
-  Never uppercase-tracked.
+### Hệ thống thứ bậc (Hierarchy)
+- **Title** (Sans 600, 1.125rem): tên màn hình. Xuất hiện một lần duy nhất trên mỗi trang, phụ đề nằm trên cùng baseline.
+- **Heading** (Sans 600, 0.9375rem): tên của panel, nằm ngay trên đường kẻ mảnh ngăn cách với nội dung.
+- **Body** (Sans 400, 0.875rem): các câu văn, giới hạn độ dài từ 65–75 ký tự.
+- **Reading** (Mono 500, 1rem): giá trị của một chỉ số đo lường (metric).
+- **Data** (Mono 400, 0.8125rem): các ô trong bảng dữ liệu. Con số căn phải, cột đầu tiên căn trái.
+- **Label** (Sans 400, 0.75rem, Muted): tiêu đề cột, chú thích số liệu, nguồn gốc dữ liệu. Không bao giờ viết in hoa dãn khoảng cách (uppercase-tracked).
 
-### Named Rules
+### Các quy tắc đặt tên kiểu chữ (Named Rules)
 
-**The Figure-Is-Mono Rule.** If it is a measurement, it is set in the mono. If it is a
-word, it is set in the sans. A table cell that holds a sentence takes `.text-cell` and
-switches back to the sans.
+**Quy tắc Số là Mono (The Figure-Is-Mono Rule).** Nếu là một con số đo lường, dùng font Mono. Nếu là một từ ngữ, dùng font Sans. Một ô trong bảng chứa câu văn sẽ gắn class `.text-cell` để chuyển về font Sans.
 
-**The No-Kicker Rule.** No small uppercase tracked eyebrow above a section. A panel is
-named by its heading and nothing else.
+**Quy tắc Không dùng Kicker (The No-Kicker Rule).** Không chèn dòng chữ nhỏ in hoa dãn cách bên trên tiêu đề phân mục. Một panel được định danh bằng chính heading của nó và không thêm gì khác.
 
-## 4. Layout
+## 4. Bố cục (Layout)
 
-A fixed shell of three rows: the 3.5rem top bar, the 2.25rem ticker rail, and the screen,
-which scrolls inside itself so the page never moves. The top bar holds the brand mark, the
-five screens, and the channel status — the one thing true on every screen.
+Khung cố định gồm ba hàng: thanh top bar 3.5rem, thanh ticker giá 2.25rem, và màn hình làm việc chính tự cuộn bên trong để toàn bộ trang web không bao giờ bị cuộn giật. Thanh top bar chứa logo thương hiệu, 5 tab điều hướng và trạng thái kết nối kênh push — thông tin đồng nhất trên mọi màn hình.
 
-A screen is a head plus a body. The body is `1fr` and a 20rem side rail: the subject on the
-left, the controls and the readouts on the right. Panels are separated by 0.85rem and
-nothing else; inside one, 0.6rem; between controls that belong together, 0.5rem.
+Mỗi màn hình gồm phần đầu (head) và phần thân (body). Phần thân chia thành cột chính `1fr` và cột bên (side rail) 20rem: đối tượng làm việc chính ở bên trái, các công cụ điều khiển và chỉ số đo lường ở bên phải. Các panel cách nhau 0.85rem; bên trong panel các phần cách nhau 0.6rem; giữa các nút điều khiển đi liền nhau cách nhau 0.5rem.
 
-Responsive behaviour is structural. The brand wordmark drops below 900px. Below 720px the
-side rail moves under the main column, the four-chart grid becomes four full-width rows,
-and — this is the part that bites — the desktop layout's height-filling (`flex: 1` plus
-`min-height: 0`) is switched off, because a collapsed track lets a tall child paint over
-whatever is stacked below it. Tables scroll inside their own container; the page never
-scrolls sideways.
+Hành vi responsive mang tính cấu trúc. Tên thương hiệu rút gọn dưới 900px. Dưới 720px cột bên sẽ chuyển xuống dưới cột chính, lưới 4 biểu đồ chuyển thành 4 hàng xếp dọc toàn chiều rộng, và — chi tiết quan trọng nhất — cơ chế tự lấp đầy chiều cao của desktop (`flex: 1` kèm `min-height: 0`) bị tắt đi, tránh việc phần tử dài đè lên nội dung bên dưới. Bảng dữ liệu tự cuộn ngang bên trong container của chính nó; toàn bộ trang web không bao giờ bị cuộn ngang.
 
-### Named Rules
+### Các quy tắc đặt tên bố cục (Named Rules)
 
-**The Height-Handoff Rule.** `.grows` (`flex: 1; min-height: 0`) belongs only on a box
-that contains its own scroller or a chart. Put it on a box that is just a stack of text and
-that text will overflow onto the next panel.
+**Quy tắc Chuyển giao Chiều cao (The Height-Handoff Rule).** Thuộc tính `.grows` (`flex: 1; min-height: 0`) chỉ được đặt trên một box chứa vùng tự cuộn riêng (scroller) hoặc chứa biểu đồ chart. Đặt nó lên một box chỉ chứa các đoạn text xếp chồng sẽ khiến text bị tràn đè lên panel tiếp theo.
 
-## 5. Elevation & Depth
+## 5. Độ cao & Chiều sâu (Elevation & Depth)
 
-Depth is a change of plane: ground, panel, raised. Three values, and a 1px hairline where
-two regions meet inside one plane. No panel has a shadow and none will get one.
+Chiều sâu được thể hiện bằng sự thay đổi mặt phẳng: nền trang (ground), panel, khối nổi (raised). Ba cấp độ, cùng đường kẻ mảnh 1px hairline khi hai vùng tiếp giáp nhau trên cùng mặt phẳng. Không panel nào dùng bóng đổ (box-shadow) và sẽ không bao giờ dùng.
 
-The exception is a layer that genuinely floats over content: the dropdown menu and the
-modal, which carry the system's only two shadow tokens (`--shadow-menu`, `--shadow-modal`)
-plus the modal's `--overlay` scrim. Nothing else in the system may reference them.
+Ngoại lệ duy nhất là các tầng thực sự trôi nổi trên bề mặt nội dung: menu dropdown và modal hộp thoại, hai thành phần này dùng hai token bóng đổ duy nhất của hệ thống (`--shadow-menu`, `--shadow-modal`) kèm lớp phủ mờ nền `--overlay`. Không thành phần nào khác được phép tham chiếu các token này.
 
-### Named Rules
+### Các quy tắc đặt tên độ cao (Named Rules)
 
-**The Three-Plane Rule.** Ground, panel, operable. A box inside a box gets no third
-background — `.panel-box` inside a `.panel-box` flattens itself on purpose.
+**Quy tắc Ba Mặt phẳng (The Three-Plane Rule).** Nền trang, panel, phần tử tương tác. Một box nằm trong một box không được tạo thêm màu nền thứ ba — `.panel-box` nằm trong `.panel-box` sẽ tự động làm phẳng chính nó.
 
-### Browser surfaces
+### Bề mặt Trình duyệt (Browser surfaces)
 
-`color-scheme: dark` is declared on the root and in the document head, so native controls,
-the date picker and the page's own scrollbar match the ground instead of the operating
-system's idea of a form, and the browser paints the dark ground before the stylesheet
-lands. Text selection is `--accent-dim` behind Ink, not the browser's blue. Scrollbars are
-8px, strong-hairline at rest and Muted on hover, on a transparent track. Headings carry
-`text-wrap: balance`.
+Khai báo `color-scheme: dark` ở cấp root và trong thẻ head của tài liệu, giúp các điều khiển mặc định, bộ chọn ngày và thanh cuộn của trình duyệt đồng bộ theo nền tối thay vì dùng giao diện mặc định của hệ điều hành, và trình duyệt render nền tối ngay trước khi file CSS tải xong. Vùng bôi đen văn bản (text selection) dùng màu `--accent-dim` sau lớp chữ Ink, không dùng màu xanh dương của trình duyệt. Thanh cuộn rộng 8px, màu strong-hairline ở trạng thái nghỉ và chuyển sang Muted khi hover, trên nền rãnh trong suốt. Các tiêu đề kích hoạt `text-wrap: balance`.
 
-## 6. Shapes
+## 6. Hình khối (Shapes)
 
-Three radii: 4px for a control or a pill, 8px for a panel, 12px for a modal. Everything
-else is square.
+Ba kích thước bo góc: 4px cho nút điều khiển hoặc thẻ pill, 8px cho panel, 12px cho modal hộp thoại. Mọi thành phần khác đều vuông góc.
 
-Borders are 1px and they either separate two things or they go. There is no 2px border in
-this system, no coloured stripe down the side of anything, and a selected card is marked by
-its border *plus* a wash of the same hue, so the state survives greyscale.
+Đường viền có độ dày 1px và chỉ xuất hiện khi cần ngăn cách hai thành phần. Không có đường viền 2px trong hệ thống này, không có dải sọc màu chạy dọc một bên, và một thẻ card được chọn sẽ được phân biệt bằng viền của nó *cộng với* một lớp nền mờ (wash) cùng tông màu, giúp trạng thái này vẫn nhận diện rõ dưới thang xám.
 
-### Named Rules
+### Các quy tắc đặt tên hình khối (Named Rules)
 
-**The Operable-Corner Rule.** 4px means you can operate it; 8px means it holds something;
-12px means it floats over the page.
+**Quy tắc Góc Bo Thao tác (The Operable-Corner Rule).** 4px nghĩa là bạn có thể bấm/thao tác vào nó; 8px nghĩa là nó đang chứa đựng một khối nội dung; 12px nghĩa là nó đang trôi nổi phía trên trang.
 
-## 7. Components
+## 7. Các Thành phần (Components)
 
-### Top bar
-- **Structure:** brand (mark + wordmark) · the five screens · channel status, pushed right.
-- **Tab rest:** Muted text, transparent. **Hover:** Ink on Panel. **Current:** Amber text
-  at 600 — two changes at once, so it survives greyscale.
-- The nav scrolls horizontally without a visible scrollbar rather than wrapping.
+### Thanh Top bar
+- **Cấu trúc:** thương hiệu (logo + tên) · 5 màn hình chính · trạng thái kết nối kênh push, đẩy sang góc phải.
+- **Trạng thái tab:** Nghỉ: chữ Muted trên nền trong suốt. Hover: chữ Ink trên nền Panel. Đang chọn: chữ Hổ phách in đậm 600 — thay đổi cả màu lẫn độ đậm font chữ cùng lúc để phân biệt tốt dưới thang xám.
+- Thanh điều hướng tự cuộn ngang không hiện thanh cuộn thay vì bị rớt dòng.
 
-### Ticker rail
-- **Character:** the last trade on every watched pair, on every screen.
-- **Style:** Panel ground, 2.25rem, one hairline under it. Pair in Muted; price in Mono,
-  coloured by the side the server sent (`data-side`), with the side spelled out beside it.
-- **Stale:** when the channel drops the colour is dropped with it, the price holds its last
-  value, and the rail says "Mất kết nối — giá đang đứng yên." A dash means nothing has
-  arrived yet.
-- It reports only what the message carried. There is no 24h change and no direction arrow,
-  because neither is in the payload and the browser computes nothing.
+### Thanh Ticker giá
+- **Đặc tính:** hiển thị khớp lệnh gần nhất của mọi cặp coin đang theo dõi, xuất hiện đồng nhất trên mọi màn hình.
+- **Phong cách:** Nền Panel, cao 2.25rem, một đường kẻ mảnh bên dưới. Tên cặp coin màu Muted; giá tiền dùng font Mono, tô màu theo chiều mua/bán từ server (`data-side`), kèm chữ Buy/Sell viết rõ ràng bên cạnh.
+- **Mất kết nối:** khi kênh push bị ngắt, màu sắc biến mất, mức giá giữ nguyên giá trị gần nhất và thanh hiển thị thông báo "Mất kết nối — giá đang đứng yên." Một dấu gạch ngang biểu thị dữ liệu chưa từng đến.
+- Chỉ hiển thị đúng những gì tin nhắn mang đến. Không hiển thị % thay đổi 24h và không có mũi tên chiều hướng, vì những dữ liệu đó không có trong payload và trình duyệt không được phép tự tính toán.
 
-### Channel status pill
-- Three states, each carrying a dot *and* a word: `live` green, `connecting` muted,
-  `down` red with a red border. `role="status"`.
+### Thẻ trạng thái Kênh push (Channel status pill)
+- Ba trạng thái, mỗi trạng thái gồm một chấm tròn *và* một từ ngữ: `live` màu xanh lá, `connecting` màu muted, `down` màu đỏ kèm viền đỏ. Thuộc tính `role="status"`.
 
-### Segmented switcher (timeframe, coin)
-- **Shape:** a Panel trough with 2px of padding; items 1.75rem, 4px radius.
-- **Rest:** Muted on transparent. **Hover:** Ink on Raised. **Selected:** Amber at 600 on
-  Raised, `aria-pressed="true"`.
+### Bộ chuyển đổi phân đoạn Segmented switcher (khung thời gian, loại coin)
+- **Hình khối:** máng trượt Panel đệm 2px; các nút con cao 1.75rem, bo góc 4px.
+- **Trạng thái:** Nghỉ: chữ Muted trên nền trong suốt. Hover: chữ Ink trên nền Raised. Đang chọn: chữ Hổ phách font 600 trên nền Raised, kèm `aria-pressed="true"`.
 
-### Buttons
-- **`.btn-action`** — Raised, Ink, 4px, 2rem. Hover to strong-hairline, active back to
-  Panel, disabled to Faint text.
-- **`.btn-primary`** — Amber, `--on-accent` text, 600. One per screen region.
-- **`.btn-ghost`** — transparent with a strong-hairline border, for a secondary action
-  inside a panel that already has a primary one.
-- **Modifiers:** `.btn-lg` (2.5rem), `.btn-sm` (1.625rem), `.btn-block`, `.btn-step`.
-- A button dropped straight into a `.panel` aligns to the start rather than stretching;
-  `.btn-block` opts back in.
+### Nút bấm (Buttons)
+- **`.btn-action`** — Nền Raised, chữ Ink, bo góc 4px, cao 2rem. Hover đổi sang strong-hairline, active chuyển về Panel, disabled đổi chữ sang Faint.
+- **`.btn-primary`** — Nền Hổ phách, chữ `--on-accent`, font 600. Mỗi khu vực màn hình chỉ có duy nhất một nút chính.
+- **`.btn-ghost`** — Nền trong suốt với viền strong-hairline, dùng cho hành động phụ bên trong một panel đã có sẵn nút chính.
+- **Các class bổ trợ:** `.btn-lg` (2.5rem), `.btn-sm` (1.625rem), `.btn-block`, `.btn-step`.
+- Một nút bấm thả trực tiếp vào `.panel` sẽ căn lề ở điểm bắt đầu thay vì kéo dãn toàn bộ; class `.btn-block` dùng khi muốn nút kéo dãn 100%.
 
-### Fields
-- One class, `.pair-select`, for selects, text, number and date inputs, so a row of them
-  shares a height without anyone remembering to match it. Raised, borderless at rest,
-  strong-hairline on hover, `--bad` border when `aria-invalid`.
-- **Error text:** `.field-error`, 0.75rem, down-ink. A sentence, not a symbol.
+### Ô nhập liệu (Fields)
+- Dùng thống nhất một class `.pair-select` cho ô select, text, number và date, giúp một hàng gồm nhiều ô nhập liệu có chiều cao bằng nhau tuyệt đối mà không cần phải căn chỉnh thủ công. Nền Raised, không viền ở trạng thái nghỉ, viền strong-hairline khi hover, viền `--bad` khi gặp lỗi `aria-invalid`.
+- **Thông báo lỗi:** `.field-error`, 0.75rem, màu đỏ chữ. Luôn là một câu văn hoàn chỉnh, không dùng một ký hiệu đơn độc.
 
-### Data table
-- **Style:** no outer border, no zebra. A hairline under each row and none under the last.
-  Header row in Label / Muted, `position: sticky` against the panel's own ground so it
-  survives a long scroll.
-- **Alignment:** figures right, the first column left, mono throughout; a cell holding a
-  sentence takes `.text-cell`.
-- **Interaction:** a `role="button"` row hovers to Raised; the selected row keeps that
-  ground and takes a 2px amber bar inset on its first cell.
-- **Overflow:** `.table-scroll` (plus `.table-scroll-capped` where a chart shares the
-  panel). The page never scrolls sideways.
+### Bảng dữ liệu (Data table)
+- **Phong cách:** không viền ngoài, không dùng màu ngựa vằn (zebra stripes). Một đường kẻ mảnh dưới mỗi hàng và không kẻ ở hàng cuối cùng. Hàng tiêu đề dùng chữ Label / Muted, kích hoạt `position: sticky` trên nền panel để giữ cố định khi cuộn trang dài.
+- **Căn chỉnh:** con số căn phải, cột đầu tiên căn trái, dùng font mono xuyên suốt; ô nào chứa câu văn sẽ dùng class `.text-cell`.
+- **Tương tác:** hàng có `role="button"` sẽ đổi màu sang Raised khi hover; hàng đang được chọn giữ nguyên màu nền đó và có một vạch hổ phách 2px ở mép ô đầu tiên.
+- **Xử lý tràn:** `.table-scroll` (hoặc `.table-scroll-capped` khi bảng nằm chung panel với biểu đồ). Trang web không bao giờ bị cuộn ngang.
 
-### Figures
-- **`.stat-tile`** is a label above a value with no frame — the grid's own gaps do the
-  separating, because a box inside a panel is a box inside a box. The grid is
-  `repeat(auto-fit, minmax(8rem, 1fr))`, so it is two-up in the side rail and four-up
-  across a wide panel without a breakpoint per home.
-- A value takes `.ok` / `.bad` only when direction is the point; `.stat-tile-note` carries
-  the band it falls in ("Tốt (>1.5)"), so the colour is never the only signal.
+### Khối hiển thị số liệu (Figures)
+- **`.stat-tile`** gồm một nhãn chữ nằm trên một giá trị số, không có khung viền bao quanh — khoảng cách giữa các ô lưới (grid gaps) tự đóng vai trò ngăn cách. Lưới chia theo `repeat(auto-fit, minmax(8rem, 1fr))`, tự động hiển thị 2 cột ở thanh bên và 4 cột trên panel rộng mà không cần viết breakpoint riêng.
+- Một con số chỉ gắn class `.ok` / `.bad` khi chiều hướng là yếu tố cốt lõi; thẻ `.stat-tile-note` đi kèm sẽ ghi rõ khoảng xếp loại ("Tốt (>1.5)"), đảm bảo màu sắc không bao giờ là tín hiệu duy nhất.
 
-### Badges
-- Tinted pills, no border: `badge-pos` (up-ink on a 12% green wash), `badge-neg`,
-  `badge-neu` (Muted on Raised), `badge-key` (Amber on a 12% amber wash). Always a word,
-  never a bare dot.
+### Huy hiệu (Badges)
+- Thẻ pill có màu mờ, không viền: `badge-pos` (chữ xanh trên nền 12% green wash), `badge-neg`, `badge-neu` (chữ Muted trên nền Raised), `badge-key` (chữ Hổ phách trên nền 12% amber wash). Luôn luôn chứa một từ ngữ, không bao giờ chỉ là một chấm tròn trơ trọi.
 
-### Chart
-- Background transparent — the panel is the frame; no border, no radius of its own.
-- Grid, axis borders, crosshair and series colours all read the token file at construction
-  time, so the theme is one file and not a sweep through chart options.
-- Candles use `--ok` / `--bad`; the MA overlay uses `--accent`; support and resistance use
-  `--ok` / `--bad` with a label each.
-- **`.chart-status-row`** is a real flow row above the chart, right-aligned, holding the
-  connection badge; the timeframe pill is absolutely positioned at its left. An overlay was
-  tried and collided with the chart's own price-scale labels.
-- **Stale:** the chart drops to 40% opacity and a banner says since when. It is never wiped
-  (the reader loses their place) and never left at full strength (it would read as live).
+### Biểu đồ (Chart)
+- Nền trong suốt — panel đóng vai trò là khung chứa; không có viền và không có góc bo riêng.
+- Lưới tọa độ, đường viền trục, con trỏ crosshair và màu sắc các chuỗi dữ liệu đều đọc trực tiếp từ file token lúc khởi tạo, giúp toàn bộ theme biểu đồ được quản lý tập trung tại một file duy nhất.
+- Nến dùng màu `--ok` / `--bad`; đường MA dùng màu `--accent`; vùng hỗ trợ và kháng cự dùng màu `--ok` / `--bad` kèm nhãn tên rõ ràng.
+- **`.chart-status-row`** là hàng hiển thị thực tế phía trên biểu đồ, căn phải, chứa huy hiệu trạng thái kết nối; thẻ pill chọn timeframe được định vị tuyệt đối ở bên trái. Trước đây từng thử phương án vẽ lớp phủ overlay nhưng bị đè lên nhãn thang giá của biểu đồ.
+- **Mất kết nối / Dữ liệu cũ:** biểu đồ giảm độ mờ xuống 40% (opacity) và xuất hiện banner thông báo rõ dữ liệu bị ngắt từ thời điểm nào. Tuyệt đối không xóa trắng biểu đồ (làm người dùng mất dấu quan sát) và không giữ nguyên 100% độ rõ (khiến người dùng tưởng nhầm là dữ liệu vẫn đang chạy trực tiếp).
 
-### Stages (loading / empty / error)
-- **`.stage`** is a centred column on the Panel plane with a 17.5rem floor, so the screen
-  does not jump when data lands. `.stage-dashed` for an empty state that is waiting on the
-  reader rather than on the server.
-- **Loading:** says what is being waited on. **Empty:** says what would end the wait.
-  **Error:** down-ink, says what broke and offers the retry. Every one of them is a
-  sentence.
+### Các trạng thái màn hình (Stages: loading / empty / error)
+- **`.stage`** là cột căn giữa trên mặt phẳng Panel với chiều cao tối thiểu 17.5rem, giúp màn hình không bị giật nhảy bố cục khi dữ liệu xuất hiện. Dùng `.stage-dashed` cho trạng thái empty đang chờ hành động từ người dùng thay vì chờ máy chủ.
+- **Loading:** thông báo rõ ràng hệ thống đang chờ đợi điều gì. **Empty:** hướng dẫn cụ thể hành động nào sẽ kết thúc việc chờ đợi. **Error:** chữ đỏ ngữ nghĩa, giải thích sự cố gì đã xảy ra và cung cấp nút thử lại. Mọi thông báo đều là câu văn hoàn chỉnh.
 
-### Modal
-- 12px radius, Panel ground, strong-hairline border, `--shadow-modal`, over the `--overlay`
-  scrim. It fades and rises 6px in 180ms, and does neither under
-  `prefers-reduced-motion: reduce`.
-- Focus is trapped, Escape closes, and focus returns to whatever opened it.
+### Hộp thoại Modal
+- Bo góc 12px, nền Panel, viền strong-hairline, bóng đổ `--shadow-modal`, hiển thị trên lớp phủ mờ `--overlay`. Hiệu ứng mờ dần và nâng lên 6px trong 180ms, và tự động tắt chuyển động khi người dùng bật `prefers-reduced-motion: reduce`.
+- Khóa con trỏ focus bên trong modal (focus trapped), phím Escape đóng modal, và focus tự động quay trở về phần tử đã kích hoạt mở nó.
 
-## 8. Motion
+## 8. Chuyển động (Motion)
 
-120ms for a hover, 180ms for a state change, on `cubic-bezier(0.25, 1, 0.5, 1)`. Colour,
-opacity, transform and width only — never a layout property. No bounce, no elastic, no
-entrance choreography: the reader is in a task.
+Thời gian 120ms cho hover, 180ms cho thay đổi trạng thái, sử dụng đường cong `cubic-bezier(0.25, 1, 0.5, 1)`. Chỉ áp dụng cho màu sắc, độ mờ (opacity), biến đổi hình học (transform) và chiều rộng — không bao giờ can thiệp vào thuộc tính bố cục layout. Không dùng hiệu ứng nảy (bounce), không co dãn đàn hồi (elastic), không hiệu ứng xuất hiện rườm rà: người dùng đang tập trung giải quyết công việc.
 
-Every transition has a `prefers-reduced-motion: reduce` branch that removes it rather than
-shortening it.
+Mọi hiệu ứng chuyển động đều có nhánh `prefers-reduced-motion: reduce` để loại bỏ hoàn toàn thay vì chỉ rút ngắn thời gian.
 
-## 9. Do's and Don'ts
+## 9. Những điều Nên làm và Không được làm (Do's and Don'ts)
 
-### Do:
-- **Do** set figures in the mono and words in the sans.
-- **Do** convey depth with the three planes plus a 1px hairline, never a shadow.
-- **Do** give every focusable element the same 2px amber ring at 1px offset.
-- **Do** pair every green or red with a word or a shape, so the meaning survives greyscale.
-  This is what pays for the red's 4.48:1, so it is not optional here.
-- **Do** write all four states as sentences that name what is happening and what to do next.
-- **Do** keep one control height per row (2rem) and one radius family (4 / 8 / 12).
+### Nên làm (Do):
+- **Nên** dùng font Mono cho số liệu và font Sans cho từ ngữ.
+- **Nên** thể hiện chiều sâu bằng ba mặt phẳng kết hợp đường kẻ mảnh 1px hairline, không dùng bóng đổ.
+- **Nên** áp dụng cho mọi phần tử focus được cùng một vòng viền hổ phách 2px với độ lệch 1px offset.
+- **Nên** kết hợp mọi màu xanh lá hoặc đỏ với một từ ngữ hoặc hình khối biểu tượng, đảm bảo ý nghĩa vẫn trọn vẹn dưới thang xám. Đây là điều kiện tiên quyết để chấp nhận mức tương phản 4.48:1 của màu đỏ.
+- **Nên** viết cả bốn trạng thái màn hình dưới dạng các câu văn hoàn chỉnh nêu rõ điều gì đang diễn ra và bước tiếp theo cần làm gì.
+- **Nên** duy trì một chiều cao điều khiển đồng nhất trên mỗi hàng (2rem) và bộ ba kích thước bo góc chuẩn (4 / 8 / 12).
 
-### Don't:
-- **Don't** build **a neon exchange**: no gradients, no glow, no blinking figures, no
-  celebratory badges.
-- **Don't** build **a beginner investing app**: no oversized arrows, no magnified
-  percentages, nothing that nudges.
-- **Don't** add a `box-shadow` outside the dropdown and the modal.
-- **Don't** nest a `.panel-box` inside a `.panel-box` and expect a third background.
-- **Don't** put `.grows` on a box that is only a stack of text.
-- **Don't** add a third font family, and never a display face.
-- **Don't** put a small uppercase tracked eyebrow above a section.
-- **Don't** use `border-left` thicker than 1px as a coloured accent stripe.
-- **Don't** compute a percentage, a direction or a profit in a component to colour
-  something — if the number is not in the response, the API is what changes.
+### Không được làm (Don't):
+- **Không** xây dựng **sàn giao dịch neon**: không dải màu gradient, không hiệu ứng phát sáng glow, không số nhấp nháy, không huy hiệu chúc tụng.
+- **Không** xây dựng **ứng dụng đầu tư cho người mới bắt đầu**: không mũi tên quá khổ, không phóng đại tỷ lệ phần trăm, không yếu tố thúc giục tâm lý.
+- **Không** thêm thuộc tính `box-shadow` ra ngoài phạm vi menu dropdown và modal.
+- **Không** lồng `.panel-box` bên trong `.panel-box` với kỳ vọng sẽ có một màu nền thứ ba.
+- **Không** đặt thuộc tính `.grows` lên một box chỉ chứa các đoạn text xếp chồng.
+- **Không** thêm họ font thứ ba, và tuyệt đối không dùng font nghệ thuật (display face).
+- **Không** chèn dòng chữ nhỏ in hoa dãn cách (kicker) phía trên tiêu đề mục.
+- **Không** dùng đường kẻ viền trái `border-left` dày hơn 1px làm dải màu nhấn trang trí.
+- **Không** tự tính toán tỷ lệ phần trăm, chiều hướng tăng giảm hoặc lợi nhuận bên trong component để tô màu — nếu con số chưa có trong phản hồi API, nơi cần thay đổi là API backend.
