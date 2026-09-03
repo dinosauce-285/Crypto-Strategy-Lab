@@ -55,8 +55,6 @@ export function sideLabel(side: 'BUY' | 'SELL' | 'buy' | 'sell'): string {
 }
 
 export function latency(ms: number): string {
-  if (ms < 1000) return '<1s';
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  const rounded = Math.max(0, Math.round(ms));
+  return `${rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}ms`;
 }

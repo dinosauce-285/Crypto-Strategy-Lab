@@ -17,10 +17,15 @@ const STATUS_LABEL: Record<ChannelStatus, { text: string; className: string }> =
 export function ConnectionStatusPanel() {
   const status = useChannelStatus();
   const lastUpdatedAt = useLastUpdatedAt();
-  const [now, setNow] = useState(() => Date.now());
+  // Only exists to force a re-render every second so latency keeps ticking up between
+  // messages — the value itself is never read. Reading a `now` *state* instead (set once
+  // a second) was the bug: a message can arrive mid-second and re-render with a fresh
+  // lastUpdatedAt against a now up to 999ms stale, going negative and clamping to 0ms.
+  // Date.now() below is always current regardless of which render triggered it.
+  const [, forceTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => forceTick((n) => n + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -41,7 +46,7 @@ export function ConnectionStatusPanel() {
         <dd>{lastUpdatedAt ? clock(lastUpdatedAt) : '—'}</dd>
 
         <dt>Độ trễ</dt>
-        <dd>{lastUpdatedAt ? latency(now - lastUpdatedAt) : '—'}</dd>
+        <dd>{lastUpdatedAt ? latency(Date.now() - lastUpdatedAt) : '—'}</dd>
       </dl>
     </section>
   );
