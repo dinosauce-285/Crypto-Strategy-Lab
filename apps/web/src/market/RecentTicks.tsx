@@ -45,8 +45,8 @@ export function RecentTicks({ pair }: RecentTicksProps) {
 
       {status === 'down' && (
         <p className="state bad">
-          <strong>Không kết nối được kênh.</strong> API có thể đang tắt — khởi động bằng{' '}
-          <code>pnpm dev:api</code>. Panel này sẽ tự kết nối lại khi API hoạt động trở lại.
+          <strong>Không kết nối được kênh.</strong> API có thể đang tắt. Panel này sẽ tự kết
+          nối lại khi API hoạt động trở lại.
         </p>
       )}
 
