@@ -55,7 +55,7 @@ export interface RunBest {
   totalReturn: number;
 }
 
-export const SEARCH_MODES = ['random', 'domain-guided'] as const;
+export const SEARCH_MODES = ['random', 'domain-guided', 'genetic'] as const;
 export type SearchMode = (typeof SEARCH_MODES)[number];
 
 /**

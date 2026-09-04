@@ -81,6 +81,7 @@ code that assumes it.
 - [0047](0047-a-run-reports-the-candidate-being-tested-right-now.md) — a run reports the candidate being tested right now
 - [0048](0048-the-weight-grid-and-default-threshold-live-in-the-contract-n.md) — the weight grid and default threshold live in the contract, not in the generator
 - [0049](0049-active-backtests-hold-a-durable-dataset-lease.md) — active backtests hold a durable Dataset lease
+- [0050](0050-a-genetic-search-mode-breeds-candidates-from-the-search-run.md) — genetic search breeds from the run's own history behind the existing CandidateGenerator seam
 
 
 
