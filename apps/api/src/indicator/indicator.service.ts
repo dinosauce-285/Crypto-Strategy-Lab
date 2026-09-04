@@ -6,6 +6,7 @@ import { buildCalculatorRegistry } from './calculators/calculator';
 import { movingAverageCalculator } from './calculators/moving-average.calculator';
 import { rsiCalculator } from './calculators/rsi.calculator';
 import { bollingerBandsCalculator } from './calculators/bollinger-bands.calculator';
+import { macdCalculator } from './calculators/macd.calculator';
 import { supportResistanceCalculator } from './calculators/support-resistance.calculator';
 import { sentimentCalculator, type ScoredArticle } from './calculators/sentiment.calculator';
 import { IndicatorRepository } from './indicator.repository';
@@ -29,6 +30,7 @@ export class IndicatorService extends IndicatorPort implements OnModuleInit {
     movingAverageCalculator,
     rsiCalculator,
     bollingerBandsCalculator,
+    macdCalculator,
     supportResistanceCalculator,
     this.sentimentCalculator,
   ]);

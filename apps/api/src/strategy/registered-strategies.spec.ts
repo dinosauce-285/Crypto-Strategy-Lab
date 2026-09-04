@@ -4,6 +4,7 @@ describe('registeredStrategies', () => {
   it('registers all strategies required by the brief including sentiment', () => {
     expect(registeredStrategies.map((strategy) => strategy.meta.id)).toEqual([
       'ma',
+      'macd',
       'rsi',
       'bollinger',
       'support-resistance',
