@@ -137,15 +137,15 @@ creation separately fetches and persists its requested historical range in pages
 ([0041](decisions/0041-dataset-creation-fetches-and-stores-its-own-candle-range-fro.md)),
 so backtests read a reproducible dataset.
 
-**indicator** — turns candles into numbers: moving average, RSI, Bollinger, support and
-resistance zones, and a sentiment series. Every calculator is strictly causal, and a
+**indicator** — turns candles into numbers: moving average, MACD, RSI, Bollinger, support
+and resistance zones, and a sentiment series. Every calculator is strictly causal, and a
 value is absent rather than approximate until enough candles exist
 ([0028](decisions/0028-indicator-series-are-named-by-dotted-source-one-field-per-da.md),
 [0029](decisions/0029-support-resistance-zones-come-from-causally-confirmed-cluste.md)).
 Results are cached per dataset, indicator and parameters, because a search run asks for
 the same series thousands of times.
 
-**strategy** — the plugin point. `StrategyRegistry` holds the five registered
+**strategy** — the plugin point. `StrategyRegistry` holds the seven registered
 strategies keyed by `id@version` and writes them to the database at boot;
 `StrategyFactory` turns a specification into something runnable. A strategy contains
 trading logic and nothing else: it reads a context, returns `BUY`/`SELL`/`HOLD` with a
@@ -312,7 +312,7 @@ POST /api/search/runs  { datasetId, strategyRefs, bound, mode }
         │                                                       │
         │ fills the queue up to 50 deep, never past the budget   │
         ▼                                                       │
-   CandidateSource ──► random | domain-guided generator         │
+   CandidateSource ──► random | domain-guided | genetic          │
         │                                                       │
         ▼                                                       │
    BullMQ (Redis) ──────────────────────────────────────────┐   │
@@ -333,6 +333,12 @@ POST /api/search/runs  { datasetId, strategyRefs, bound, mode }
         ▼
    SearchService updates counters ──► search:<runId> ──► the browser
 ```
+
+A run picks one generator and keeps it. The genetic mode is the one that spends the
+affordance `0013` and `0037` left open: it breeds the next candidates from the best-scoring
+ones the run has already produced, while random and domain-guided read that same history
+only to avoid repeating themselves
+([0050](decisions/0050-a-genetic-search-mode-breeds-candidates-from-the-search-run.md)).
 
 Six things end a run: the candidate budget, wall-clock duration, a plateau of results that
 stopped improving, an exhausted generator, someone pressing stop, or a pause left standing
@@ -388,9 +394,3 @@ drawdown and Sharpe derive a trade's return through one function that falls back
 prices when the stored `profit` is unreadable; win rate and profit factor read the stored
 value directly. Every row the current runner writes carries a profit, so they agree today
 and stop agreeing the first time something files a trade without one.
-
-**No generator learns from a score yet.** Both use the run's history only to avoid
-repeating a candidate.
-[0037](decisions/0037-domain-guided-search-uses-group-composition-and-top-history.md)
-planned for that — the history is carried so an adaptive generator can arrive without the
-`CandidateSource` contract moving — but the loop on the diagram is not adaptive today.

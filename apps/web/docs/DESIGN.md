@@ -165,7 +165,7 @@ Three neutral planes, one amber accent, and green/red reserved strictly for dire
   for text alike: candles, volume bars, chart markers and bar segments take the same red
   and green a reader sees in a profit column. The red measures 4.48:1 on a panel — a
   hair under the AA floor — and is kept anyway, because the alternative is a red that is
-  not the category's. `UI_CONSTRAINT.md` names and bounds that exception; ADR 0050 records
+  not the category's. `UI_CONSTRAINT.md` names and bounds that exception; ADR 0051 records
   the call.
 - **Washes** (`#10251d`, `#2a1a1e`, `#2a2413`) are the grounds a coloured pill sits on.
   They are *darker* than the plane behind them, not a transparent tint of the colour: a

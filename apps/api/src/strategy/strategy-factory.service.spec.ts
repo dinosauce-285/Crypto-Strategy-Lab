@@ -52,7 +52,7 @@ describe('StrategyFactoryService', () => {
         threshold: 0.5,
         members: [
           {
-            id: 'macd',
+            id: 'unregistered-strategy',
             version: 1,
             params: {},
             paramsHash: canonicalJson({}),

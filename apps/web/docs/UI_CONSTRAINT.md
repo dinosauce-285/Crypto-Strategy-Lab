@@ -38,7 +38,7 @@ response, the boundary is gone.
   One exception is named, measured and bounded: `--bad` (`#f6465d`) reaches **4.48:1** on
   `--surface` and **3.72:1** on a hovered row. It was kept at the exchange's own value
   because the alternative was a red that does not belong to the category — a call recorded
-  in ADR 0050 and taken by the product owner, not by a component. It holds only because
+  in ADR 0051 and taken by the product owner, not by a component. It holds only because
   the Never-Alone rule below already forbids colour from carrying meaning by itself, so a
   reader who cannot resolve the red still reads the sign, the word or the badge beside it.
   It extends to nothing else: any *new* text colour meets 4.5:1, and if this red ever

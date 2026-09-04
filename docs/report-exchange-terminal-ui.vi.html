@@ -131,7 +131,7 @@
         <dt>Nhánh</dt><dd><code>feat/exchange-terminal-ui</code>, cắt từ <code>dev</code> tại <code>adddca3</code></dd>
         <dt>Trạng thái</dt><dd>chưa commit — toàn bộ thay đổi đang nằm trong working tree</dd>
         <dt>Phạm vi</dt><dd>28 file được sửa và 9 file mới, tất cả trong <code>apps/web</code>, cộng một bản ghi quyết định</dd>
-        <dt>Lý do</dt><dd><a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a> — báo cáo này không chép lại lập luận ở đó</dd>
+        <dt>Lý do</dt><dd><a href="decisions/0051-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0051</a> — báo cáo này không chép lại lập luận ở đó</dd>
         <dt>Kiểm chứng</dt><dd>lint + lint:ui + build xanh; 5 màn hình chạy thật trên trình duyệt qua Playwright</dd>
         <dt>Đọc</dt><dd>~5 phút</dd>
       </dl>
@@ -209,7 +209,7 @@
           <details class="node" open>
             <summary class="row"><span class="lbl">Hai sắc đỏ và hai sắc xanh</span><span class="hint">một cặp để vẽ, một cặp để đọc</span></summary>
             <div class="kids">
-              <p><code>--ok</code> và <code>--bad</code> dùng cho những thứ được <em>vẽ</em>: thân nến, cột khối lượng, marker, viền một ô nhập sai. <code>--ok-ink</code> và <code>--bad-ink</code> dùng cho những thứ được <em>đọc</em>: chữ, con số, nhãn. Lý do và cái giá của việc có bốn token thay vì hai nằm ở <a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a>.</p>
+              <p><code>--ok</code> và <code>--bad</code> dùng cho những thứ được <em>vẽ</em>: thân nến, cột khối lượng, marker, viền một ô nhập sai. <code>--ok-ink</code> và <code>--bad-ink</code> dùng cho những thứ được <em>đọc</em>: chữ, con số, nhãn. Lý do và cái giá của việc có bốn token thay vì hai nằm ở <a href="decisions/0051-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0051</a>.</p>
             </div>
           </details>
 
@@ -381,7 +381,7 @@
           <ul class="checks">
             <li class="block"><span class="box">[!]</span><span class="txt"><strong>Câu định vị thương hiệu trong <code>PRODUCT.md</code> chưa được thương lượng lại.</strong> Câu đó — sản phẩm là "một thiết bị đo chứ không phải một sàn giao dịch" — được viết cho hệ thống sáng màu cũ. Những thứ nó cấm thì vẫn đang được tôn trọng: không gradient, không hào quang, không con số nhấp nháy, xanh đỏ luôn đi kèm một chữ. Nhưng chính câu ấy giờ chỉ còn đúng một nửa, và nó phải được chốt lại ở <code>PRODUCT.md</code>, không phải trong CSS.</span></li>
             <li class="block"><span class="box">[!]</span><span class="txt"><strong>Hệ thống có hai token đỏ và hai token xanh thay vì mỗi thứ một.</strong> <code>--bad</code> để vẽ, <code>--bad-ink</code> để đọc. Người đọc code phải nhớ thêm một luật, và lý do chỉ là một khoảng cách 0.02 trên thang tương phản: đỏ bán của Binance đo được 4.48:1 trên mặt panel, thấp hơn sàn AA mà chính ứng dụng này tự ràng buộc.</span></li>
-            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Không còn giao diện sáng.</strong> Mọi màu vẫn đi qua biến nên dựng lại một theme sáng là viết thêm một khối giá trị token, không phải quét lại JSX. Nhưng lập luận của bảng màu sáng cũ thì từ nay chỉ còn nằm trong lịch sử git và trong ADR 0050.</span></li>
+            <li class="block"><span class="box">[!]</span><span class="txt"><strong>Không còn giao diện sáng.</strong> Mọi màu vẫn đi qua biến nên dựng lại một theme sáng là viết thêm một khối giá trị token, không phải quét lại JSX. Nhưng lập luận của bảng màu sáng cũ thì từ nay chỉ còn nằm trong lịch sử git và trong ADR 0051.</span></li>
             <li class="block"><span class="box">[!]</span><span class="txt"><strong>Gói web nặng 543 kB và vẫn là một mảnh.</strong> Vite cảnh báo mọi mảnh vượt 500 kB. Việc chia mảnh chưa được đụng tới trong đợt này vì nó là chuyện đóng gói chứ không phải chuyện giao diện — nhưng nó chưa được xử lý, và nên mở một thẻ riêng.</span></li>
           </ul>
         </div>
@@ -398,13 +398,13 @@
                 <tr><td>Vỏ ứng dụng</td><td><code>index.html</code>, <code>src/App.tsx</code>, <code>src/index.css</code>, <code>src/layout/Navbar.tsx</code></td></tr>
                 <tr><td>Màn hình</td><td><code>BacktestScreen.tsx</code>, <code>LeaderboardScreen.tsx</code>, <code>RealtimeScreen.tsx</code></td></tr>
                 <tr><td>Thành phần</td><td>7 file trong <code>backtest/</code>, 5 file trong <code>market/</code>, 3 file trong <code>news/</code>, <code>LeaderboardTable.tsx</code>, 2 file trong <code>search/</code></td></tr>
-                <tr><td>Tài liệu</td><td><code>apps/web/docs/DESIGN.md</code> viết lại, <code>docs/decisions/0050-*.md</code> mới, một dòng thêm vào <code>docs/decisions/README.md</code></td></tr>
+                <tr><td>Tài liệu</td><td><code>apps/web/docs/DESIGN.md</code> viết lại, <code>docs/decisions/0051-*.md</code> mới, một dòng thêm vào <code>docs/decisions/README.md</code></td></tr>
                 <tr><td>Phụ thuộc</td><td><code>@fontsource/ibm-plex-sans</code> thêm vào <code>apps/web/package.json</code></td></tr>
               </tbody>
             </table>
           </div>
           <p><code>apps/web/docs/UI_CONSTRAINT.md</code> <strong>không</strong> nằm trong danh sách này, và đó là chủ ý: luật mà người review kiểm không đổi, chỉ có hệ thống thị giác mà luật ấy sinh ra là được viết lại.</p>
-          <p>ADR 0050 là thứ mở khoá cổng decision-gate lúc push, vì thay đổi này chạm vào một hợp đồng thị giác dùng chung cho cả năm màn hình.</p>
+          <p>ADR 0051 là thứ mở khoá cổng decision-gate lúc push, vì thay đổi này chạm vào một hợp đồng thị giác dùng chung cho cả năm màn hình.</p>
         </div>
       </details>
 
@@ -414,7 +414,7 @@
     <section class="foot">
       <p class="eyebrow">Đọc thêm</p>
       <ul>
-        <li><a href="decisions/0050-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0050</a> — vì sao chọn nền tối và một sắc hổ phách, đã cân nhắc những gì, đánh đổi cái gì.</li>
+        <li><a href="decisions/0051-the-web-ui-adopts-an-exchange-terminal-visual-system-dark-gr.md">ADR 0051</a> — vì sao chọn nền tối và một sắc hổ phách, đã cân nhắc những gì, đánh đổi cái gì.</li>
         <li><code>apps/web/docs/DESIGN.md</code> — bảng màu, thang chữ, từng thành phần và các luật có tên.</li>
         <li><code>apps/web/docs/UI_CONSTRAINT.md</code> — luật mà người review kiểm được, không đổi trong đợt này.</li>
       </ul>
