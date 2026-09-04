@@ -23,10 +23,10 @@ cache adds a copy that can be stale, and a stale leaderboard is a bug nobody see
 because a wrong ranking still looks like a ranking. Adding one is a decision to make
 against a measurement, and it gets its own record when it happens.
 
-This also keeps `0003` honest. The backtest worker publishes `experiment.completed`,
-the ranking service listens and tells the UI the board has changed; the UI re-reads.
-Nothing stores a rank, so nothing can hold a rank that disagrees with the experiments
-it came from.
+This also keeps `0003` honest. A finished candidate publishes `backtest.completed` and
+`strategy.evaluated` on the bus; the ranking module listens and tells the UI which board
+moved, never what it now holds; the UI re-reads. Nothing stores a rank, so nothing can
+hold a rank that disagrees with the experiments it came from.
 
 ## What else we looked at
 
@@ -50,9 +50,12 @@ decision that gets revisited first.
 
 Because the score is computed rather than stored, changing the formula silently
 reorders every past result. That is correct — all rows are then scored the same way —
-but it means a leaderboard screenshot from last week cannot be reproduced today. If
-that matters at hand-in time, the formula needs a version of its own, the way `0009`
-gave one to strategy code. It does not have one now.
+but it means a leaderboard screenshot from last week cannot be reproduced today. This
+paragraph used to end by saying the formula needed a version of its own, the way `0009`
+gave one to strategy code, and that it did not have one. `0036` gave it one: the score is
+stamped `v1` and every entry carries the version it was scored under. The reordering is
+still silent — what changed is that a reader can now tell which formula they are looking
+at, and the screen says so rather than describing a formula it may no longer be using.
 
 The board is only as coherent as its dataset filter: it must always be read for one
 dataset, never across several, or it compares runs judged by different rules — which
