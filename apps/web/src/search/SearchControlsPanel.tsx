@@ -4,6 +4,7 @@ import { DatasetPicker } from '../backtest/DatasetPicker';
 const SEARCH_MODE_LABELS: Partial<Record<SearchMode, string>> = {
   'domain-guided': 'Có định hướng (Domain guided)',
   random: 'Ngẫu nhiên',
+  genetic: 'Tiến hoá (Genetic)',
 };
 
 const modeLabel = (mode: SearchMode): string =>

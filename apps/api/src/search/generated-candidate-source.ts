@@ -12,6 +12,7 @@ import { CandidateSource, InvalidSearchSpaceError } from './ports/candidate-sour
 import type { CandidateGenerator } from './candidate-generator';
 import { DomainGuidedCandidateGenerator } from './domain-guided-candidate.generator';
 import { RandomCandidateGenerator } from './random-candidate.generator';
+import { GeneticCandidateGenerator } from './genetic-candidate.generator';
 
 @Injectable()
 export class GeneratedCandidateSource extends CandidateSource {
@@ -19,6 +20,7 @@ export class GeneratedCandidateSource extends CandidateSource {
   private readonly generators: Record<SearchMode, CandidateGenerator> = {
     random: new RandomCandidateGenerator(),
     'domain-guided': new DomainGuidedCandidateGenerator(),
+    genetic: new GeneticCandidateGenerator(),
   };
 
   private mode: SearchMode = 'random';
