@@ -19,7 +19,7 @@ export class RankingService extends RankingPort {
       where: { id: query.datasetId },
     });
     if (!dataset) {
-      throw new NotFoundException(`Dataset "${query.datasetId}" not found`);
+      throw new NotFoundException('Không tìm thấy dataset này. Tải lại danh sách rồi chọn cái khác.');
     }
 
     const rows = await this.prisma.experiment.findMany({

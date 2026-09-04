@@ -252,11 +252,17 @@ export class SearchService implements OnModuleDestroy {
   }
 }
 
+const RUN_STATE_TEXT: Record<RunState, string> = {
+  running: 'đang chạy',
+  paused: 'đã tạm dừng',
+  ended: 'đã kết thúc',
+};
+
 export class NoActiveRunError extends DomainError {
   readonly status = 404;
 
   constructor() {
-    super('no run is active');
+    super('Không có lượt tìm kiếm nào đang chạy.');
   }
 }
 
@@ -264,7 +270,9 @@ export class RunNotInStateError extends DomainError {
   readonly status = 409;
 
   constructor(actual: RunState, wanted: RunState) {
-    super(`the run is ${actual}, not ${wanted}`);
+    super(
+      `Lượt chạy hiện ${RUN_STATE_TEXT[actual]}, thao tác này chỉ dùng được khi lượt chạy ${RUN_STATE_TEXT[wanted]}.`,
+    );
   }
 }
 
@@ -272,14 +280,14 @@ export class RunAlreadyActiveError extends DomainError {
   readonly status = 409;
 
   constructor() {
-    super('a run is already active — stop it before starting another');
+    super('Đã có lượt tìm kiếm đang chạy. Dừng nó trước đã.');
   }
 }
 
 export class DatasetNotFoundError extends DomainError {
   readonly status = 404;
 
-  constructor(datasetId: string) {
-    super(`Dataset "${datasetId}" not found`);
+  constructor(readonly datasetId: string) {
+    super('Không tìm thấy dataset này. Tải lại danh sách rồi chọn cái khác.');
   }
 }

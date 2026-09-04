@@ -18,6 +18,6 @@ export class UnknownDatasetError extends DomainError {
   readonly status = 404;
 
   constructor(readonly datasetId: string) {
-    super(`dataset "${datasetId}" does not exist`);
+    super('Dataset này không tồn tại.');
   }
 }

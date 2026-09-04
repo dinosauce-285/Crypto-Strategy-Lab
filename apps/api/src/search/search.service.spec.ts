@@ -205,7 +205,8 @@ describe('SearchService run-state errors', () => {
     await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
     await service.pause();
 
-    await expect(service.pause()).rejects.toThrow('the run is paused, not running');
+    // Both states named, actual before wanted — the point of the message, not its wording.
+    await expect(service.pause()).rejects.toThrow(/đã tạm dừng.*đang chạy/);
     await service.stop();
     service.onModuleDestroy();
   });
@@ -214,7 +215,7 @@ describe('SearchService run-state errors', () => {
     const service = build();
     await service.start('dataset-1', [{ id: 'ma', version: 1 }], { maxCandidates: 10 }, 'random');
 
-    await expect(service.resume()).rejects.toThrow('the run is running, not paused');
+    await expect(service.resume()).rejects.toThrow(/đang chạy.*đã tạm dừng/);
     await service.stop();
     service.onModuleDestroy();
   });

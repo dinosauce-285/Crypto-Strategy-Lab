@@ -1,0 +1,144 @@
+/* The only file allowed to hold a raw colour — enforced by scripts/check-ui-tokens.mjs.
+   Palette and primitives for the exchange-terminal system described in docs/DESIGN.md. */
+
+/* Whole-weight files, not the per-subset ones: only these carry unicode-range, without
+   which the Vietnamese subset would replace latin instead of filling its gaps. */
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+:root {
+  /* ground → panel → raised: three planes, darkest at the back */
+  --bg: #181a20;
+  --surface: #1e2329;
+  --raised: #2b3139;
+  --line: #2b3139;
+  --line-strong: #363a45;
+
+  --ink: #eaecef;
+  --muted: #848e9c;
+  --faint: #5e6673;
+
+  /* the one accent — primary action, current selection, live-state marker */
+  --accent: #fcd535;
+  --accent-press: #f0b90b;
+  --accent-dim: #6a5a11;
+  --on-accent: #202630;
+
+  /* Direction. One value each, for marks and for text alike — see ADR 0050 on the 4.48:1
+     this costs against --surface. The washes are deliberately darker than the plane they
+     sit on rather than a transparent tint of the colour: a tint lightens the ground and
+     drags coloured text down with it, and it took the muted sub-labels on a selected card
+     below the floor too. */
+  --ok: #0ecb81;
+  --bad: #f6465d;
+  --ok-wash: #10251d;
+  --bad-wash: #2a1a1e;
+  --accent-wash: #2a2413;
+
+  --overlay: rgba(11, 14, 17, 0.72);
+  --shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.44);
+  --shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.56);
+
+  --font-ui: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-num: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  --control-h: 2rem;
+  --control-h-lg: 2.5rem;
+  --header-h: 3.5rem;
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-backdrop: 300;
+  --z-modal: 400;
+
+  --ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --fast: 120ms;
+  --normal: 180ms;
+
+  color-scheme: dark;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+h1 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0;
+  text-wrap: balance;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: var(--accent-dim);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+code {
+  font-family: var(--font-num);
+  font-size: 0.9em;
+  background: var(--raised);
+  color: var(--ink);
+  padding: 0.05em 0.35em;
+  border-radius: var(--radius-sm);
+}
+
+/* Digits are the subject; they align in one column and never shift the row they sit in. */
+.num,
+td,
+th,
+.stat-tile-val,
+.composite-weight,
+.ticker-price {
+  font-variant-numeric: tabular-nums;
+}
+
+.ok { color: var(--ok); }
+.bad { color: var(--bad); }
+
+/* The parts nobody draws still belong to the system. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }

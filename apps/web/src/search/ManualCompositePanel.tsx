@@ -169,34 +169,42 @@ export function ManualCompositePanel({ strategies, dataset }: ManualCompositePan
       )}
 
       {selected.length > 0 && (
-        <div className="controls-row">
-          <div className="timeframe-control">
-            <label htmlFor="composite-threshold" className="stat-tile-label">
-              Ngưỡng đồng thuận
-            </label>
-            <select
-              id="composite-threshold"
-              className="pair-select"
-              value={threshold}
-              onChange={(event) => setThreshold(Number(event.target.value))}
+        <>
+          {/* Bottom-aligned: the select carries a label above it and the button does not,
+              so a centre-aligned row leaves the button floating half a line high. */}
+          <div className="controls-row controls-row-bottom">
+            <div className="field">
+              <label htmlFor="composite-threshold" className="field-label">
+                Ngưỡng đồng thuận
+              </label>
+              <select
+                id="composite-threshold"
+                className="pair-select"
+                value={threshold}
+                onChange={(event) => setThreshold(Number(event.target.value))}
+              >
+                {THRESHOLDS.map((value) => (
+                  <option key={value} value={value}>
+                    {value.toFixed(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="btn-action"
+              onClick={() => setParts(balancedParts(selected))}
             >
-              {THRESHOLDS.map((value) => (
-                <option key={value} value={value}>
-                  {value.toFixed(1)}
-                </option>
-              ))}
-            </select>
+              Chia đều lại
+            </button>
           </div>
 
-          <button type="button" className="btn-action" onClick={() => setParts(balancedParts(selected))}>
-            Chia đều lại
-          </button>
-
-          <span className="source">
+          <p className="source">
             Tổng trọng số {percent(total * WEIGHT_STEP)} · điểm phải vượt ±{threshold} thì tổ
             hợp mới ra lệnh, trong khoảng đó là đứng yên.
-          </span>
-        </div>
+          </p>
+        </>
       )}
 
       {blockedReason && <p className="state">{blockedReason}</p>}

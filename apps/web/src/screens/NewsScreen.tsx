@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { NewsItem } from '@csl/contracts';
 import { apiFetch } from '../api/request';
 import { Header } from '../layout/Header';
-import { buildCollectNewsPayload, validateDateRange } from '../news/collect-payload';
+import { buildCollectNewsPayload, buildNewsQuery, validateDateRange } from '../news/news-request';
 import { NewsControls } from '../news/NewsControls';
 import { NewsFeed } from '../news/NewsFeed';
 import { SentimentDistribution, type SentimentStats } from '../news/SentimentDistribution';
@@ -22,16 +22,24 @@ export function NewsScreen() {
   const [isCollecting, setIsCollecting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
+  const [filterError, setFilterError] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const fetchNews = useCallback(() => {
+    // A backwards range is the filter refusing, not the feed failing — it belongs beside
+    // the controls that caused it, and must not claim the articles could not be loaded.
+    const dateError = validateDateRange(fromDate, toDate);
+    setFilterError(dateError);
+    if (dateError) {
+      setIsLoadingNews(false);
+      return;
+    }
+
     setIsLoadingNews(true);
     setNewsError(null);
 
-    const params = new URLSearchParams({ limit: '50' });
-    if (coin !== 'ALL') params.append('coin', coin);
-    if (source !== 'ALL') params.append('source', source);
+    const params = buildNewsQuery({ coin, source, fromDate, toDate });
 
     apiFetch<{ items: NewsItem[]; total: number }>(`/api/news?${params.toString()}`)
       .then((data) => {
@@ -43,7 +51,7 @@ export function NewsScreen() {
         setNewsError(err.message);
         setIsLoadingNews(false);
       });
-  }, [coin, source]);
+  }, [coin, source, fromDate, toDate]);
 
   const fetchStats = useCallback(() => {
     setIsLoadingStats(true);
@@ -69,16 +77,12 @@ export function NewsScreen() {
   }, [fetchNews, fetchStats]);
 
   const handleCollect = () => {
-    const dateError = validateDateRange(fromDate, toDate);
-    if (dateError) {
-      setNewsError(dateError);
-      return;
-    }
-
     setIsCollecting(true);
     setNewsError(null);
     setFeedback(null);
-    const body = buildCollectNewsPayload({ coin, source, fromDate, toDate, limit });
+    // No date range: collecting asks the providers for their newest articles, and the
+    // range the reader picked is a filter over what is already stored.
+    const body = buildCollectNewsPayload({ coin, source, limit });
 
     apiFetch<{ collected: number; inserted: number }>('/api/news/collect', {
       method: 'POST',
@@ -155,6 +159,7 @@ export function NewsScreen() {
             isCollecting={isCollecting}
             isAnalyzing={isAnalyzing}
             feedback={feedback}
+            filterError={filterError}
           />
 
           <NewsFeed
@@ -174,6 +179,7 @@ export function NewsScreen() {
             stats={stats}
             isLoading={isLoadingStats}
             error={statsError}
+            onRetry={fetchStats}
           />
 
         </div>

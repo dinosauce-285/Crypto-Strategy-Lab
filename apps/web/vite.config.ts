@@ -9,6 +9,25 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        output: {
+          // The screens are lazy, so each is already its own chunk; this names the
+          // libraries they share so a screen switch re-uses them from cache. Matched on
+          // the installed path rather than by package name: naming "react-dom" alone
+          // chunks its entry module and leaves the ~130 kB of internals behind in the
+          // entry chunk, because pnpm resolves them through a different directory.
+          manualChunks(id) {
+            if (!id.includes('/node_modules/')) return undefined;
+            if (id.includes('/node_modules/lightweight-charts/')) return 'charts';
+            if (/\/node_modules\/(socket\.io|engine\.io)/.test(id)) return 'channel';
+            if (/\/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id))
+              return 'react';
+            return undefined;
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       // The browser only ever talks to the web origin; the API is reached through

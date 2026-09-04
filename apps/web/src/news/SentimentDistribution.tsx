@@ -11,6 +11,7 @@ export interface SentimentDistributionProps {
   stats: SentimentStats | null;
   isLoading: boolean;
   error: string | null;
+  onRetry: () => void;
 }
 
 function segment(offsetPct: number, widthPct: number): string {
@@ -22,10 +23,11 @@ export function SentimentDistribution({
   stats,
   isLoading,
   error,
+  onRetry,
 }: SentimentDistributionProps) {
   if (isLoading && !stats) {
     return (
-      <section className="panel panel-compact">
+      <section className="panel panel-box panel-compact">
         <div className="panel-head">
           <h2>Phân tích Sentiment ({coin})</h2>
         </div>
@@ -36,13 +38,16 @@ export function SentimentDistribution({
 
   if (error && !stats) {
     return (
-      <section className="panel panel-compact">
+      <section className="panel panel-box panel-compact">
         <div className="panel-head">
           <h2>Phân tích Sentiment ({coin})</h2>
         </div>
         <p className="state bad">
           <strong>Không tải được số liệu thống kê.</strong> {error}
         </p>
+        <button type="button" className="btn-action" onClick={onRetry}>
+          Thử lại
+        </button>
       </section>
     );
   }
@@ -58,7 +63,7 @@ export function SentimentDistribution({
   const negPct = total > 0 ? Math.max(0, 100 - posPct - neuPct) : 0;
 
   return (
-    <section className="panel panel-compact">
+    <section className="panel panel-box panel-compact">
       <div className="panel-head">
         <h2>Phân tích Sentiment ({coin})</h2>
       </div>
@@ -75,7 +80,7 @@ export function SentimentDistribution({
           sentiment AI trên các bài viết đã thu thập.
         </p>
       ) : (
-        <div className="panel" style={{ gap: '0.65rem' }}>
+        <div className="panel">
           <div className="sentiment-bar-wrap">
             <div className="sentiment-bar" aria-label="Phân bố sentiment">
               <div
@@ -97,15 +102,15 @@ export function SentimentDistribution({
 
             <div className="sentiment-legend">
               <span className="legend-item ok">
-                <span className="legend-dot" style={{ background: 'var(--ok)' }} />
+                <span className="legend-dot dot-pos" />
                 Tích cực ({posPct}%)
               </span>
-              <span className="legend-item" style={{ color: 'var(--muted)' }}>
-                <span className="legend-dot" style={{ background: 'var(--line)' }} />
+              <span className="legend-item">
+                <span className="legend-dot dot-neu" />
                 Trung lập ({neuPct}%)
               </span>
               <span className="legend-item bad">
-                <span className="legend-dot" style={{ background: 'var(--bad)' }} />
+                <span className="legend-dot dot-neg" />
                 Tiêu cực ({negPct}%)
               </span>
             </div>

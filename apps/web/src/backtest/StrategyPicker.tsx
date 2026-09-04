@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CandidateSpec, StrategyMeta, StrategyParams } from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { STRATEGY_GROUP_LABELS } from '../search/group-labels';
 import { DynamicParamForm } from './DynamicParamForm';
 import { formatParams } from './param-labels';
@@ -24,18 +25,13 @@ export function StrategyPicker({
   const [strategies, setStrategies] = useState<StrategyMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch('/api/strategies')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Lỗi kết nối máy chủ (HTTP ${res.status})`);
-        }
-        return res.json();
-      })
-      .then((list: StrategyMeta[]) => {
+    apiFetch<StrategyMeta[]>('/api/strategies')
+      .then((list) => {
         setStrategies(list);
         if (list.length > 0 && !selectedStrategy && !customSpec) {
           const first = list[0];
@@ -51,28 +47,27 @@ export function StrategyPicker({
         setError(err.message || 'Không thể kết nối đến máy chủ.');
         setLoading(false);
       });
-  }, [onSelectStrategy, selectedStrategy, customSpec]);
+  }, [onSelectStrategy, selectedStrategy, customSpec, attempt]);
 
   const handleStrategyChange = (strategyId: string) => {
     if (onClearCustomSpec) onClearCustomSpec();
     const found = strategies.find((s) => s.id === strategyId);
-    if (found) {
-      const defaults: StrategyParams = {};
-      found.params.forEach((p) => {
-        defaults[p.name] = p.default;
-      });
-      onSelectStrategy(found, defaults);
-    }
+    if (!found) return;
+    const defaults: StrategyParams = {};
+    found.params.forEach((p) => {
+      defaults[p.name] = p.default;
+    });
+    onSelectStrategy(found, defaults);
   };
 
   return (
-    <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
+    <div className="panel panel-box">
       <div className="panel-head">
-        <h2 title="Strategy: chiến lược giao dịch được cấu hình để chạy backtest">Cấu hình Strategy</h2>
+        <h2 title="Strategy: chiến lược giao dịch được cấu hình để chạy backtest">
+          Cấu hình Strategy
+        </h2>
         {customSpec ? (
-          <span className="badge badge-pos">
-            Tổ hợp ({customSpec.members.length} chiến lược)
-          </span>
+          <span className="badge badge-key">Tổ hợp ({customSpec.members.length} chiến lược)</span>
         ) : selectedStrategy ? (
           <span className="badge badge-neu">
             {STRATEGY_GROUP_LABELS[selectedStrategy.group]} · v{selectedStrategy.version}
@@ -81,48 +76,53 @@ export function StrategyPicker({
       </div>
 
       {error && (
-        <div style={{ marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--bad)' }}>
-          ⚠ {error}
+        <div className="field-retry">
+          <p className="field-error">{error}</p>
+          <button
+            type="button"
+            className="btn-action btn-sm"
+            disabled={loading}
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
       {customSpec ? (
-        <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="stat-tile-label">Công thức đang chọn ({customSpec.rule} · {customSpec.threshold})</span>
+        <>
+          <div className="controls-row">
+            <span className="stat-tile-label">
+              Công thức đang chọn ({customSpec.rule} · {customSpec.threshold})
+            </span>
             {onClearCustomSpec && (
-              <button
-                type="button"
-                className="btn-action"
-                style={{ fontSize: '0.72rem', height: '1.5rem', padding: '0 0.4rem' }}
-                onClick={onClearCustomSpec}
-              >
+              <button type="button" className="btn-action btn-sm" onClick={onClearCustomSpec}>
                 Chuyển sang đơn lẻ
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', background: 'var(--bg)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)' }}>
+          <div className="spec-readout">
+            {/* Index key: the specification is read-only here, never reordered or filtered. */}
             {customSpec.members.map((m, idx) => (
               <div key={idx} className="composite-member">
                 <strong>
                   {strategies.find((s) => s.id === m.id)?.name ?? m.id}{' '}
-                  <span className="source" style={{ fontWeight: 'normal' }}>v{m.version}</span>
+                  <span className="source">v{m.version}</span>
                 </strong>
-                <span className="source">{(m.weight * 100).toFixed(0)}% · {formatParams(m.params)}</span>
+                <span className="source">
+                  {(m.weight * 100).toFixed(0)}% · {formatParams(m.params)}
+                </span>
               </div>
             ))}
           </div>
-        </div>
+        </>
       ) : (
         <>
-          <div className="form-group" style={{ marginTop: '0.25rem' }}>
-            <label htmlFor="strategy-select" className="stat-tile-label">
-              Strategy đã chọn
-            </label>
+          <label className="form-group" htmlFor="strategy-select">
+            <span className="stat-tile-label">Strategy đã chọn</span>
             <select
               id="strategy-select"
               className="pair-select"
-              style={{ width: '100%', minWidth: 0 }}
               disabled={loading || strategies.length === 0}
               value={selectedStrategy?.id ?? ''}
               title={selectedStrategy?.name}
@@ -141,13 +141,11 @@ export function StrategyPicker({
                 </option>
               ))}
             </select>
-          </div>
+          </label>
 
           {selectedStrategy && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <h2 style={{ fontSize: '0.82rem', marginBottom: '0.4rem' }}>
-                Tham số ({selectedStrategy.params.length})
-              </h2>
+            <div className="panel">
+              <span className="stat-tile-label">Tham số ({selectedStrategy.params.length})</span>
               <DynamicParamForm
                 params={selectedStrategy.params}
                 values={params}

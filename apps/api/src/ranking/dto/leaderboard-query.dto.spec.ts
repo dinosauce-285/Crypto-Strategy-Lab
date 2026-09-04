@@ -1,4 +1,4 @@
-import { parseLeaderboardQuery } from './leaderboard-query.dto';
+import { InvalidLeaderboardQueryError, parseLeaderboardQuery } from './leaderboard-query.dto';
 
 describe('parseLeaderboardQuery', () => {
   it('leaves the optional fields undefined so the service keeps its own defaults', () => {
@@ -10,26 +10,24 @@ describe('parseLeaderboardQuery', () => {
     });
   });
 
+  // Each refusal is checked for naming the value it refused, not for its exact wording:
+  // that wording is what the user reads (ADR 0044) and is expected to be edited.
   it('rejects a missing datasetId', () => {
-    expect(() => parseLeaderboardQuery({})).toThrow('"datasetId" is required');
+    expect(() => parseLeaderboardQuery({})).toThrow(InvalidLeaderboardQueryError);
   });
 
-  it('rejects an unknown sort field', () => {
-    expect(() => parseLeaderboardQuery({ datasetId: 'd', sortBy: 'profit' })).toThrow(
-      'Invalid sortBy parameter "profit"',
-    );
+  it('rejects an unknown sort field, naming it', () => {
+    expect(() => parseLeaderboardQuery({ datasetId: 'd', sortBy: 'profit' })).toThrow('"profit"');
   });
 
-  it('rejects an unknown direction', () => {
+  it('rejects an unknown direction, naming it', () => {
     expect(() => parseLeaderboardQuery({ datasetId: 'd', direction: 'sideways' })).toThrow(
-      'Invalid direction parameter "sideways"',
+      '"sideways"',
     );
   });
 
-  it.each(['0', '-1', 'abc', '51'])('rejects a limit of %s', (limit) => {
-    expect(() => parseLeaderboardQuery({ datasetId: 'd', limit })).toThrow(
-      'must be an integer between 1 and 50',
-    );
+  it.each(['0', '-1', 'abc', '51'])('rejects a limit of %s, naming it', (limit) => {
+    expect(() => parseLeaderboardQuery({ datasetId: 'd', limit })).toThrow(`"${limit}"`);
   });
 
   it('accepts a limit sitting on the ceiling', () => {

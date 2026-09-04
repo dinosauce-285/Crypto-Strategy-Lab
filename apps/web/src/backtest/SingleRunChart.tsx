@@ -122,7 +122,18 @@ export function SingleRunChart({
         horzLines: { color: token('--line') },
       },
       localization: { timeFormatter },
-      timeScale: { rightOffset: 6, timeVisible: true, secondsVisible: false, tickMarkFormatter },
+      timeScale: {
+        rightOffset: 6,
+        timeVisible: true,
+        secondsVisible: false,
+        tickMarkFormatter,
+        borderColor: token('--line'),
+      },
+      rightPriceScale: { borderColor: token('--line') },
+      crosshair: {
+        vertLine: { color: token('--muted'), labelBackgroundColor: token('--raised') },
+        horzLine: { color: token('--muted'), labelBackgroundColor: token('--raised') },
+      },
     });
 
     const upColor = token('--ok');

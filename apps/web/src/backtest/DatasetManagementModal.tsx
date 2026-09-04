@@ -137,8 +137,8 @@ export function DatasetManagementModal({ datasets, loading, listError, onClose, 
                     <td>{dataset.rules.profitMode}</td>
                     <td>{dataset.rules.drawdownMode}</td>
                     <td className="dataset-management-actions">
-                      <button type="button" className="btn-action" disabled={loadingDetailId === dataset.id || deleting} onClick={() => void showDetail(dataset)}>{loadingDetailId === dataset.id ? 'Đang tải…' : 'Chi tiết'}</button>
-                      <button type="button" className="btn-action" disabled={deleting} onClick={() => { setDeleteError(null); setPendingDelete(dataset); }}>Xoá</button>
+                      <button type="button" className="btn-action btn-sm" disabled={loadingDetailId === dataset.id || deleting} onClick={() => void showDetail(dataset)}>{loadingDetailId === dataset.id ? 'Đang tải…' : 'Chi tiết'}</button>
+                      <button type="button" className="btn-action btn-sm" disabled={deleting} onClick={() => { setDeleteError(null); setPendingDelete(dataset); }}>Xoá</button>
                     </td>
                   </tr>
                 ))}

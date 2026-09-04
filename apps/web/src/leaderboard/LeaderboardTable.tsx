@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { LeaderboardEntry, LeaderboardSortField, SortDirection, StrategyMeta } from '@csl/contracts';
+import type {
+  LeaderboardEntry,
+  LeaderboardSortField,
+  SortDirection,
+  StrategyMeta,
+} from '@csl/contracts';
+import { apiFetch } from '../api/request';
 import { formatParams } from '../backtest/param-labels';
 import { scoreTooltip } from './score-formula';
 import { varyingParamNames, varyingParamText } from './varying-params';
@@ -12,6 +18,15 @@ interface LeaderboardTableProps {
   onSelectEntry: (entry: LeaderboardEntry) => void;
 }
 
+const COLUMNS: Array<{ field: LeaderboardSortField; label: string }> = [
+  { field: 'score', label: 'Điểm' },
+  { field: 'totalReturn', label: 'Lợi nhuận' },
+  { field: 'winRate', label: 'Tỷ lệ thắng' },
+  { field: 'maxDrawdown', label: 'Drawdown tối đa' },
+  { field: 'sharpeRatio', label: 'Sharpe Ratio' },
+  { field: 'tradeCount', label: 'Số lệnh' },
+];
+
 export function LeaderboardTable({
   entries,
   sortBy,
@@ -23,182 +38,59 @@ export function LeaderboardTable({
   const varying = varyingParamNames(entries);
 
   useEffect(() => {
-    fetch('/api/strategies')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((list: StrategyMeta[]) => {
-        if (Array.isArray(list)) {
-          setStrategies(list);
-        }
+    apiFetch<StrategyMeta[]>('/api/strategies')
+      .then((list) => {
+        if (Array.isArray(list)) setStrategies(list);
       })
       .catch(() => {});
   }, []);
 
-  const getStrategyName = (id: string) => {
-    const found = strategies.find((s) => s.id === id);
-    return found ? found.name : id;
-  };
-
-  const renderSortIndicator = (field: LeaderboardSortField) => {
-    if (sortBy !== field) return null;
-    return direction === 'asc' ? ' ▲' : ' ▼';
-  };
-
-  const getRankBadgeClass = (rank: number) => {
-    if (rank === 1) return 'badge badge-pos';
-    if (rank === 2 || rank === 3) return 'badge badge-neu';
-    return 'source';
-  };
-
-  const sortAria = (field: LeaderboardSortField) =>
-    sortBy === field ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
+  const strategyName = (id: string) => strategies.find((s) => s.id === id)?.name ?? id;
 
   return (
-    <div className="panel grows">
+    <div className="panel panel-box grows">
       <div className="panel-head">
         <h2>Xếp hạng Strategy (Top {entries.length})</h2>
         <span className="source">Nhấn vào một dòng để xem chi tiết ở Single-Run Backtest</span>
       </div>
 
-      <div className="candles grows" style={{ overflow: 'auto' }}>
+      <div className="table-scroll grows">
         <table>
           <thead>
             <tr>
-              <th style={{ width: '4rem' }} aria-sort={sortAria('score')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('score')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                    textAlign: 'left',
-                  }}
-                >
-                  Hạng
-                </button>
-              </th>
+              <th>Hạng</th>
               <th className="text-cell">Tổ hợp Candidate / Strategy</th>
-              <th aria-sort={sortAria('score')} title={scoreTooltip(entries[0]?.scoreFormulaVersion)}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('score')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
+              {COLUMNS.map(({ field, label }) => (
+                <th
+                  key={field}
+                  aria-sort={
+                    sortBy === field ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'
+                  }
+                  title={field === 'score' ? scoreTooltip(entries[0]?.scoreFormulaVersion) : undefined}
                 >
-                  Điểm{renderSortIndicator('score')}
-                </button>
-              </th>
-              <th aria-sort={sortAria('totalReturn')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('totalReturn')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Lợi nhuận{renderSortIndicator('totalReturn')}
-                </button>
-              </th>
-              <th aria-sort={sortAria('winRate')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('winRate')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Tỷ lệ thắng{renderSortIndicator('winRate')}
-                </button>
-              </th>
-              <th aria-sort={sortAria('maxDrawdown')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('maxDrawdown')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Drawdown tối đa{renderSortIndicator('maxDrawdown')}
-                </button>
-              </th>
-              <th aria-sort={sortAria('sharpeRatio')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('sharpeRatio')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Sharpe Ratio{renderSortIndicator('sharpeRatio')}
-                </button>
-              </th>
-              <th aria-sort={sortAria('tradeCount')}>
-                <button
-                  type="button"
-                  onClick={() => onSortChange('tradeCount')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    cursor: 'pointer',
-                    padding: 0,
-                  }}
-                >
-                  Số lệnh{renderSortIndicator('tradeCount')}
-                </button>
-              </th>
+                  <button type="button" onClick={() => onSortChange(field)}>
+                    {label}
+                    {sortBy === field && (direction === 'asc' ? ' ▲' : ' ▼')}
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => {
               const retNum = entry.metrics.totalReturn;
-              const retSign = retNum > 0 ? '+' : '';
-              const retColor = retNum > 0 ? 'ok' : retNum < 0 ? 'bad' : '';
-
               const ddNum = entry.metrics.maxDrawdown;
-              const ddSign = ddNum > 0 ? '-' : '';
-              const ddColor = ddNum > 0 ? 'bad' : '';
 
               const recipeSummary = entry.spec.members
                 .map((m) => {
                   const differs = varyingParamText(m.params, varying.get(m.id));
                   const weight = `${(m.weight * 100).toFixed(0)}%`;
-                  return `${getStrategyName(m.id)} (${differs ? `${weight}, ${differs}` : weight})`;
+                  return `${strategyName(m.id)} (${differs ? `${weight}, ${differs}` : weight})`;
                 })
                 .join(' + ');
 
               const recipeDetail = entry.spec.members
-                .map((m) => `${getStrategyName(m.id)} v${m.version}: ${formatParams(m.params, 'long')}`)
+                .map((m) => `${strategyName(m.id)} v${m.version}: ${formatParams(m.params, 'long')}`)
                 .join('\n');
 
               return (
@@ -214,29 +106,31 @@ export function LeaderboardTable({
                       onSelectEntry(entry);
                     }
                   }}
-                  style={{ cursor: 'pointer' }}
                 >
                   <td>
-                    <span className={getRankBadgeClass(entry.rank)}>
+                    <span className={`badge ${entry.rank <= 3 ? 'badge-key' : 'badge-neu'}`}>
                       #{entry.rank}
                     </span>
                   </td>
                   <td className="text-cell" title={recipeDetail}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                      <strong style={{ fontSize: '0.82rem' }}>{recipeSummary || 'Một Strategy'}</strong>
-                      <span className="source" style={{ fontSize: '0.7rem' }}>
-                        {entry.spec.rule === 'weighted' ? 'Trọng số' : entry.spec.rule} (ngưỡng {entry.spec.threshold})
+                    <div className="recipe-cell">
+                      <strong>{recipeSummary || 'Một Strategy'}</strong>
+                      <span className="source">
+                        {entry.spec.rule === 'weighted' ? 'Trọng số' : entry.spec.rule} (ngưỡng{' '}
+                        {entry.spec.threshold})
                       </span>
                     </div>
                   </td>
-                  <td style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                    {entry.score.toFixed(4)}
-                  </td>
-                  <td className={retColor} style={{ fontWeight: 600 }}>
-                    {retSign}{(retNum * 100).toFixed(2)}%
+                  <td className="cell-score">{entry.score.toFixed(4)}</td>
+                  <td className={`cell-strong ${retNum > 0 ? 'ok' : retNum < 0 ? 'bad' : ''}`}>
+                    {retNum > 0 ? '+' : ''}
+                    {(retNum * 100).toFixed(2)}%
                   </td>
                   <td>{(entry.metrics.winRate * 100).toFixed(1)}%</td>
-                  <td className={ddColor}>{ddSign}{(ddNum * 100).toFixed(2)}%</td>
+                  <td className={ddNum > 0 ? 'bad' : ''}>
+                    {ddNum > 0 ? '-' : ''}
+                    {(ddNum * 100).toFixed(2)}%
+                  </td>
                   <td>
                     {entry.metrics.sharpeRatio !== undefined
                       ? entry.metrics.sharpeRatio.toFixed(2)

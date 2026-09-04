@@ -225,9 +225,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
           </div>
 
           <div className="rules-section">
-            <h2 style={{ marginTop: '0.5rem', marginBottom: '0.25rem' }}>
-              Quy tắc khớp lệnh khi mô phỏng
-            </h2>
+            <h2>Quy tắc khớp lệnh khi mô phỏng</h2>
 
             <div className="form-row">
               <div className="form-group">
@@ -312,7 +310,7 @@ export function DatasetFormModal({ onClose, onCreated }: DatasetFormModalProps) 
 
           {error && <p className="state bad">{error}</p>}
 
-          <div className="controls-row" style={{ marginTop: '0.75rem' }}>
+          <div className="controls-row">
             <button
               type="submit"
               className="btn-action btn-primary"

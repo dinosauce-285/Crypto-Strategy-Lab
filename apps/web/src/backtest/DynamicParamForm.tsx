@@ -90,31 +90,22 @@ export function DynamicParamForm({
                 [{param.min} .. {param.max}]
               </span>
             </div>
-            {meta?.description && (
-              <span className="source" style={{ fontSize: '0.7rem', display: 'block', marginBottom: '0.2rem' }}>
-                {meta.description}
-              </span>
-            )}
-            <div className="controls-row">
-              <input
-                id={`param-${param.name}`}
-                type="number"
-                className="pair-select"
-                style={{
-                  width: '100%',
-                  borderColor: isOutOfRange ? 'var(--bad)' : undefined,
-                }}
-                min={param.min}
-                max={param.max}
-                step={param.step}
-                value={currentVal}
-                onChange={(e) => handleChange(param.name, e.target.value, param)}
-                onBlur={() => handleBlur(param.name, param)}
-              />
-            </div>
+            {meta?.description && <span className="stat-tile-note">{meta.description}</span>}
+            <input
+              id={`param-${param.name}`}
+              type="number"
+              className="pair-select"
+              aria-invalid={isOutOfRange}
+              min={param.min}
+              max={param.max}
+              step={param.step}
+              value={currentVal}
+              onChange={(e) => handleChange(param.name, e.target.value, param)}
+              onBlur={() => handleBlur(param.name, param)}
+            />
             {isOutOfRange && (
-              <span className="bad" style={{ fontSize: '0.72rem', display: 'block', marginTop: '0.2rem' }}>
-                ⚠ Giá trị hợp lệ từ {param.min} đến {param.max}
+              <span className="field-error">
+                Giá trị hợp lệ từ {param.min} đến {param.max}
               </span>
             )}
           </div>

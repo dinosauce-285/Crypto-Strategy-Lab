@@ -43,7 +43,7 @@ export function NewsFeed({
 
   if (isLoading && items.length === 0) {
     return (
-      <div className="panel">
+      <div className="panel panel-box">
         <p className="state">Đang tải tin tức crypto…</p>
       </div>
     );
@@ -51,7 +51,7 @@ export function NewsFeed({
 
   if (error && items.length === 0) {
     return (
-      <div className="panel">
+      <div className="panel panel-box">
         <p className="state bad">
           <strong>Không tải được tin tức.</strong> {error}
         </p>
@@ -64,7 +64,7 @@ export function NewsFeed({
 
   if (items.length === 0) {
     return (
-      <div className="panel">
+      <div className="panel panel-box">
         <div className="panel-head">
           <h2>Nguồn tin đầu vào</h2>
         </div>
@@ -89,7 +89,7 @@ export function NewsFeed({
   const displayedItems = isExpanded ? items : items.slice(0, DEFAULT_VISIBLE_COUNT);
 
   return (
-    <div className="panel">
+    <div className="panel panel-box">
       <div className="panel-head">
         <h2>Nguồn tin đầu vào</h2>
         <span className="source">
@@ -105,7 +105,7 @@ export function NewsFeed({
         </p>
       )}
 
-      <div className="panel" style={{ gap: '0.65rem' }}>
+      <div className="news-list">
         {displayedItems.map((item) => {
           const visibleCoins = item.relatedCoins.slice(0, MAX_VISIBLE_COIN_PILLS);
           const hiddenCoinsCount = item.relatedCoins.length - MAX_VISIBLE_COIN_PILLS;
@@ -114,9 +114,7 @@ export function NewsFeed({
             <article key={item.id} className="news-card">
               <div className="news-card-head">
                 <div className="news-meta">
-                  <span className="source" style={{ fontWeight: 600 }}>
-                    {item.source}
-                  </span>
+                  <strong>{item.source}</strong>
                   <span>•</span>
                   <span>{formatDate(item.publishedAt)}</span>
                   {visibleCoins.map((coin) => (
@@ -125,11 +123,7 @@ export function NewsFeed({
                     </span>
                   ))}
                   {hiddenCoinsCount > 0 && (
-                    <span
-                      className="coin-pill"
-                      style={{ color: 'var(--muted)' }}
-                      title={item.relatedCoins.join(', ')}
-                    >
+                    <span className="coin-pill" title={item.relatedCoins.join(', ')}>
                       +{hiddenCoinsCount}
                     </span>
                   )}
@@ -168,10 +162,10 @@ export function NewsFeed({
       </div>
 
       {items.length > DEFAULT_VISIBLE_COUNT && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.25rem' }}>
+        <div className="news-expand">
           <button
             type="button"
-            className="btn-action"
+            className="btn-action btn-ghost"
             onClick={() => setIsExpanded((prev) => !prev)}
           >
             {isExpanded

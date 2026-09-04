@@ -1,0 +1,246 @@
+/* What only one screen needs: the strategy pickers, the run panel, the news feed. */
+
+/* --- search: strategy space, manual composite, run progress --- */
+
+.search-control-panel,
+.search-space-panel,
+.search-progress-panel,
+.search-state-panel,
+.composite-builder-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+}
+
+.search-state-panel,
+/* It takes the height the running panel would, so the empty state is centred in it
+   rather than pinned to a corner of a large box. */
+.empty-progress {
+  min-height: 13rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.search-state-panel { min-height: 16rem; }
+.empty-progress .state { max-width: 42ch; }
+
+.start-search-btn { width: 100%; }
+
+.strategy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.5rem;
+}
+/* Wider than the search space's tiles: these carry a stepper as well as a name. And each
+   card is its own height — a ticked card grows a params form, and stretching its untouched
+   neighbours to match leaves three empty boxes the size of a form. */
+.composite-builder-panel .strategy-grid {
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  align-items: start;
+}
+
+.strategy-choice {
+  min-height: 3.75rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+  cursor: pointer;
+  background: var(--bg);
+  transition: border-color var(--fast) var(--ease);
+}
+.strategy-choice:hover { border-color: var(--line-strong); }
+.strategy-choice[data-selected='true'] { border-color: var(--accent); background: var(--accent-wash); }
+
+/* Scoped to this panel: StrategySpacePicker's cards are plain rows via the base rule
+   above. Only here does a card grow a params form below its row. */
+.composite-builder-panel .strategy-choice { flex-direction: column; align-items: stretch; }
+.strategy-choice-row { display: flex; gap: 0.55rem; align-items: flex-start; }
+.strategy-choice-params { padding-top: 0.5rem; border-top: 1px solid var(--line); }
+
+.strategy-choice-main {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.strategy-choice input { margin-top: 0.15rem; flex-shrink: 0; }
+.strategy-choice-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.strategy-choice-title { font-weight: 500; font-size: 0.8125rem; }
+
+.weight-stepper { display: flex; align-items: center; gap: 0.25rem; align-self: center; }
+.composite-weight {
+  font-family: var(--font-num);
+  font-size: 0.8125rem;
+  min-width: 4ch;
+  text-align: right;
+}
+
+/* A member's parameters are one unbreakable token wide enough to push the page sideways,
+   so this line wraps rather than widening the column it sits in. */
+.composite-member {
+  font-size: 0.78rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 0.5rem;
+  align-items: baseline;
+  overflow-wrap: anywhere;
+}
+.composite-member strong { font-weight: 500; }
+
+.spec-readout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.6rem;
+}
+
+.running-dataset,
+.search-recipe { display: flex; flex-direction: column; gap: 0.1rem; }
+.running-dataset strong,
+.search-recipe strong { font-size: 0.8125rem; font-weight: 500; line-height: 1.35; }
+
+/* --- dataset picker & management --- */
+
+.dataset-picker-wrap { display: flex; flex-direction: column; gap: 0.35rem; width: 100%; }
+.dataset-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dataset-picker-actions { display: flex; gap: 0.35rem; }
+.dataset-picker-wrap > .pair-select { width: 100%; }
+
+.dataset-management-modal { max-width: min(72rem, calc(100vw - 2rem)); }
+.dataset-management-table-wrap { overflow-x: auto; margin-top: 0.75rem; }
+/* Eight columns including a two-timestamp range: let the cells wrap so the actions column
+   stays on screen instead of sitting past the modal's right edge. */
+.dataset-management-table-wrap th,
+.dataset-management-table-wrap td { white-space: normal; }
+.dataset-management-actions { display: flex; justify-content: flex-end; gap: 0.35rem; }
+
+/* --- news feed --- */
+
+.news-list { display: flex; flex-direction: column; }
+.news-expand { display: flex; justify-content: center; }
+
+.news-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.news-card:last-child { border-bottom: 0; }
+
+.news-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.news-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.news-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.35;
+}
+.news-title:hover { color: var(--accent); }
+
+.news-content {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 75ch;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.coin-pill {
+  font-family: var(--font-num);
+  font-size: 0.6875rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.news-filter-field {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.news-filter-field .pair-select { width: 100%; }
+.news-filter-limit .pair-select { width: 4.5rem; }
+
+/* --- sentiment distribution --- */
+
+.sentiment-bar-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.sentiment-bar {
+  position: relative;
+  height: 0.5rem;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--raised);
+}
+
+/* Each segment is laid out full-width and placed by transform, so a changing
+   distribution animates on the compositor instead of reflowing the row. */
+.sentiment-bar-seg {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transition: transform var(--normal) var(--ease);
+}
+.seg-pos { background: var(--ok); }
+.seg-neu { background: var(--faint); }
+.seg-neg { background: var(--bad); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sentiment-bar-seg { transition: none; }
+}
+
+/* A column, not a wrapping row: three labels in a narrow rail wrap two-then-one and
+   space-between then strands the third against the left edge. */
+.sentiment-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.legend-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.legend-item { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.legend-line { width: 10px; height: 2px; border-radius: 0; }
+.dot-pos { background: var(--ok); }
+.dot-neu { background: var(--faint); }
+.dot-neg { background: var(--bad); }
+.dot-key { background: var(--accent); }

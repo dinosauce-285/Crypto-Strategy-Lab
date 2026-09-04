@@ -2,300 +2,403 @@
 name: Crypto Strategy Lab
 description: A laboratory for combining, backtesting and ranking crypto trading strategies.
 colors:
-  ink: "#2a251f"
-  muted: "#6f6658"
-  bg: "#faf9f6"
-  surface: "#f4f1ea"
-  line: "#e2dbce"
-  accent: "#0b4f9c"
-  ok: "#197e3a"
-  bad: "#b3271e"
+  bg: "#181a20"
+  surface: "#1e2329"
+  raised: "#2b3139"
+  line: "#2b3139"
+  lineStrong: "#363a45"
+  ink: "#eaecef"
+  muted: "#848e9c"
+  faint: "#5e6673"
+  accent: "#fcd535"
+  accentPress: "#f0b90b"
+  onAccent: "#202630"
+  ok: "#0ecb81"
+  bad: "#f6465d"
+  okWash: "#10251d"
+  badWash: "#2a1a1e"
+  accentWash: "#2a2413"
 typography:
   title:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "1.4rem"
+    fontFamily: "IBM Plex Sans, Segoe UI, system-ui, sans-serif"
+    fontSize: "1.125rem"
     fontWeight: 600
     lineHeight: 1.3
   heading:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "1rem"
+    fontFamily: "IBM Plex Sans, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.9375rem"
     fontWeight: 600
     lineHeight: 1.4
-  reading:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "2rem"
-    fontWeight: 400
-    lineHeight: 1.1
   body:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "1rem"
+    fontFamily: "IBM Plex Sans, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.875rem"
     fontWeight: 400
-    lineHeight: 1.5
+    lineHeight: 1.45
+  reading:
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "1rem"
+    fontWeight: 500
+    lineHeight: 1.3
   data:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "0.84rem"
+    fontFamily: "IBM Plex Mono, ui-monospace, monospace"
+    fontSize: "0.8125rem"
     fontWeight: 400
     lineHeight: 1.4
   label:
-    fontFamily: "ui-monospace, SF Mono, Menlo, Consolas, monospace"
-    fontSize: "0.76rem"
+    fontFamily: "IBM Plex Sans, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.75rem"
     fontWeight: 400
     lineHeight: 1.4
 rounded:
-  sm: "3px"
-  md: "6px"
+  sm: "4px"
+  md: "8px"
+  lg: "12px"
 spacing:
   xs: "0.25rem"
   sm: "0.5rem"
-  md: "1rem"
-  lg: "2.5rem"
+  md: "0.85rem"
+  lg: "1.25rem"
 components:
-  segmented-item:
-    backgroundColor: "{colors.bg}"
+  btn-action:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sm}"
+    height: "2rem"
+    padding: "0 0.75rem"
+  btn-action-hover:
+    backgroundColor: "{colors.lineStrong}"
+  btn-primary:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.onAccent}"
+    fontWeight: 600
+  btn-primary-hover:
+    backgroundColor: "{colors.accentPress}"
+  pair-select:
+    backgroundColor: "{colors.raised}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sm}"
+    height: "2rem"
+    padding: "0 0.6rem"
+  seg-item:
+    backgroundColor: "transparent"
     textColor: "{colors.muted}"
-    rounded: "{rounded.md}"
-    height: "2rem"
-    padding: "0 0.5rem"
-  segmented-item-hover:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-  segmented-item-selected:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-  select:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    height: "2rem"
-    padding: "0 0.5rem"
-  reading:
-    textColor: "{colors.ink}"
-    typography: "{typography.reading}"
-  reading-fresh:
+    rounded: "{rounded.sm}"
+    height: "1.75rem"
+  seg-item-selected:
+    backgroundColor: "{colors.raised}"
     textColor: "{colors.accent}"
+    fontWeight: 600
+  panel-box:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.md}"
+    padding: "0.85rem"
   data-table:
-    backgroundColor: "{colors.bg}"
     textColor: "{colors.ink}"
     typography: "{typography.data}"
-    padding: "0.35rem 0.6rem"
+    padding: "0.45rem 0.6rem"
+  data-table-row-hover:
+    backgroundColor: "{colors.raised}"
+  badge-pos:
+    textColor: "{colors.ok}"
+    backgroundColor: "{colors.okWash}"
+  badge-neg:
+    textColor: "{colors.bad}"
+    backgroundColor: "{colors.badWash}"
   state-line:
     textColor: "{colors.muted}"
-    typography: "{typography.body}"
+    typography: "{typography.data}"
 ---
 
 # Design System: Crypto Strategy Lab
 
 ## 1. Overview
 
-**Creative North Star: "The Instrument Face"**
+**Creative North Star: "The Exchange Terminal"**
 
-This is the dial of a measuring device, not a trading floor. Figures are etched onto a
-pale ground; the scale marks are thin and few; nothing on the surface is there to be
-admired. Every line has to answer what it separates, and a line that cannot answer is
-deleted. The ground is a warm off-white (`#faf9f6`) rather than white because an
-instrument face is paper or enamel, never a lightbox, and the whole palette is one hue
-family away from neutral so a single blue reads as deliberate when it appears.
+This is the room where the numbers are worked, not a report about them. The ground is the
+near-black an exchange uses because candlesticks in green and red have their highest
+contrast against it, and because the people who read this screen have read a hundred like
+it — the familiarity is the feature. Panels are unbordered slabs a shade lighter than the
+ground; a boundary is a change of plane or a hairline, never a frame drawn for its own
+sake. One amber carries every decision the reader can make.
 
-Density serves reading at a distance before it serves cramming. The screen is judged in a
-fifteen-minute demo over a projector, so figures are set in a size a room can read, and
-the interface spends its space on the numbers rather than on frames around them. Where
-density and legibility disagree, legibility wins — that is the one place this system is
-deliberately less dense than a professional terminal.
+Density serves the task. Body type is 14px, table type 13px, and a screen fills its width
+because a wide table beats a narrow one. Where a figure and a label compete, the figure is
+in mono and the label is in sans, so a column of prices aligns without the sentence beside
+it looking like output.
 
-It explicitly rejects the two shapes closest to this subject: the neon exchange, with its
-purple-to-cyan gradients and blinking figures, and the beginner investing app, with
-oversized green and red arrows that turn a backtest into advice. Both are loud in exactly
-the register where this product needs to be trusted.
+It explicitly rejects the two shapes closest to this subject and nearest to a casino: the
+**neon exchange** — purple-to-cyan gradients, glow, blinking figures, badges that
+celebrate — and the **beginner investing app** — oversized arrows, magnified percentages,
+anything that nudges. Dark and amber is the category's working uniform; gradients and glow
+are its costume.
 
 **Key Characteristics:**
-- One monospace family for everything; the numbers align because they are meant to be compared.
-- Warm off-white ground, ink-brown text, one blue accent used only for state.
-- No shadows anywhere; depth is a change of ground plus a hairline.
-- Controls are silent until touched.
-- Four states on every surface — loading, empty, error, data — and none of them may be mistaken for another.
+- Three planes: ground `#181a20`, panel `#1e2329`, raised control `#2b3139`.
+- One accent, amber `#fcd535` — primary action, current tab, current selection, nothing else.
+- IBM Plex Sans for words, IBM Plex Mono for figures. One superfamily, two genres.
+- A top bar and a live ticker rail; the screen below them is full width.
+- Four states on every surface — loading, empty, error, data — and none of them may be
+  mistaken for another.
 
 ## 2. Colors
 
-A near-neutral warm palette carrying one cool accent, with green and red reserved
-strictly for outcome.
+Three neutral planes, one amber accent, and green/red reserved strictly for direction.
 
 ### Primary
-- **Signal Blue** (`#0b4f9c`): the only accent. Focus rings, the selected item, and the
-  moment a live figure changes. Never a background, never decoration.
+- **Amber** (`#fcd535`): the only accent. Primary buttons, the current tab, a selected
+  card's border and wash, the MA overlay, the top three ranks, every focus ring. Its
+  pressed state is `#f0b90b`; text on it is `#202630`.
 
 ### Neutral
-- **Etched Ink** (`#2a251f`): all body text and every figure. A brown-black, not a pure
-  black, so it sits on the warm ground without vibrating.
-- **Scale Grey** (`#6f6658`): labels, column headers, timestamps, and any text that names
-  a number rather than being one. Meets 4.5:1 on the ground, so it is legible, not decorative.
-- **Enamel** (`#faf9f6`): the page ground.
-- **Recessed Enamel** (`#f4f1ea`): the second plane — control backgrounds, selected
-  segments, and any surface that must read as *behind* or *held*.
-- **Hairline** (`#e2dbce`): the only divider. 1px, everywhere, no exceptions.
+- **Ground** (`#181a20`): the page.
+- **Panel** (`#1e2329`): a surface holding data. No border — the plane change is the edge.
+- **Raised** (`#2b3139`): anything you operate. Buttons, fields, hovered rows, pills.
+- **Ink** (`#eaecef`): body text and every figure.
+- **Muted** (`#848e9c`): labels, column headers, state sentences. 5.2:1 on the ground and
+  4.8:1 on a panel, so it is legible rather than decorative.
+- **Faint** (`#5e6673`): a disabled control's text, and the neutral segment of a bar.
+- **Hairline** (`#2b3139`) and **strong hairline** (`#363a45`): the only dividers, 1px.
 
 ### Semantic
-- **Confirmed Green** (`#197e3a`): a healthy check, a profitable result. Always paired
-  with a word or a shape.
-- **Refused Red** (`#b3271e`): an error state, a loss, a broken connection. Same pairing rule.
+- **Up / buy** (`#0ecb81`) and **down / sell** (`#f6465d`). One value each, for marks and
+  for text alike: candles, volume bars, chart markers and bar segments take the same red
+  and green a reader sees in a profit column. The red measures 4.48:1 on a panel — a
+  hair under the AA floor — and is kept anyway, because the alternative is a red that is
+  not the category's. `UI_CONSTRAINT.md` names and bounds that exception; ADR 0051 records
+  the call.
+- **Washes** (`#10251d`, `#2a1a1e`, `#2a2413`) are the grounds a coloured pill sits on.
+  They are *darker* than the plane behind them, not a transparent tint of the colour: a
+  tint lightens the ground and drags the text on it down with it — which is how the muted
+  sub-label on a selected strategy card ended up at 4.01:1.
 
 ### Named Rules
 
 **The Meaning-Only Rule.** Colour appears when it carries information and at no other
-time. A heading is not blue because headings look nice blue; a panel is not tinted to
-show it is a panel. If a colour cannot be explained by what it tells the reader, it is
-removed.
+time. A heading is not amber because headings look good amber; a panel is not tinted to
+show that it is a panel.
 
 **The Never-Alone Rule.** Green and red never carry meaning by themselves. Buy and sell,
-profit and loss, up and down are all readable in greyscale through a word, a shape or a
-position. A colour-blind reader and a black-and-white printout must reach the same
-conclusion.
+profit and loss, up and down are readable in greyscale through a word, a shape or a
+position. A colour-blind reader and a black-and-white printout reach the same conclusion.
+
+**The One-Red Rule.** There is one red and one green, and a mark and a sentence use the
+same one. A second value tuned for a background is how a palette starts drifting, and it
+asks every future author to know which of two nearly identical tokens they want.
 
 ## 3. Typography
 
-**Display Font:** none. This system has no display face and will not acquire one.
-**Body Font:** the platform monospace stack (`ui-monospace`, `SF Mono`, `Menlo`, `Consolas`).
-**Label/Mono Font:** the same family, one step down and in Scale Grey.
+**Body / UI font:** IBM Plex Sans (400 / 500 / 600).
+**Figure font:** IBM Plex Mono (400 / 500 / 600).
 
-**Character:** one family, several weights and sizes. A monospace is chosen for a
-non-decorative reason: every column of figures aligns without effort, and a price that
-changes from `64,231.10` to `9,842.05` does not shift the layout under the reader's eye.
-`font-variant-numeric: tabular-nums` is set anywhere digits stack.
+**Character:** one superfamily in two genres. The sans carries every word — headings,
+labels, buttons, sentences — so prose reads as prose. The mono carries every figure, so a
+price changing from `64,231.10` to `9,842.05` does not shift the row under the reader's
+eye. `font-variant-numeric: tabular-nums` is set wherever digits stack.
 
 ### Hierarchy
-- **Title** (600, 1.4rem, 1.3): the page name. Once per screen.
-- **Heading** (600, 1rem, 1.4): a panel's name. Sits on the hairline that separates it from its content.
-- **Reading** (400, 2rem, 1.1): the live figure — the one number a viewer is watching. This is the largest type in the system and it is always a measurement, never a word.
-- **Body** (400, 1rem, 1.5): sentences. Capped at 65–75ch; state lines and explanations live here.
-- **Data** (400, 0.84rem, 1.4): table cells. Right-aligned for figures, left for the first column, tabular numerals throughout.
-- **Label** (400, 0.76rem, Scale Grey): column headers and the caption under a figure. Never uppercase-tracked.
+- **Title** (Sans 600, 1.125rem): the page name. Once per screen, with its subtitle on the
+  same baseline.
+- **Heading** (Sans 600, 0.9375rem): a panel's name, sitting on the hairline that separates
+  it from its content.
+- **Body** (Sans 400, 0.875rem): sentences, capped at 65–75ch.
+- **Reading** (Mono 500, 1rem): a metric's value.
+- **Data** (Mono 400, 0.8125rem): table cells. Figures right, the first column left.
+- **Label** (Sans 400, 0.75rem, Muted): column headers, a figure's caption, provenance.
+  Never uppercase-tracked.
 
 ### Named Rules
 
-**The Biggest-Thing-Is-A-Number Rule.** The largest type on any screen is a measurement.
-If a heading ever out-sizes the figure it introduces, the screen is advertising itself.
+**The Figure-Is-Mono Rule.** If it is a measurement, it is set in the mono. If it is a
+word, it is set in the sans. A table cell that holds a sentence takes `.text-cell` and
+switches back to the sans.
 
 **The No-Kicker Rule.** No small uppercase tracked eyebrow above a section. A panel is
 named by its heading and nothing else.
 
 ## 4. Layout
 
-One centred column, 46rem wide, with 3rem of air above the title and 1.5rem at the sides.
-A screen is a stack of named panels separated by space, not a grid of boxes: 2.5rem
-between panels, 1rem inside one, 0.5rem between controls that belong together. Rhythm
-comes from those four steps and nothing else.
+A fixed shell of three rows: the 3.5rem top bar, the 2.25rem ticker rail, and the screen,
+which scrolls inside itself so the page never moves. The top bar holds the brand mark, the
+five screens, and the channel status — the one thing true on every screen.
 
-Panels head with their name on a 1px Hairline, and the controls that scope a panel sit on
-that same line — the pair, the timeframe, and later the dataset. Anything that changes
-what a panel shows lives on the panel's own head, never in a global toolbar.
+A screen is a head plus a body. The body is `1fr` and a 20rem side rail: the subject on the
+left, the controls and the readouts on the right. Panels are separated by 0.85rem and
+nothing else; inside one, 0.6rem; between controls that belong together, 0.5rem.
 
-Responsive behaviour is structural. The control row wraps before it shrinks, tables scroll
-inside their own container so the page never scrolls sideways, and type sizes do not
-change with the viewport: a figure read from the back of a room is the same size on a
-laptop and on a projector.
+Responsive behaviour is structural. The brand wordmark drops below 900px. Below 720px the
+side rail moves under the main column, the four-chart grid becomes four full-width rows,
+and — this is the part that bites — the desktop layout's height-filling (`flex: 1` plus
+`min-height: 0`) is switched off, because a collapsed track lets a tall child paint over
+whatever is stacked below it. Tables scroll inside their own container; the page never
+scrolls sideways.
 
 ### Named Rules
 
-**The Column Rule.** One column, one reading order. Two columns arrive only when two
-things are genuinely being compared side by side, and then the comparison is the point of
-the screen.
+**The Height-Handoff Rule.** `.grows` (`flex: 1; min-height: 0`) belongs only on a box
+that contains its own scroller or a chart. Put it on a box that is just a stack of text and
+that text will overflow onto the next panel.
 
 ## 5. Elevation & Depth
 
-There are no shadows in this system and none will be added. Depth is a change of ground
-plus a hairline: a surface that must read as held or recessed uses Recessed Enamel
-(`#f4f1ea`) against the page's Enamel (`#faf9f6`), and a boundary between regions is a 1px
-Hairline. Two planes is the entire vocabulary, which is what an instrument face has.
+Depth is a change of plane: ground, panel, raised. Three values, and a 1px hairline where
+two regions meet inside one plane. No panel has a shadow and none will get one.
 
-The one future exception is a floating layer that genuinely overlaps content — a dropdown
-or a dialog. When one arrives it earns exactly one shadow token, defined then, and it must
-be the only thing in the system that has one.
+The exception is a layer that genuinely floats over content: the dropdown menu and the
+modal, which carry the system's only two shadow tokens (`--shadow-menu`, `--shadow-modal`)
+plus the modal's `--overlay` scrim. Nothing else in the system may reference them.
 
 ### Named Rules
 
-**The Two-Plane Rule.** Ground and held. Anything that appears to need a third plane is
-a layout problem wearing a costume.
-
-## 6. Shapes
-
-Two radii and no more: 3px for something inline (a code span, a tag), 6px for something
-you can operate (a control, a select, a segment). Everything else is square, including
-panels and tables, because an instrument face is ruled, not rounded.
-
-Borders are 1px Hairline or they are absent. There is no 2px border in this system, no
-coloured stripe down the side of anything, and no border whose job is decoration — a rule
-either separates two things or it goes.
-
-### Named Rules
-
-**The Operable-Corner Rule.** A rounded corner means the thing can be operated. If it
-cannot be clicked, typed into or selected, it is square.
+**The Three-Plane Rule.** Ground, panel, operable. A box inside a box gets no third
+background — `.panel-box` inside a `.panel-box` flattens itself on purpose.
 
 ### Browser surfaces
 
-The parts nobody draws still belong to the system. Text selection is Hairline behind
-Etched Ink, not the browser's blue. Scrollbars on a scrolling container are thin, Hairline
-at rest and Scale Grey on hover, on a transparent track. `color-scheme: light` is declared
-so native controls and the page's own scrollbar match the ground rather than the operating
-system's idea of a form. Headings carry `text-wrap: balance`.
+`color-scheme: dark` is declared on the root and in the document head, so native controls,
+the date picker and the page's own scrollbar match the ground instead of the operating
+system's idea of a form, and the browser paints the dark ground before the stylesheet
+lands. Text selection is `--accent-dim` behind Ink, not the browser's blue. Scrollbars are
+8px, strong-hairline at rest and Muted on hover, on a transparent track. Headings carry
+`text-wrap: balance`.
+
+## 6. Shapes
+
+Three radii: 4px for a control or a pill, 8px for a panel, 12px for a modal. Everything
+else is square.
+
+Borders are 1px and they either separate two things or they go. There is no 2px border in
+this system, no coloured stripe down the side of anything, and a selected card is marked by
+its border *plus* a wash of the same hue, so the state survives greyscale.
+
+### Named Rules
+
+**The Operable-Corner Rule.** 4px means you can operate it; 8px means it holds something;
+12px means it floats over the page.
 
 ## 7. Components
 
-### Segmented control (timeframe)
-- **Character:** silent until touched.
-- **Shape:** 6px radius, 2rem tall, 2.75rem minimum width so the six timeframes form an even rhythm.
-- **Rest:** transparent background, transparent 1px border, Scale Grey text. It reads as a row of words.
-- **Hover:** Recessed Enamel background, Etched Ink text.
-- **Selected:** Recessed Enamel background, Hairline border, Etched Ink text, `aria-pressed="true"`. Selection is carried by three changes at once, so it survives greyscale.
-- **Focus:** 2px Signal Blue outline, 1px offset. Never removed.
+### Top bar
+- **Structure:** brand (mark + wordmark) · the five screens · channel status, pushed right.
+- **Tab rest:** Muted text, transparent. **Hover:** Ink on Panel. **Current:** Amber text
+  at 600 — two changes at once, so it survives greyscale.
+- The nav scrolls horizontally without a visible scrollbar rather than wrapping.
 
-### Select (pair)
-- **Style:** Recessed Enamel background, 1px Hairline border, 6px radius, 2rem tall — the
-  same height as the segmented control beside it. One control height per row is a rule, not a coincidence.
-- **Focus:** the same 2px Signal Blue outline. Every focusable thing focuses identically.
+### Ticker rail
+- **Character:** the last trade on every watched pair, on every screen.
+- **Style:** Panel ground, 2.25rem, one hairline under it. Pair in Muted; price in Mono,
+  coloured by the side the server sent (`data-side`), with the side spelled out beside it.
+- **Stale:** when the channel drops the colour is dropped with it, the price holds its last
+  value, and the rail says "Mất kết nối — giá đang đứng yên." A dash means nothing has
+  arrived yet.
+- It reports only what the message carried. There is no 24h change and no direction arrow,
+  because neither is in the payload and the browser computes nothing.
 
-### Live reading
-- **Character:** the subject of the screen.
-- **Style:** 2rem, tabular numerals, Etched Ink, with its caption in Label beside it on the baseline.
-- **State:** on arrival the figure takes Signal Blue for 180ms and returns to Etched Ink on an ease-out curve. It says *something arrived*, and deliberately does not say *up* or *down* — a direction is a computed claim and this layer does not make claims.
-- **Stale:** when the channel drops, the last figure stays on screen in Scale Grey with its caption changed to "stale — last seen HH:MM:SS". It is never wiped (the reader loses their place) and never left in ink (it would read as live). The word carries the meaning; the colour only reinforces it.
-- **Reduced motion:** the transition is removed; the value simply replaces itself.
+### Channel status pill
+- Three states, each carrying a dot *and* a word: `live` green, `connecting` muted,
+  `down` red with a red border. `role="status"`.
 
-### Provenance line
-- **Character:** the panel's receipt, and the smallest type on the screen.
-- **Style:** Label size, Scale Grey, at the foot of the panel it belongs to.
-- **Content:** the topics this panel is subscribed to, verbatim (`market:BTCUSDT:price · market:BTCUSDT:1m`). It names where the numbers came from without the browser learning which exchange is behind them — that is the adapter's business, not the screen's.
+### Segmented switcher (timeframe, coin)
+- **Shape:** a Panel trough with 2px of padding; items 1.75rem, 4px radius.
+- **Rest:** Muted on transparent. **Hover:** Ink on Raised. **Selected:** Amber at 600 on
+  Raised, `aria-pressed="true"`.
+
+### Buttons
+- **`.btn-action`** — Raised, Ink, 4px, 2rem. Hover to strong-hairline, active back to
+  Panel, disabled to Faint text.
+- **`.btn-primary`** — Amber, `--on-accent` text, 600. One per screen region.
+- **`.btn-ghost`** — transparent with a strong-hairline border, for a secondary action
+  inside a panel that already has a primary one.
+- **Modifiers:** `.btn-lg` (2.5rem), `.btn-sm` (1.625rem), `.btn-block`, `.btn-step`.
+- A button dropped straight into a `.panel` aligns to the start rather than stretching;
+  `.btn-block` opts back in.
+
+### Fields
+- One class, `.pair-select`, for selects, text, number and date inputs, so a row of them
+  shares a height without anyone remembering to match it. Raised, borderless at rest,
+  strong-hairline on hover, `--bad` border when `aria-invalid`.
+- **Error text:** `.field-error`, 0.75rem, down-ink. A sentence, not a symbol.
 
 ### Data table
-- **Style:** no outer border, no zebra striping, no card. 1px Hairline under each row and
-  none under the last. Header row in Label / Scale Grey.
-- **Alignment:** figures right, the first column left, tabular numerals throughout.
-- **Density:** 0.35rem vertical padding. Denser than prose, looser than a terminal, because of the projector.
-- **Overflow:** the table scrolls inside its own container; the page never scrolls sideways.
+- **Style:** no outer border, no zebra. A hairline under each row and none under the last.
+  Header row in Label / Muted, `position: sticky` against the panel's own ground so it
+  survives a long scroll.
+- **Alignment:** figures right, the first column left, mono throughout; a cell holding a
+  sentence takes `.text-cell`.
+- **Interaction:** a `role="button"` row hovers to Raised; the selected row keeps that
+  ground and takes a 2px amber bar inset on its first cell.
+- **Overflow:** `.table-scroll` (plus `.table-scroll-capped` where a chart shares the
+  panel). The page never scrolls sideways.
 
-### State lines
-- **Character:** a sentence, not an icon.
-- **Loading:** "Opening the channel…" — says what is being waited on.
-- **Empty:** names what is subscribed and what would end the wait, so silence is distinguishable from a quiet market.
-- **Error:** Refused Red, says what broke, what to run, and whether it recovers on its own.
-- **Data:** the figure and its table.
+### Figures
+- **`.stat-tile`** is a label above a value with no frame — the grid's own gaps do the
+  separating, because a box inside a panel is a box inside a box. The grid is
+  `repeat(auto-fit, minmax(8rem, 1fr))`, so it is two-up in the side rail and four-up
+  across a wide panel without a breakpoint per home.
+- A value takes `.ok` / `.bad` only when direction is the point; `.stat-tile-note` carries
+  the band it falls in ("Tốt (>1.5)"), so the colour is never the only signal.
 
-## 8. Do's and Don'ts
+### Badges
+- Tinted pills, no border: `badge-pos` (up-ink on a 12% green wash), `badge-neg`,
+  `badge-neu` (Muted on Raised), `badge-key` (Amber on a 12% amber wash). Always a word,
+  never a bare dot.
+
+### Chart
+- Background transparent — the panel is the frame; no border, no radius of its own.
+- Grid, axis borders, crosshair and series colours all read the token file at construction
+  time, so the theme is one file and not a sweep through chart options.
+- Candles use `--ok` / `--bad`; the MA overlay uses `--accent`; support and resistance use
+  `--ok` / `--bad` with a label each.
+- **`.chart-status-row`** is a real flow row above the chart, right-aligned, holding the
+  connection badge; the timeframe pill is absolutely positioned at its left. An overlay was
+  tried and collided with the chart's own price-scale labels.
+- **Stale:** the chart drops to 40% opacity and a banner says since when. It is never wiped
+  (the reader loses their place) and never left at full strength (it would read as live).
+
+### Stages (loading / empty / error)
+- **`.stage`** is a centred column on the Panel plane with a 17.5rem floor, so the screen
+  does not jump when data lands. `.stage-dashed` for an empty state that is waiting on the
+  reader rather than on the server.
+- **Loading:** says what is being waited on. **Empty:** says what would end the wait.
+  **Error:** down-ink, says what broke and offers the retry. Every one of them is a
+  sentence.
+
+### Modal
+- 12px radius, Panel ground, strong-hairline border, `--shadow-modal`, over the `--overlay`
+  scrim. It fades and rises 6px in 180ms, and does neither under
+  `prefers-reduced-motion: reduce`.
+- Focus is trapped, Escape closes, and focus returns to whatever opened it.
+
+## 8. Motion
+
+120ms for a hover, 180ms for a state change, on `cubic-bezier(0.25, 1, 0.5, 1)`. Colour,
+opacity, transform and width only — never a layout property. No bounce, no elastic, no
+entrance choreography: the reader is in a task.
+
+Every transition has a `prefers-reduced-motion: reduce` branch that removes it rather than
+shortening it.
+
+## 9. Do's and Don'ts
 
 ### Do:
-- **Do** put the largest type on the measurement, and keep headings at 1rem–1.4rem.
-- **Do** convey depth with Recessed Enamel plus a 1px Hairline, never a shadow.
-- **Do** give every focusable element the same 2px Signal Blue outline at 1px offset.
-- **Do** set `font-variant-numeric: tabular-nums` wherever digits stack, so a changing price does not move the layout.
-- **Do** write all four states as sentences that name what is happening and what to do next.
+- **Do** set figures in the mono and words in the sans.
+- **Do** convey depth with the three planes plus a 1px hairline, never a shadow.
+- **Do** give every focusable element the same 2px amber ring at 1px offset.
 - **Do** pair every green or red with a word or a shape, so the meaning survives greyscale.
-- **Do** keep one control height per row (2rem) and one radius family (3px / 6px).
+  This is what pays for the red's 4.48:1, so it is not optional here.
+- **Do** write all four states as sentences that name what is happening and what to do next.
+- **Do** keep one control height per row (2rem) and one radius family (4 / 8 / 12).
 
 ### Don't:
-- **Don't** build **a neon crypto exchange**: no purple-to-cyan gradients, no blinking figures, no badges, no glow.
-- **Don't** build **a beginner investing app**: no oversized green and red, no arrows, no magnified percentages, nothing that nudges.
-- **Don't** add a `box-shadow`. The system is flat; a shadow is the tell that a card was reached for instead of a layout.
-- **Don't** wrap content in cards, and never nest one inside another.
-- **Don't** add a second font family, and never a display face.
+- **Don't** build **a neon exchange**: no gradients, no glow, no blinking figures, no
+  celebratory badges.
+- **Don't** build **a beginner investing app**: no oversized arrows, no magnified
+  percentages, nothing that nudges.
+- **Don't** add a `box-shadow` outside the dropdown and the modal.
+- **Don't** nest a `.panel-box` inside a `.panel-box` and expect a third background.
+- **Don't** put `.grows` on a box that is only a stack of text.
+- **Don't** add a third font family, and never a display face.
 - **Don't** put a small uppercase tracked eyebrow above a section.
 - **Don't** use `border-left` thicker than 1px as a coloured accent stripe.
-- **Don't** compute a percentage, a direction or a profit in a component to colour something — if the number is not in the response, the API is what changes.
+- **Don't** compute a percentage, a direction or a profit in a component to colour
+  something — if the number is not in the response, the API is what changes.

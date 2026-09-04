@@ -34,7 +34,7 @@ export function RecentTicks({ pair }: RecentTicksProps) {
   );
 
   return (
-    <section className="panel">
+    <section className="panel panel-box">
       <div className="panel-head">
         <h2>Giao dịch gần đây</h2>
       </div>
@@ -57,7 +57,7 @@ export function RecentTicks({ pair }: RecentTicksProps) {
       )}
 
       {ticks.length > 0 && (
-        <div className="candles">
+        <div className="table-scroll">
           <table>
             <thead>
               <tr>
@@ -71,7 +71,7 @@ export function RecentTicks({ pair }: RecentTicksProps) {
               {ticks.map((tick, i) => (
                 <tr key={`${tick.at}-${i}`}>
                   <td>{clock(tick.at)}</td>
-                  <td>{decimal(tick.price)}</td>
+                  <td className={tick.side === 'buy' ? 'ok' : 'bad'}>{decimal(tick.price)}</td>
                   <td>{decimal(tick.volume)}</td>
                   <td className={tick.side === 'buy' ? 'ok' : 'bad'}>
                     {sideLabel(tick.side)}

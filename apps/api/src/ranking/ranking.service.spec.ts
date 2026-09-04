@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { RankingService } from './ranking.service';
 
@@ -85,7 +86,7 @@ describe('RankingService', () => {
 
   it('throws NotFoundException when dataset does not exist', async () => {
     await expect(service.getLeaderboard({ datasetId: 'non-existent' })).rejects.toThrow(
-      'Dataset "non-existent" not found',
+      NotFoundException,
     );
   });
 });

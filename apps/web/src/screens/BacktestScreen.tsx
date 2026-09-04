@@ -103,9 +103,8 @@ export function BacktestScreen() {
       setCustomSpec(navState.spec);
     }
 
-    fetch('/api/datasets')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((datasets: Dataset[]) => {
+    apiFetch<Dataset[]>('/api/datasets')
+      .then((datasets) => {
         const match = datasets.find((d) => d.id === navState.datasetId);
         if (match) {
           setDataset(match);
@@ -177,56 +176,24 @@ export function BacktestScreen() {
         {/* Left Column: Visual Chart & Analysis Panels */}
         <div className="screen-main">
           {state.kind === 'idle' && (
-            <div
-              className="panel grows backtest-stage"
-              style={{
-                border: '1px dashed var(--line)',
-                borderRadius: 'var(--radius)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '2rem',
-                textAlign: 'center',
-              }}
-            >
-              <p className="state" style={{ maxWidth: '48ch', lineHeight: '1.5' }}>
-                Chọn dataset và strategy ở bên phải, sau đó nhấn <strong>▶ Chạy Backtest</strong> để mô phỏng việc thực thi lệnh, vẽ biểu đồ nến kèm indicator, và xem các chỉ số hiệu suất giao dịch.
+            <div className="stage stage-dashed grows backtest-stage">
+              <p className="state">
+                Chọn dataset và strategy ở bên phải, sau đó nhấn <strong>▶ Chạy Backtest</strong>{' '}
+                để mô phỏng việc thực thi lệnh, vẽ biểu đồ nến kèm indicator, và xem các chỉ số
+                hiệu suất giao dịch.
               </p>
             </div>
           )}
 
           {state.kind === 'loading' && (
-            <div
-              className="panel grows backtest-stage"
-              style={{
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '2rem',
-                textAlign: 'center',
-              }}
-            >
+            <div className="stage grows backtest-stage">
               <p className="state">Đang mô phỏng backtest & tính toán chỉ số…</p>
             </div>
           )}
 
           {state.kind === 'error' && (
-            <div
-              className="panel grows backtest-stage"
-              style={{
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '2rem',
-                textAlign: 'center',
-              }}
-            >
-              <p className="state bad" style={{ marginBottom: '0.75rem' }}>
+            <div className="stage grows backtest-stage">
+              <p className="state bad">
                 <strong>Mô phỏng thất bại.</strong> {state.message}
               </p>
               <button type="button" className="btn-action" onClick={handleRun}>
@@ -237,15 +204,13 @@ export function BacktestScreen() {
 
           {state.kind === 'ready' && (
             <>
-              <div className="panel grows backtest-stage">
+              <div className="panel panel-box grows backtest-stage">
                 <div className="panel-head">
                   <h2>
                     {state.result.dataset.pair} · {state.result.dataset.timeframe} (
                     {state.result.candles.length} nến)
                   </h2>
-                  <span className="source badge badge-neu">
-                    Mô phỏng hoàn tất
-                  </span>
+                  <span className="badge badge-pos">Mô phỏng hoàn tất</span>
                 </div>
 
                 <SingleRunChart
@@ -267,9 +232,11 @@ export function BacktestScreen() {
 
         {/* Right Column: Configuration & Controls */}
         <div className="screen-side">
-          <div className="panel" style={{ background: 'var(--surface)', padding: '0.85rem', borderRadius: 'var(--radius)', border: '1px solid var(--line)' }}>
+          <div className="panel panel-box">
             <div className="panel-head">
-              <h2 title="Dataset: tập dữ liệu nến lịch sử đã tải, dùng để chạy backtest">Thiết lập Dataset</h2>
+              <h2 title="Dataset: tập dữ liệu nến lịch sử đã tải, dùng để chạy backtest">
+                Thiết lập Dataset
+              </h2>
             </div>
             <DatasetPicker
               selectedDataset={dataset}
@@ -290,8 +257,7 @@ export function BacktestScreen() {
 
           <button
             type="button"
-            className="btn-action btn-primary"
-            style={{ height: '2.4rem', fontSize: '0.9rem', justifyContent: 'center' }}
+            className="btn-action btn-primary btn-lg btn-block"
             disabled={!dataset || (!strategy && !customSpec) || state.kind === 'loading'}
             onClick={handleRun}
           >
