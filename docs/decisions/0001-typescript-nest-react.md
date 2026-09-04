@@ -1,73 +1,31 @@
-# TypeScript on both ends: NestJS backend, React + Vite frontend
+# TypeScript trên cả hai đầu: NestJS backend, React + Vite frontend
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-One language across frontend and backend lets the shared types live in a package
-both sides import. `Candle`, `Signal`, `CandidateStrategy`, `Trade` and `NewsItem`
-stop being a document everyone agrees to follow and become something the compiler
-checks. For a project where the grade rests on the contracts between modules, that
-turns the most expensive class of mistake into a build error.
+Sử dụng cùng một ngôn ngữ cho cả frontend và backend cho phép các kiểu dữ liệu dùng chung (shared types) cùng nằm trong một package mà cả hai phía đều import được. Các thực thể `Candle`, `Signal`, `CandidateStrategy`, `Trade` và `NewsItem` không còn là một tài liệu thỏa thuận trên giấy mà mọi người tự giác làm theo, mà trở thành thứ được trình biên dịch (compiler) kiểm tra chặt chẽ. Đối với một đồ án mà điểm số phụ thuộc lớn vào hợp đồng giao tiếp giữa các module, điều này biến nhóm lỗi đắt giá nhất thành lỗi compile ngay lúc build.
 
-NestJS because it already contains the thing the brief is asking for. Section 12
-says to research Strategy Pattern, Plugin Architecture, Factory, Registry and
-Dependency Injection; Nest ships a DI container and a module system, so the
-registry is a provider, the generator is an injection token, and swapping random
-search for a domain-guided one is a single line in a module declaration. When the
-lecturer runs the section 42 scenario we change that line and nothing downstream
-notices. The `@Module` declarations also *are* the container decomposition that
-section 45 asks for in the architecture document, so the diagram cannot drift away
-from the code.
+Chọn NestJS vì framework này đã tích hợp sẵn những mô hình mà đề bài yêu cầu. Mục 12 trong đề bài yêu cầu nghiên cứu Strategy Pattern, Plugin Architecture, Factory, Registry và Dependency Injection; NestJS cung cấp sẵn DI container và hệ thống module hoàn chỉnh, nhờ đó registry trở thành một provider, bộ sinh ứng viên trở thành một injection token, và việc hoán đổi thuật toán tìm kiếm ngẫu nhiên (random search) sang tìm kiếm định hướng miền (domain-guided) chỉ là một dòng code trong khai báo module. Khi giảng viên chạy kịch bản kiểm tra ở mục 42, chúng ta chỉ cần đổi dòng đó mà không làm ảnh hưởng đến bất kỳ thành phần nào phía sau. Các khai báo `@Module` cũng chính là sự phân rã container mà mục 45 yêu cầu trong tài liệu kiến trúc, đảm bảo sơ đồ kiến trúc không bao giờ bị lệch so với code thực tế.
 
-Its module boundaries are enforced rather than agreed: if a module does not export
-a service, nothing outside can inject it. Our rule that dependencies only point one
-way stops being a code-review comment and becomes a runtime failure.
+Ranh giới module của NestJS được thực thi bằng mã nguồn thay vì chỉ thỏa thuận miệng: nếu một module không export một service, không thành phần nào bên ngoài có thể inject nó. Quy tắc phụ thuộc một chiều của chúng ta không còn là lời nhắc nhở lúc review code mà trở thành một lỗi runtime nếu vi phạm.
 
-Vite because the development loop matters here — four live charts on a WebSocket
-means constant reloading, and instant start with state-preserving hot reload
-compounds over a term. A plain single-page app also keeps the section 44 rule easy
-to honour: the browser only renders what the backend computed, because there is
-nowhere else for logic to hide.
+Chọn Vite vì tốc độ của vòng lặp phát triển cục bộ (development loop) rất quan trọng — việc hiển thị 4 biểu đồ chạy trực tiếp qua WebSocket đồng nghĩa với việc reload liên tục, và khả năng khởi động tức thì cùng Hot Module Replacement (HMR) giữ nguyên trạng thái sẽ tích lũy tiết kiệm rất nhiều thời gian trong suốt học kỳ. Một ứng dụng SPA thuần túy cũng giúp tuân thủ dễ dàng quy tắc ở mục 44: trình duyệt chỉ render những gì backend đã tính toán, vì logic không còn chỗ nào khác để ẩn nấp.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Python with FastAPI** — the strongest alternative. Pandas makes the numeric side
-faster to write and faster to run, and the sentiment model would live in the same
-language as everything else. It loses the shared frontend/backend types, and its
-module boundaries are conventional rather than enforced. If the team were stronger
-in Python this would be the right call and the architecture story would survive
-almost intact.
+**Python kết hợp FastAPI** — phương án thay thế mạnh mẽ nhất. Thư viện Pandas giúp việc xử lý số liệu nhanh hơn cả về tốc độ viết lẫn tốc độ chạy, và mô hình phân tích cảm xúc sentiment sẽ nằm trong cùng ngôn ngữ với phần còn lại. Tuy nhiên, nó đánh mất lợi thế chia sẻ kiểu dữ liệu trực tiếp giữa frontend và backend, và ranh giới giữa các module trong Python mang tính quy ước hơn là thực thi chặt chẽ. Nếu cả nhóm thành thạo Python hơn thì đây sẽ là lựa chọn phù hợp và câu chuyện kiến trúc vẫn được bảo toàn phần lớn.
 
-**Express** — less to learn, and perfectly capable. But the registry and the
-dependency wiring would be hand-rolled, which means at the defence we would be
-explaining our mechanism instead of pointing at one. That is a worse position for
-the exact thing being examined.
+**Express** — dễ học hơn và hoàn toàn đủ khả năng xử lý. Nhưng registry và việc nối dây phụ thuộc (dependency wiring) sẽ phải tự viết tay hoàn toàn, đồng nghĩa với việc khi bảo vệ đồ án nhóm sẽ phải mất thời gian giải thích cơ chế tự chế của mình thay vì chỉ vào một chuẩn kiến trúc có sẵn. Đó là vị thế bất lợi hơn đối với môn học kiểm tra về kiến trúc phần mềm.
 
-**Java with Spring, or .NET** — arguably the best fit for this rubric; the DI and
-module story is even stronger. Wrong cost for five students in one term: the time
-would go into configuration rather than into the twenty-nine tasks.
+**Java với Spring, hoặc .NET** — có thể xem là phù hợp nhất với thang điểm lý thuyết; câu chuyện DI và module thậm chí còn mạnh mẽ hơn. Nhưng chi phí học và cấu hình quá lớn đối với nhóm sinh viên trong một học kỳ: thời gian sẽ bị tiêu tốn vào cấu hình boilerplate thay vì giải quyết trọn vẹn 29 nhiệm vụ của đề bài.
 
-**Next.js instead of Vite** — server-side rendering solves nothing here. There is
-no SEO requirement and the data is all live behind a session, so it adds a server
-tier that no driver justifies. Worse, server actions create a place for business
-logic to leak into the frontend, which is the third anti-pattern in section 44.
+**Next.js thay vì Vite** — Render phía server (SSR) không giải quyết được vấn đề gì ở đây. Đồ án không có yêu cầu SEO và toàn bộ dữ liệu đều chạy realtime theo phiên làm việc, do đó Next.js chỉ làm phức tạp thêm tầng server mà không có lý do kiến trúc nào biện minh. Tệ hơn nữa, Server Actions tạo kẽ hở cho logic nghiệp vụ rò rỉ vào frontend, vốn là anti-pattern thứ ba trong mục 44.
 
-**Vue or Svelte instead of React** — technically equal for this. The charting
-library is imperative, so the framework barely matters. React wins on the number of
-existing TradingView examples and on what the team already knows, not on merit.
+**Vue hoặc Svelte thay vì React** — Về mặt kỹ thuật là tương đương nhau. Thư viện vẽ biểu đồ hoạt động theo cơ chế imperative, do đó framework UI không tạo ra sự khác biệt lớn. React thắng nhờ số lượng ví dụ tích hợp TradingView phong phú và sự quen thuộc sẵn có của các thành viên trong nhóm.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Nest has a real learning curve — decorators, modules, providers, injection tokens.
-Two or three days before it feels natural for someone who has only used Express.
-That cost lands entirely in the foundation slice, which one person owns, so it
-blocks nobody; but it is a genuine cost and it buys architecture rather than
-features. On a project graded on features this would be the wrong trade.
+NestJS có độ dốc học tập thực sự — decorators, modules, providers, injection tokens. Sẽ mất hai đến ba ngày làm quen đối với thành viên trước đây chỉ dùng Express. Chi phí này tập trung ở lát cắt nền tảng ban đầu (slice 0), do một người phụ trách nên không làm nghẽn tiến độ của người khác; nhưng đây là chi phí thực tế và nó đánh đổi lấy chất lượng kiến trúc thay vì tính năng bề nổi. Với một đồ án chỉ chấm điểm tính năng thì đây sẽ là sự đánh đổi sai lầm.
 
-Choosing TypeScript would normally push the sentiment model into a second runtime,
-since the model ecosystem lives in Python. Calling a hosted model instead avoids
-that, so the project stays one language end to end — but it trades a local model for
-a network dependency, which is its own decision and is recorded separately.
+Việc chọn TypeScript thông thường sẽ đẩy mô hình sentiment sang một runtime thứ hai, vì hệ sinh thái AI/ML chủ yếu nằm ở Python. Việc gọi API một mô hình hosted (Groq) giúp tránh được điều đó, giữ cho toàn bộ dự án đồng nhất một ngôn ngữ từ đầu đến cuối — nhưng nó đánh đổi một mô hình chạy local lấy một phụ thuộc mạng bên ngoài, điều này được ghi nhận riêng trong một bản ghi quyết định khác.
 
-Numeric loops in TypeScript are slower than vectorised pandas. Caching indicators
-per parameter set should keep backtests comfortable at the scale required, but if
-backtesting turns out to be the bottleneck, this decision is where it came from.
+Vòng lặp tính toán số học trong TypeScript chậm hơn Pandas được tối ưu vector. Việc cache chỉ báo theo bộ tham số sẽ giúp các lượt backtest vận hành mượt mà ở quy mô yêu cầu, nhưng nếu việc backtest trở thành nút thắt cổ chai về hiệu năng thì quyết định này chính là nguồn gốc ban đầu của sự đánh đổi đó.

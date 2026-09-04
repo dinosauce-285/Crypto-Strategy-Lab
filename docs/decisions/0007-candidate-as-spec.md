@@ -1,97 +1,35 @@
-# A candidate strategy travels as data, and is built into an object only to run
+# Chiến lược ứng viên luân chuyển dưới dạng dữ liệu đặc tả, chỉ khởi tạo thành object khi chạy
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A candidate is a specification — which strategies, which parameters, which weights,
-which merge rule — and a factory turns that specification into a runnable strategy
-inside the worker that is about to backtest it. The runnable object is never stored
-and never sent anywhere.
+Một ứng viên (candidate) là một bản đặc tả (specification) thuần túy — bao gồm những chiến lược nào, tham số gì, trọng số bao nhiêu, quy tắc kết hợp nào — và một xưởng khởi tạo (factory) sẽ chuyển bản đặc tả đó thành một đối tượng chiến lược có thể thực thi được bên trong tiến trình worker chuẩn bị chạy backtest. Đối tượng thực thi đó không bao giờ được lưu vào cơ sở dữ liệu và không bao giờ được truyền qua mạng.
 
-This was already decided in effect by `0004`. Work reaches a backtest worker through
-a queue, and everything crossing that queue is serialised. An object's methods live
-on its prototype, not in its fields, so serialising one keeps the numbers and drops
-the behaviour; the worker receives a shell that throws the moment it is asked
-anything. Keeping candidates as live objects means keeping everything in one process,
-which means one worker, which gives up the parallelism section 43 is built around.
+Quyết định này thực tế đã được định hình từ ADR `0004`. Công việc đến với worker thông qua hàng đợi, và mọi thứ đi qua hàng đợi đều phải được tuần tự hóa (serialised). Các phương thức của một JavaScript object nằm trên prototype chứ không nằm trong các trường dữ liệu, do đó khi tuần tự hóa một object thì các con số được giữ lại nhưng hành vi phương thức bị mất sạch; worker nhận về một cái vỏ rỗng và sẽ ném lỗi ngay khi bị gọi. Giữ ứng viên dưới dạng object đang sống đồng nghĩa với việc bắt buộc mọi thứ phải chạy trong một tiến trình duy nhất, tức là chỉ có một worker, từ bỏ hoàn toàn năng lực xử lý song song mà mục 43 của đề bài xây dựng xung quanh.
 
-What makes the specification the better shape rather than merely the possible one is
-that three jobs need the same thing. Section 15 generates candidates, section 24
-pushes them through a queue to workers, and section 35 stores them in an experiment
-row. A specification serves all three unchanged, and the third is what answers
-section 36 and question 8 of section 40: an old result does not record a strategy's
-name, it records the full recipe, so it can be rebuilt exactly months later. The
-worker already contains the code for every strategy — it runs the same program — so
-the only thing it lacks is which ones to assemble and with what numbers.
+Yếu tố biến bản đặc tả trở thành hình thái vượt trội chứ không chỉ là giải pháp tình thế là có tới ba tác vụ cùng cần đến cùng một cấu trúc dữ liệu: Mục 15 sinh ra các ứng viên, mục 24 đẩy chúng qua hàng đợi tới các worker, và mục 35 lưu trữ chúng vào một dòng trong bảng `Experiment`. Một bản đặc tả duy nhất phục vụ trọn vẹn cả ba tác vụ mà không cần chuyển đổi, và tác vụ thứ ba chính là câu trả lời xuất sắc cho mục 36 và câu hỏi 8 của mục 40: một kết quả cũ không chỉ ghi lại tên chiến lược, nó ghi lại toàn bộ công thức chi tiết, giúp tái lập lại chính xác thử nghiệm đó sau nhiều tháng. Tiến trình worker đã chứa sẵn toàn bộ mã nguồn của mọi chiến lược — nó chạy cùng một chương trình — thứ duy nhất nó thiếu chỉ là lắp ráp những chiến lược nào với những con số tham số nào.
 
-Two details left open here are settled now that a queue exists to settle them against. The
-validator runs at the **receiving** end, inside the worker, immediately before the
-specification is built. The sending end cannot be the place, because there is no single
-sending end: a generator enqueues candidates today, a person retries one by hand tomorrow,
-and a validator on the sender protects only against the sender that remembered to call it.
-The worker is where the untyped value becomes an object, so it is where the check is worth
-anything.
+Hai chi tiết để ngỏ trước đây nay được chốt chặt chẽ khi đã có hàng đợi: Bộ kiểm tra tính hợp lệ (validator) chạy ở **đầu nhận (receiving end)**, bên trong worker, ngay trước khi bản đặc tả được khởi tạo thành object. Đầu gửi không thể là nơi kiểm tra vì không có duy nhất một đầu gửi: hôm nay là bộ sinh tự động đẩy ứng viên vào hàng đợi, ngày mai là người dùng thử lại bằng tay, và validator ở đầu gửi chỉ bảo vệ được những bên nhớ gọi nó. Worker là nơi giá trị untyped được hiện thực hóa thành object, vì vậy đó là nơi duy nhất việc kiểm tra mang lại giá trị thực sự.
 
-And a specification the validator rejects is **written as a failed experiment**, not
-dropped. Section 32.7 asks how many jobs failed, and an answer assembled from log lines is
-not an answer. The row costs one insert on a path that is already writing rows, it carries
-the reason in the column T03 gave it, and it means the failure count and the results come
-from the same table rather than from two accounts that can disagree.
+Và một bản đặc tả bị validator từ chối sẽ được **ghi nhận là một thử nghiệm thất bại (failed experiment)** vào cơ sở dữ liệu, không bị âm thầm vứt bỏ. Mục 32.7 hỏi có bao nhiêu job bị thất bại, và một câu trả lời chắp vá từ các dòng log console không phải là một câu trả lời chuẩn mực. Dòng dữ liệu này chỉ tốn thêm một lệnh insert trên đường dẫn vốn đã liên tục ghi dữ liệu, mang theo lý do lỗi trong cột mà migration T03 đã chuẩn bị, và đảm bảo số lượng thất bại cùng kết quả thành công đều đến từ cùng một bảng dữ liệu thay vì hai nguồn độc lập có thể sai lệch nhau.
 
-The dataset is deliberately not part of the specification. A specification answers
-what the strategy is; a dataset answers what it ran on. They are sent together as a
-pair and stored as separate columns. Folding the dataset in would make one strategy
-run on two date ranges look like two different strategies, and would destroy the
-ability to ask whether a candidate does better on the 5-minute or the 1-hour frame —
-which is among the more interesting questions the system can answer.
+Dataset được tách biệt khỏi bản đặc tả có chủ đích. Bản đặc tả trả lời câu hỏi chiến lược là gì; dataset trả lời câu hỏi nó đã chạy trên dữ liệu nào. Chúng được gửi đi cùng nhau như một cặp và lưu vào hai cột riêng biệt. Nếu gộp dataset vào trong đặc tả, cùng một chiến lược chạy trên hai khoảng thời gian khác nhau sẽ bị coi là hai chiến lược hoàn toàn khác biệt, và phá hủy khả năng so sánh xem một ứng viên hoạt động tốt hơn trên khung 5 phút hay 1 giờ — vốn là một trong những câu hỏi thú vị nhất mà hệ thống có thể trả lời.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Keeping the live object** — no serialising, no rebuilding, and no gap between what
-was generated and what runs. It works, and would be the obvious choice if the search
-loop ran in one process. It cannot cross a queue, cannot be written to a column, and
-cannot be reconstructed later, so it fails all three jobs above rather than just the
-first.
+**Giữ nguyên object đang sống (live object)** — không cần tuần tự hóa, không cần xưởng dựng lại, không có khoảng cách giữa thứ sinh ra và thứ chạy. Cách này chạy tốt, và sẽ là lựa chọn hiển nhiên nếu vòng lặp tìm kiếm chạy trong một tiến trình đơn lẻ. Nhưng nó không thể đi qua hàng đợi Redis, không thể lưu vào cột cơ sở dữ liệu, và không thể tái hiện lại trong tương lai, vì vậy nó thất bại trước cả ba tác vụ cốt lõi ở trên.
 
-**A serialisable object with methods restored after transport** — send fields, then
-re-attach the prototype on the far side. This is the specification-and-factory
-approach wearing a disguise, with the reconstruction hidden inside the type instead
-of stated as a step. It costs the same and explains itself worse.
+**Một object có thể tuần tự hóa với các phương thức được gắn lại sau khi truyền tải** — gửi các trường dữ liệu, sau đó gắn lại prototype ở phía bên kia. Đây thực chất là mô hình đặc tả + factory khoác một chiếc áo khác, với việc tái tạo bị giấu bên trong type thay vì được tuyên bố như một bước xử lý tường minh. Nó tốn chi phí y hệt nhưng khó giải thích kiến trúc hơn.
 
-**Storing generated source code for each candidate** — maximally faithful, since the
-stored artefact is the thing that ran. It turns every backtest into code execution
-from the database, which is a security problem we have no reason to take on, and
-makes comparing two candidates a diff of text rather than of fields.
+**Lưu trữ mã nguồn được sinh tự động cho từng ứng viên** — trung thực tối đa với những gì đã chạy. Nhưng nó biến mỗi lượt backtest thành việc thực thi mã nguồn động đọc từ database (eval/dynamic execution), tạo ra một lỗ hổng bảo mật nghiêm trọng không đáng có, và khiến việc so sánh hai ứng viên trở thành việc so khớp diff văn bản thay vì so sánh các trường tham số.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-The compiler stops helping at the boundary. Data arriving from the queue is untyped
-at runtime, and asserting a type on it checks nothing. A validator has to be written
-and kept in step with the shared type by hand, and a malformed specification is
-discovered when it is built rather than when it is written.
+Trình biên dịch (compiler) mất đi sự bảo vệ tại ranh giới hàng đợi. Dữ liệu đến từ hàng đợi không có kiểu dữ liệu lúc runtime (untyped), và việc ép kiểu kiểu TypeScript không kiểm tra được gì trong thực tế. Một validator bắt buộc phải được viết tay và duy trì đồng bộ thủ công với shared types, và một bản đặc tả sai cấu trúc chỉ được phát hiện khi nó được khởi tạo thay vì lúc được viết ra.
 
-Validating at the receiving end means a bad specification is caught after it has been
-queued, waited and been picked up, rather than at the moment it was written. The generator
-that produced it is long gone by then, and the only thing pointing back at it is the reason
-stored on the failed row.
+Kiểm tra hợp lệ ở đầu nhận đồng nghĩa với việc một bản đặc tả lỗi chỉ bị bắt sau khi nó đã nằm trong hàng đợi, chờ đợi và được worker bốc lên. Bộ sinh tạo ra nó lúc đó đã hoàn thành xong từ lâu, và thứ duy nhất truy ngược lại được là lý do lỗi lưu trên dòng thất bại.
 
-Recording a rejected specification also depends on it carrying a dataset that exists,
-because an experiment is a row against a dataset. A job malformed enough to lose that has
-nowhere to be written and can only be counted in the run that queued it — so the failure
-count is one table plus one number held in memory, and the number does not survive a
-restart. The alternative was a table for runs, which is a schema change bought to make a
-rare failure tidy.
+Việc ghi nhận một bản đặc tả bị từ chối cũng phụ thuộc vào việc nó có mang theo một datasetId hợp lệ hay không, vì một experiment là một dòng trỏ đến dataset. Một job bị hỏng nặng đến mức mất luôn thông tin dataset sẽ không có nơi nào để ghi vào DB và chỉ có thể đếm tạm trong bộ nhớ của lượt chạy — vì vậy số lượng thất bại là một bảng cộng với một con số tạm thời trong RAM không sống sót qua lệnh restart.
 
-Failures now come in two kinds that must not be treated alike. A specification naming
-a strategy that does not exist is permanently broken and must not be retried; a
-dropped connection is temporary and must be. The queue retries everything by default,
-so getting this wrong means a bad specification is retried until it exhausts its
-attempts, or forever if attempts are unbounded.
+Các thất bại giờ đây chia làm hai loại và không được đối xử giống nhau. Một đặc tả gọi tên một chiến lược không tồn tại là lỗi vĩnh viễn và tuyệt đối không được retry; một kết nối mạng bị rớt là lỗi tạm thời và bắt buộc phải retry. Hàng đợi BullMQ mặc định sẽ retry mọi thứ, vì vậy nếu không phân loại đúng thì một đặc tả sai sẽ bị retry liên tục cho đến khi cạn số lần thử, gây lãng phí tài nguyên vô ích.
 
-Identity depends on serialising consistently. The same candidate written with its
-fields in a different order hashes differently, and the search engine then re-tests
-combinations it has already seen without noticing. Field order, member order and
-floating-point precision all have to be normalised before hashing — a small piece of
-work that is invisible until the day the leaderboard fills with duplicates.
-
-There is now a construction step that can fail in the middle of a run, in a place
-that did not previously exist.
+Định danh ứng viên phụ thuộc vào tính nhất quán khi tuần tự hóa. Cùng một ứng viên nhưng nếu các trường trong JSON bị đảo thứ tự thì mã băm (hash) sẽ ra kết quả khác nhau, khiến search engine vô tình kiểm thử lại các tổ hợp mà nó đã từng thấy. Thứ tự trường, thứ tự thành viên và độ chính xác số thực đều phải được chuẩn hóa trước khi băm — một công việc nhỏ nhưng sẽ rất tai hại nếu bị bỏ qua đến ngày bảng xếp hạng bị tràn ngập các bản ghi trùng lặp.

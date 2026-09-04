@@ -1,70 +1,39 @@
-# UI constraint — apps/web
+# Ràng buộc Thiết kế Giao diện — apps/web
 
-Binding for every file under `src/`. Read before writing any screen or component.
+Quy chuẩn bắt buộc áp dụng cho mọi tệp tin trong thư mục `src/`. Đọc kỹ tài liệu này trước khi bắt tay viết bất kỳ màn hình hoặc component nào.
 
-Design work should use the frontend design helper available in the contributor's local
-agent harness. In the author's local Claude setup that helper is `impeccable`; another
-agent may name or implement it differently. This file holds the rules that survive
-whatever the design turns into — the ones a reviewer can check without opinion.
+Công việc thiết kế nên sử dụng công cụ hỗ trợ thiết kế frontend có sẵn trong agent harness cục bộ của thành viên. Trong môi trường Claude cục bộ của tác giả, công cụ đó là `impeccable`; các agent khác có thể đặt tên hoặc triển khai khác. Tệp tài liệu này lưu giữ các quy tắc cốt lõi bất biến dù giao diện có thay đổi thế nào — những quy tắc mà người review có thể kiểm tra một cách khách quan không phụ thuộc vào cảm tính cá nhân.
 
-Two files, two jobs: this one is the law a reviewer checks, and
-[`DESIGN.md`](DESIGN.md) is the visual system that law produced — palette, type scale,
-component states, the named rules. Strategy behind both lives in [`PRODUCT.md`](PRODUCT.md).
-A rule belongs in exactly one of the three.
+Ba tệp tài liệu, ba nhiệm vụ chuyên biệt: tệp này (`UI_CONSTRAINT.md`) là quy chuẩn bắt buộc mà reviewer kiểm tra; [`DESIGN.md`](DESIGN.md) là hệ thống thiết kế trực quan (visual system) sinh ra từ quy chuẩn đó — bảng màu, tỷ lệ font chữ, các trạng thái component, các quy tắc đặt tên; và chiến lược đằng sau cả hai tài liệu trên nằm trong [`PRODUCT.md`](PRODUCT.md). Một quy tắc chỉ được phép xuất hiện tại đúng một trong ba tài liệu này.
 
-## Two rules that outrank the rest
+## Hai quy tắc có mức ưu tiên cao nhất
 
-**Reuse.** Never hand-roll what the repo already has. Before adding a component, look in
-`src/components/`. A second table, a second modal, a second stat tile is worse than an
-imperfect first one, because now every future change has two homes.
+**Tái sử dụng (Reuse).** Tuyệt đối không tự viết lại bằng tay những gì repo đã có sẵn. Trước khi thêm mới một component, hãy kiểm tra kỹ thư mục `src/components/`. Một component bảng thứ hai, một modal thứ hai, một stat tile thứ hai được tạo mới còn tệ hơn là dùng lại một component sẵn có dù chưa hoàn hảo, bởi vì từ đó về sau mọi thay đổi trong tương lai sẽ bị phân tán thành hai nơi.
 
-**No business logic here.** The frontend renders what the backend computed. No strategy
-maths, no backtest simulation, no profit calculation, no ranking, no signal derivation.
-This is one of the five anti-patterns the brief marks down, and it is the easiest of the
-five to slide into — the moment a number is computed in a component instead of read from a
-response, the boundary is gone.
+**Không đưa logic nghiệp vụ vào đây (No business logic here).** Frontend chỉ render hiển thị những gì mà backend đã tính toán xong. Không thực hiện các phép toán chiến lược, không mô phỏng backtest, không tính toán lợi nhuận, không xếp hạng điểm số, không tự suy luận tín hiệu mua bán. Đây là một trong năm anti-pattern bị trừ điểm nặng nhất trong đề bài, và là cái bẫy dễ trượt chân vào nhất — khoảnh khắc một con số được tính toán bên trong component thay vì đọc từ phản hồi API, ranh giới kiến trúc đã bị phá vỡ hoàn toàn.
 
-## Non-negotiable
+## Các quy tắc không thể thương lượng (Non-negotiable)
 
-- **Tokens, never raw colour.** No hex, `rgb()` or `hsl()` outside the token file. If a
-  colour is needed and no token fits, add the token. Enforced by `pnpm lint:ui`.
-- **Every screen handles four states**: loading, empty, error, and has-data. A screen that
-  only renders the happy path is not finished. The empty state says what to do next; the
-  error state says what broke and how to retry.
-- **Body text hits 4.5:1 contrast** against its background, large text 3:1. Placeholder
-  text is body text for this purpose. Light grey "for elegance" is the most common way an
-  interface becomes unreadable.
+- **Chỉ sử dụng Design Tokens, tuyệt đối không dùng mã màu thô.** Không viết trực tiếp mã hex, `rgb()` hay `hsl()` ra bên ngoài file token. Nếu cần một màu mới mà chưa có token phù hợp, hãy bổ sung token vào bảng định nghĩa. Quy tắc này được kiểm tra tự động bởi lệnh `pnpm lint:ui`.
+- **Mọi màn hình đều phải xử lý đầy đủ bốn trạng thái**: đang tải (`loading`), trống rỗng (`empty`), lỗi (`error`), và đã có dữ liệu (`has-data`). Một màn hình chỉ render kịch bản thành công lý tưởng (happy path) là màn hình chưa hoàn thành. Trạng thái empty phải hướng dẫn người dùng bước tiếp theo nên làm gì; trạng thái error phải nêu rõ sự cố gì đã xảy ra và cách thử lại.
+- **Độ tương phản văn bản nội dung (body text) phải đạt tối thiểu 4.5:1** so với màu nền, văn bản lớn đạt tối thiểu 3:1. Placeholder text cũng được tính là body text theo tiêu chuẩn này. Dùng màu xám nhạt "cho sang trọng" là nguyên nhân phổ biến nhất khiến giao diện trở nên mờ mịt và không đọc nổi.
 
-  One exception is named, measured and bounded: `--bad` (`#f6465d`) reaches **4.48:1** on
-  `--surface` and **3.72:1** on a hovered row. It was kept at the exchange's own value
-  because the alternative was a red that does not belong to the category — a call recorded
-  in ADR 0051 and taken by the product owner, not by a component. It holds only because
-  the Never-Alone rule below already forbids colour from carrying meaning by itself, so a
-  reader who cannot resolve the red still reads the sign, the word or the badge beside it.
-  It extends to nothing else: any *new* text colour meets 4.5:1, and if this red ever
-  becomes the sole carrier of a meaning, it stops being an exception and becomes a bug.
-- **One icon family, one stroke width** across the whole app. Mixing two sets reads as
-  unfinished more than any other single thing.
-- **One control height per row.** Inputs, selects and buttons sitting together share a
-  height token. Mismatched heights in a toolbar is the tell of an assembled UI.
-- **Line length capped at 65–75ch** for prose.
-- **No frame inside a frame.** An input inside an already-bordered panel does not get its
-  own heavy border.
-- **z-index comes from one scale**, defined once. No ad-hoc `z-index: 9999`.
+  Một ngoại lệ duy nhất được đo lường và ghi nhận rõ ràng: mã màu `--bad` (`#f6465d`) đạt tỷ lệ tương phản **4.48:1** trên nền `--surface` và **3.72:1** trên một dòng dữ liệu đang hover. Màu này được giữ nguyên theo mã màu chuẩn của sàn giao dịch tiền mã hóa vì phương án thay thế là một màu đỏ lệch chuẩn thị trường — quyết định này được ghi nhận chính thức trong ADR 0051 và do chủ sản phẩm phê duyệt, không phải do component tự ý chọn. Ngoại lệ này chỉ được chấp nhận vì quy tắc "Không bao giờ để màu sắc đứng đơn độc (Never-Alone rule)" bên dưới nghiêm cấm việc chỉ dùng màu sắc thuần túy để truyền tải ý nghĩa: một người dùng không phân biệt được sắc đỏ vẫn đọc được dấu âm/dương, chữ hiển thị hoặc huy hiệu (badge) bên cạnh. Ngoại lệ này không áp dụng cho bất kỳ trường hợp nào khác: mọi màu chữ *mới* bắt buộc phải đạt chuẩn 4.5:1, và nếu sắc đỏ này trở thành phương tiện duy nhất để biểu đạt ý nghĩa thì nó sẽ bị coi là một bug.
+- **Dùng thống nhất một bộ icon duy nhất, một độ dày nét (stroke width) duy nhất** trên toàn bộ ứng dụng. Việc pha trộn hai bộ icon khác nhau sẽ tạo cảm giác sản phẩm chắp vá, thiếu hoàn thiện.
+- **Chiều cao điều khiển đồng nhất trên mỗi hàng (One control height per row).** Các ô input, select và button đặt cạnh nhau trên cùng một thanh công cụ bắt buộc phải dùng chung một token chiều cao. Các nút lệch kích thước trên cùng một hàng là dấu hiệu rõ ràng của một giao diện lắp ghép cẩu thả.
+- **Giới hạn độ dài dòng văn bản từ 65–75 ký tự** đối với các đoạn văn xuôi dài.
+- **Không lồng viền trong viền (No frame inside a frame).** Một ô input nằm bên trong một panel đã có viền bao quanh thì không cần thêm đường viền quá dày.
+- **Quy mô thang bậc z-index đồng nhất**, được định nghĩa tập trung một lần. Tuyệt đối không dùng `z-index: 9999` tùy tiện.
 
-## Charts
+## Biểu đồ (Charts)
 
-The chart library is the one decided in T06 and it is the only one. Do not add a second
-charting dependency for a different screen.
+Thư viện biểu đồ là thư viện đã được chốt trong task T06 và là thư viện duy nhất được phép sử dụng. Không thêm một thư viện chart thứ hai cho một màn hình khác.
 
-- Chart colours come from tokens like everything else. Buy and sell markers use the
-  semantic success and danger tokens, not arbitrary green and red.
-- Every chart is readable without colour alone — shape, position or label carries the
-  meaning too. Long and short, buy and sell, profit and loss must be distinguishable in
-  greyscale.
-- A chart with no data shows the empty state, not an empty grid.
+- Màu sắc biểu đồ phải lấy từ design tokens như mọi thành phần khác. Các điểm đánh dấu mua (buy) và bán (sell) phải sử dụng semantic tokens đại diện cho success và danger, không dùng màu xanh đỏ tùy ý.
+- Mọi biểu đồ phải đọc hiểu được mà không hoàn toàn phụ thuộc vào màu sắc — hình dạng điểm đánh dấu, vị trí hoặc nhãn chữ đi kèm phải cùng thể hiện ý nghĩa. Các cặp khái niệm Long và Short, Buy và Sell, Lời và Lỗ phải phân biệt được ngay cả khi hiển thị dưới thang xám (greyscale).
+- Một biểu đồ khi chưa có dữ liệu phải hiển thị trạng thái empty state rõ ràng, không render một lưới ô vuông trống trơn vô hồn.
 
-## Before saying it is done
+## Các bước kiểm tra trước khi xác nhận hoàn thành
 
 ```bash
 pnpm --dir apps/web lint
@@ -72,12 +41,8 @@ pnpm --dir apps/web lint:ui
 pnpm --dir apps/web build
 ```
 
-Then open it. A screen that has not been looked at in a browser is not done, and the four
-states are checked by actually producing them — unplug the API and see what the error state
-does.
+Sau đó hãy mở trình duyệt lên. Một màn hình chưa từng được quan sát thực tế trên trình duyệt thì chưa thể coi là đã xong, và cả bốn trạng thái phải được kiểm tra bằng cách kích hoạt chúng trong thực tế — ngắt kết nối API để xem trạng thái error xử lý thế nào.
 
-## Not yet decided
+## Ghi chú về thiết kế ban đầu
 
-The token set, the component kit and the chart library are task **T04** and **T06**. Until
-those land, this file states the rules; `impeccable` produces the system that satisfies
-them. Run it once the first real screen exists, not before — it needs something to shape.
+Bộ design token, bộ thư viện component dùng chung và thư viện biểu đồ được khởi tạo từ task **T04** và **T06**. Tệp này định nghĩa các nguyên tắc cốt lõi bất biến; các công cụ hỗ trợ thiết kế sẽ sinh ra hệ thống trực quan đáp ứng các yêu cầu đó.

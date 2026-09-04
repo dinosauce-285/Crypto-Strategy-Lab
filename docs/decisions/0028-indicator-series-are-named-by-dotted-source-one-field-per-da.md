@@ -1,54 +1,21 @@
-# Indicator series are named by dotted source, one field per DataRequest
+# Chuỗi chỉ báo đặt tên theo cấu trúc nguồn dấu chấm, một trường cho mỗi DataRequest
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-`DataRequest.source` (`packages/contracts/src/strategy.ts`, locked by `0008`) is one
-string, and `StrategyContext.get` returns one `number[]`. MA and RSI fit that directly.
-Bollinger Bands do not — section 9 draws three lines from one indicator — and neither
-does Support/Resistance, which this codebase treats as two independent series (support
-and resistance move independently; a candle can sit near one, both, or neither).
+Trường `DataRequest.source` (`packages/contracts/src/strategy.ts`, được chốt bởi ADR `0008`) là một chuỗi string, và hàm `StrategyContext.get` trả về một mảng số `number[]`. Chỉ báo MA và RSI khớp trực tiếp với định dạng này. Nhưng Bollinger Bands thì không — mục 9 của đề bài vẽ tới ba đường từ cùng một chỉ báo — và chỉ báo Hỗ trợ/Kháng cự cũng vậy, vốn được codebase này xử lý thành hai chuỗi độc lập (hỗ trợ và kháng cự biến thiên độc lập; một cây nến có thể nằm gần một đường, cả hai đường, hoặc không đường nào).
 
-The convention is `<indicator-name>.<field>`, kebab-case name, field omitted for a
-single-series indicator: `ma`, `rsi`, `bollinger.upper`, `bollinger.middle`,
-`bollinger.lower`, `support-resistance.support`, `support-resistance.resistance`. This
-mirrors the dotted namespacing `packages/contracts/src/events.ts` already uses for event
-names (`market.candle.closed`), so a reader who knows that convention already knows this
-one.
+Quy ước đặt tên được chọn là `<indicator-name>.<field>`, sử dụng định dạng `kebab-case`, và bỏ qua phần trường đối với các chỉ báo chỉ có một chuỗi dữ liệu duy nhất: `ma`, `rsi`, `bollinger.upper`, `bollinger.middle`, `bollinger.lower`, `support-resistance.support`, `support-resistance.resistance`. Quy ước này phản ánh chính xác cấu trúc namespace bằng dấu chấm mà `packages/contracts/src/events.ts` đang dùng cho tên sự kiện (`market.candle.closed`), tạo sự nhất quán cho người đọc.
 
-The split is more than naming. Bollinger's three bands share one SMA-and-stddev pass;
-computing `upper`, `middle` and `lower` as three unrelated indicators would triple that
-work for every candidate that asks for any of them. `IndicatorService` splits `source` on
-the first `.` to get `[name, field]`, and every calculator returns a `Record<string,
-number[]>` even when it only has one field — so the cache key is `(datasetId, name,
-params)`, not `(datasetId, source, params)`, and three `DataRequest`s for the same
-indicator and params share one computed pass and one cache entry.
+Sự phân tách này mang ý nghĩa lớn hơn việc đặt tên. Ba dải của Bollinger Bands dùng chung một lượt tính toán SMA và độ lệch chuẩn stddev; việc tính `upper`, `middle` và `lower` như ba chỉ báo riêng biệt không liên quan sẽ làm tăng gấp ba khối lượng tính toán cho mọi ứng viên cần đến chúng. `IndicatorService` tách `source` tại dấu `.` đầu tiên để lấy cặp `[name, field]`, và mọi bộ tính toán đều trả về một `Record<string, number[]>` ngay cả khi nó chỉ có một trường — nhờ đó khóa cache là `(datasetId, name, params)`, không phải `(datasetId, source, params)`, và ba yêu cầu `DataRequest` cho cùng một chỉ báo và tham số sẽ dùng chung một lượt tính toán duy nhất và một bản ghi cache duy nhất.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**A struct-returning source, one request per indicator** — `bollinger` returns
-`{upper, middle, lower}` and a strategy destructures it. Closest to "compute Bollinger
-once," but it breaks the contract `get(request: DataRequest): readonly number[]` locked
-in `0008`'s neighbourhood — every caller would need a second, incompatible return shape
-for exactly the indicators this decision is about, and `StrategyContext` would need two
-methods instead of one.
+**Nguồn trả về một struct, một request cho toàn bộ chỉ báo** — `bollinger` trả về `{upper, middle, lower}` và chiến lược tự phân rã dữ liệu. Nhưng nó phá vỡ hợp đồng `get(request: DataRequest): readonly number[]` đã được chốt ở ADR `0008` — mọi bên gọi sẽ cần thêm kiểu dữ liệu trả về thứ hai không tương thích và `StrategyContext` sẽ cần hai phương thức thay vì một.
 
-**Three fully separate indicators** (`bollinger-upper`, `bollinger-mid`,
-`bollinger-lower`, each its own calculator) — no dispatch logic, no split. It throws away
-the shared computation this decision is written to keep, and the three names carry no
-relationship to each other in the registry the way `bollinger.*` visibly does.
+**Tách thành ba chỉ báo hoàn toàn riêng biệt** (`bollinger-upper`, `bollinger-mid`, `bollinger-lower`) — vứt bỏ sự chia sẻ tính toán chung mà quyết định này muốn bảo vệ, và ba tên gọi không thể hiện mối quan hệ họ hàng tự nhiên với nhau trong registry.
 
-**camelCase or a different separator** (`bollingerUpper`, `bollinger:upper`) — no
-functional difference, just inconsistent with the one dotted convention this codebase
-already has for names of this shape.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+`IndicatorService` giờ đây phải điều phối theo hai tầng: phân phát theo chuỗi `source` đầy đủ nhưng lưu cache theo `name` độc lập. Một bộ tính toán nếu quên điền một trường trong object trả về sẽ gây lỗi tại thời điểm chiến lược đọc trường đó lúc runtime.
 
-`IndicatorService` now has two things to keep straight instead of one: dispatch on the
-full `source` and caching on `name` alone. A calculator that forgets to fill in every
-field of its return object fails at the point a strategy reads a field that isn't there,
-not when the calculator runs — the same class of run-time-only failure `0008` already
-accepts for a strategy's own declared needs.
-
-The convention only works because indicator names never contain a literal `.`. Nothing
-enforces that beyond review — the same trust `AGENTS.md` already places in kebab-case
-file names.
+Quy ước này vận hành chuẩn xác vì tên các chỉ báo kỹ thuật không bao giờ chứa dấu chấm `.` thực tế trong tên của chúng.

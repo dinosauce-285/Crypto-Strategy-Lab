@@ -1,85 +1,31 @@
-# Dataset creation fetches and stores its own candle range from the exchange, paginated
+# Việc tạo Dataset chủ động nạp và lưu trữ khoảng nến riêng từ sàn giao dịch, có phân trang
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-`0026` deliberately left this open: "filling a specific gap on purpose (a 'load more
-history' action) is a real feature, but a different one, for whoever builds the screen
-that needs it." Since then, `0040` removed the one path that used to accidentally
-cover some of this — Realtime watching no longer persists anything — so a Dataset with
-a date range outside what's already stored now has no way to ever get real data. This
-is that feature.
+`0026` đã chủ ý để ngỏ điều này: "việc chủ động lấp một khoảng trống cụ thể (hành động 'tải thêm lịch sử') là một tính năng thực sự, nhưng là một tính năng khác biệt, dành cho bất kỳ ai xây dựng màn hình cần đến nó." Kể từ đó, `0040` đã gỡ bỏ con đường duy nhất từng vô tình bao phủ một phần việc này — việc theo dõi Realtime không còn lưu trữ bất kỳ thứ gì — vì vậy một Dataset có phạm vi ngày nằm ngoài những gì đã được lưu trữ giờ đây không có cách nào để có được dữ liệu thực. Đây chính là tính năng đó.
 
-`ExchangeHistoryPort.fetchKlines(pair, timeframe, limit)` only ever sends `limit`; it
-has no way to ask for a specific window. Binance's own `/api/v3/klines` already
-supports `startTime`/`endTime` — `ExchangeStreamPort.fetchCandles` proves this out
-today, used by `MarketService.recoverGaps()` to page through a reconnect gap in
-≤1000-row chunks (Binance's per-call cap). That loop is the template: `fetchRange`
-does the same thing, bounded by the Dataset's own `to` instead of `Date.now()`.
+`ExchangeHistoryPort.fetchKlines(pair, timeframe, limit)` trước đây chỉ gửi `limit`; nó không có cách nào yêu cầu một cửa sổ thời gian cụ thể. Bản thân `/api/v3/klines` của Binance đã hỗ trợ `startTime`/`endTime` — `ExchangeStreamPort.fetchCandles` đã chứng minh điều này trong thực tế, được `MarketService.recoverGaps()` sử dụng để phân trang qua một khoảng trống khi kết nối lại theo từng khối ≤1000 hàng (giới hạn tối đa cho mỗi lệnh gọi của Binance). Vòng lặp đó chính là khuôn mẫu: `fetchRange` làm điều tương tự, được chặn bởi mốc `to` của chính Dataset thay vì `Date.now()`.
 
-Two rate-limit rules, kept deliberately small: a ~150-200ms delay between chunk
-requests, and on a 429, read `Retry-After`, wait exactly that long, retry once, then
-fail for real. The actual numbers don't justify more: a worst-case Dataset (a month at
-1m, 44 calls) costs ~220 request weight against Binance's 6,000/minute budget — under
-4%. What does justify something is the shape of Binance's penalty: a 429 you ignore
-escalates to an IP ban (418) that scales 2 minutes to 3 days per repeat offense, and
-that ban would take down the live Realtime stream too, not just this feature. The two
-rules exist to make that failure mode survivable, not to manage a budget under real
-pressure.
+Hai quy tắc giới hạn tần suất (rate-limit) được giữ ở mức tối giản có chủ ý: độ trễ ~150-200ms giữa các yêu cầu từng khối, và khi gặp lỗi 429, đọc header `Retry-After`, chờ chính xác khoảng thời gian đó, thử lại đúng một lần, sau đó mới thực sự báo lỗi. Các con số thực tế không đòi hỏi nhiều hơn: một Dataset trong trường hợp xấu nhất (một tháng ở khung 1m, 44 lệnh gọi) chỉ tốn ~220 trọng số yêu cầu so với ngân sách 6.000/phút của Binance — dưới 4%. Điều thực sự đòi hỏi biện pháp bảo vệ là hình thái hình phạt của Binance: một lỗi 429 nếu bị phớt lờ sẽ leo thang thành lệnh cấm IP (418) với thời hạn tăng dần từ 2 phút đến 3 ngày cho mỗi lần tái phạm, và lệnh cấm đó sẽ đánh sập cả luồng stream Realtime trực tiếp chứ không chỉ tính năng này. Hai quy tắc này tồn tại để giúp chế độ lỗi đó có thể sống sót, chứ không phải để quản lý ngân sách dưới áp lực tải thực tế.
 
-The fetch runs inline in `POST /datasets`, not through BullMQ. `0004`'s job queue
-exists for the search loop's many independent, retryable, pausable units of work — a
-different shape of problem than one bounded fetch for one Dataset. `recoverGaps()`
-already sets the precedent: a multi-call paginated Binance fetch, awaited inline, no
-queue. If it fails, the caller sees a real error and can just try again — `create()`'s
-upsert and `upsertMany`'s upsert are both already idempotent, so a retry costs nothing
-extra.
+Việc nạp dữ liệu chạy đồng bộ (inline) trong `POST /datasets`, không thông qua BullMQ. Hàng đợi tác vụ của `0004` tồn tại cho nhiều đơn vị công việc độc lập, có thể thử lại và có thể tạm dừng của vòng lặp tìm kiếm — một hình thái bài toán hoàn toàn khác với việc nạp dữ liệu có giới hạn cho một Dataset đơn lẻ. `recoverGaps()` đã tạo tiền lệ: một đợt nạp Binance nhiều lần gọi có phân trang, được await đồng bộ, không cần hàng đợi. Nếu thất bại, bên gọi sẽ nhận thông báo lỗi thực tế và có thể thử lại đơn giản — thao tác upsert của `create()` và upsert của `upsertMany` đều đã có tính lũy thừa (idempotent), nên việc thử lại không tốn thêm bất kỳ chi phí phụ trội nào.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Queue it through BullMQ, like a search candidate.** Gets retries, pause/resume, and
-progress observability for free. Rejected: those are solved problems for one bounded,
-user-triggered fetch that already has a trivial retry story (recreate the Dataset).
-Adding a queue here is exactly the kind of technology-without-a-driver the brief's
-§38 warns against.
+**Đưa vào hàng đợi qua BullMQ, giống như một ứng viên tìm kiếm.** Có sẵn khả năng thử lại, tạm dừng/tiếp tục và khả năng quan sát tiến độ. Bị từ chối: đó là những giải pháp cho một đợt nạp có giới hạn do người dùng kích hoạt vốn đã có câu chuyện thử lại quá đơn giản (tạo lại Dataset). Việc bổ sung hàng đợi ở đây chính là dạng công nghệ-không-có-động-lực-thực-tế mà §38 của bản mô tả đã cảnh báo.
 
-**Push progress over the WebSocket channel, mirroring `SearchProgressPanel`.** Real UX
-improvement for a 10-20 second wait. Deferred, not rejected outright — the team
-already said the current block-and-wait `Creating…` state (the same pattern
-`BacktestScreen` already uses) is an acceptable wait. Worth revisiting if datasets
-start regularly requesting much wider ranges.
+**Đẩy tiến độ qua kênh WebSocket, phản chiếu `SearchProgressPanel`.** Một cải tiến UX thực sự cho khoảng chờ 10-20 giây. Bị hoãn lại, chứ không bị bác bỏ hoàn toàn — nhóm phát triển đã thống nhất rằng trạng thái chặn-và-chờ `Creating…` hiện tại (cùng mẫu mà `BacktestScreen` đang dùng) là khoảng chờ chấp nhận được. Đáng xem xét lại nếu các dataset thường xuyên yêu cầu các phạm vi rộng hơn nhiều.
 
-**Diff against what's already stored, fetch only the missing part.** Real savings when
-ranges overlap. Deferred as a later optimization — `upsertMany`'s upsert semantics
-already make a naive full re-fetch harmless, just not maximally efficient.
+**So sánh (diff) với những gì đã được lưu trữ, chỉ nạp phần còn thiếu.** Tiết kiệm thực sự khi các phạm vi chồng lấn. Hoãn lại như một tối ưu hóa sau này — ngữ nghĩa upsert của `upsertMany` đã làm cho việc nạp lại toàn bộ một cách đơn giản trở nên vô hại, chỉ là chưa đạt hiệu quả tối đa.
 
-**Track Binance's `X-MBX-USED-WEIGHT-1M` header and self-throttle against it.** More
-robust than a fixed delay. Rejected for now — at ~4% of budget per Dataset, there's
-nothing this would currently protect against that the fixed delay doesn't already
-cover, and it's real infrastructure (shared state, coordination across callers) for a
-problem that doesn't exist yet.
+**Theo dõi header `X-MBX-USED-WEIGHT-1M` của Binance và tự điều tiết theo đó.** Mạnh mẽ hơn độ trễ cố định. Bị từ chối ở thời điểm hiện tại — ở mức ~4% ngân sách cho mỗi Dataset, không có nguy cơ nào mà giải pháp này phòng vệ được mà độ trễ cố định chưa bao phủ, và nó đòi hỏi cơ sở hạ tầng thực tế (trạng thái dùng chung, điều phối giữa các bên gọi) cho một vấn đề chưa hề tồn tại.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A wide-range Dataset now makes `POST /datasets` a genuinely slow request (10-20+
-seconds for a month at 1m) instead of an instant write. The modal blocks for that
-whole window with only static "Creating…" text — acceptable today, but it's a real
-UX cost that grows with how wide a range someone asks for, and there's no cap yet on
-how wide a single request can be.
+Một Dataset có phạm vi rộng giờ đây làm cho `POST /datasets` trở thành một yêu cầu thực sự chậm (10-20+ giây cho một tháng ở khung 1m) thay vì một thao tác ghi tức thì. Modal bị chặn trong toàn bộ khoảng thời gian đó với chỉ dòng chữ tĩnh "Creating…" — chấp nhận được ở hiện tại, nhưng đó là một chi phí UX thực sự tăng dần theo độ rộng của phạm vi yêu cầu, và hiện chưa có mức trần cho độ rộng tối đa của một yêu cầu.
 
-Dataset creation now depends on Binance being reachable at creation time. A Dataset
-that used to always succeed (pure metadata) can now fail outright if the exchange is
-down or rate-limited — a new failure mode `DatasetFormModal`'s existing error-and-retry
-UI happens to already handle, but it's a real behavior change from "this never fails."
+Việc tạo Dataset giờ đây phụ thuộc vào việc Binance có thể kết nối được tại thời điểm tạo hay không. Một Dataset trước đây luôn thành công (chỉ lưu metadata thuần túy) giờ đây có thể thất bại hoàn toàn nếu sàn giao dịch gặp sự cố hoặc bị giới hạn tần suất — một chế độ lỗi mới mà UI xử lý lỗi và thử lại hiện tại của `DatasetFormModal` tình cờ đã xử lý được, nhưng đó là một sự thay đổi hành vi thực sự từ "điều này không bao giờ thất bại."
 
-This closes the read side of `0026`'s deferred question but leaves its own trade-off
-in place: a caller still can't tell "genuinely thin range" from "not backfilled that
-far back" from the read endpoint alone. It no longer matters for Dataset-driven reads,
-since Dataset creation now guarantees its own range is fetched — but it still applies
-to anyone reading `GET /market/candles` with `from`/`to` directly, outside a Dataset.
+Điều này giải quyết khía cạnh đọc của câu hỏi bị hoãn lại trong `0026` nhưng vẫn giữ nguyên sự đánh đổi của chính nó: bên gọi vẫn không thể phân biệt được giữa "khoảng dữ liệu thực sự thưa thớt" và "chưa được backfill sâu về trước" chỉ từ endpoint đọc. Điều này không còn quan trọng đối với các lượt đọc dựa trên Dataset, vì việc tạo Dataset giờ đây đảm bảo phạm vi của nó đã được nạp — nhưng nó vẫn áp dụng cho bất kỳ ai đọc `GET /market/candles` với `from`/`to` trực tiếp, bên ngoài phạm vi một Dataset.
 
-Dataset deletion isn't part of this change — none exists in the app today — but it's
-worth recording here since this makes Dataset rows more expensive to create: a Dataset
-with any Experiment against it already can't be deleted, enforced at the database
-level (`Experiment_datasetId_fkey ... ON DELETE RESTRICT`, `Trade`'s own relation to
-`Experiment` is the only one that cascades). Whoever eventually builds dataset deletion
-should not override that with a cascade.
+Việc xóa Dataset không thuộc phạm vi của thay đổi này — chưa có tính năng này trong ứng dụng hôm nay — nhưng rất đáng ghi nhận ở đây vì điều này làm cho các hàng Dataset tốn kém hơn khi tạo: một Dataset có bất kỳ Thực nghiệm (Experiment) nào liên kết đều không thể bị xóa, được thực thi ở cấp cơ sở dữ liệu (`Experiment_datasetId_fkey ... ON DELETE RESTRICT`, quan hệ của `Trade` với `Experiment` là quan hệ duy nhất có cascade). Bất kỳ ai sau này xây dựng tính năng xóa dataset không được ghi đè quy tắc đó bằng thao tác cascade.

@@ -1,98 +1,40 @@
-# A number nobody can argue is put in the specification and answered by the leaderboard
+# Các tham số không thể đoán trước được đưa vào đặc tả và giải đáp bởi leaderboard
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Two numbers came out of the combination rule, and neither has a defensible value.
+Có hai con số phát sinh từ quy tắc kết hợp tín hiệu, và không con số nào có thể đưa ra một giá trị cố định có cơ sở vững chắc:
 
-The decision threshold is one. Section 14 uses 0.3 as an example and says outright
-that a team may design its own method, so 0.3 is not derived from anything. Worse, it
-behaves inconsistently in a way nobody chose: a single member speaking alone scores
-0.5 with two members, 0.33 with three and 0.25 with four, so at 0.3 a lone voice acts
-in a three-member candidate and is ignored in a four-member one.
+Thứ nhất là ngưỡng quyết định (threshold). Mục 14 lấy con số 0.3 làm ví dụ và nói thẳng rằng nhóm có thể tự thiết kế phương pháp riêng, do đó 0.3 không bắt nguồn từ một cơ sở toán học tất yếu nào. Tệ hơn, nó hành xử thiếu nhất quán theo cách không ai cố ý chọn: một thành viên đơn độc phát tín hiệu đạt điểm 0.5 trong tổ hợp 2 thành viên, 0.33 trong tổ hợp 3 thành viên, và 0.25 trong tổ hợp 4 thành viên. Vì vậy ở ngưỡng 0.3, tiếng nói đơn độc đó sẽ được kích hoạt hành động trong tổ hợp 3 thành viên nhưng lại bị phớt lờ trong tổ hợp 4 thành viên.
 
-How long a crossing keeps speaking is the other. A moving-average cross happens on one
-candle; RSI below 30 is a state that holds for twenty. Added straight, the member that
-repeats itself decides the composite and the crossing is outvoted the moment it speaks
-— not on merit, on frequency. Fading the crossing's strength over the following candles
-fixes it, and `0006` gives strength exactly that room. But how many candles is another
-number with no argument behind it.
+Thứ hai là khoảng thời gian một sự kiện giao cắt (crossover) duy trì tiếng nói của nó. Sự kiện giao cắt MA chỉ diễn ra trên đúng một cây nến; trong khi trạng thái RSI dưới 30 có thể kéo dài suốt 20 cây nến liên tiếp. Nếu cộng trực tiếp, thành viên lặp lại liên tục sẽ lấn át hoàn toàn tổ hợp và sự kiện giao cắt sẽ bị phủ quyết ngay khoảnh khắc nó vừa xuất hiện — không phải vì nó dở, mà vì tần suất xuất hiện quá ít. Giải pháp là làm suy giảm dần (fade/decay) độ mạnh của tín hiệu giao cắt qua các cây nến tiếp theo, và ADR `0006` cung cấp sẵn độ mạnh cho việc đó. Nhưng suy giảm qua bao nhiêu cây nến lại là một con số khác không có cơ sở lý thuyết nào để chốt cứng.
 
-Asking a person to type either one does not work. Weights can be argued — *I trust
-support and resistance more than RSI* is a sentence somebody can mean. A threshold is a
-number about a score the user has never seen, and a decay length is a guess about how
-long a signal stays interesting. Putting either in a form asks for a guess and then
-records it as a choice.
+Yêu cầu người dùng tự gõ hai con số này là không thực tế. Trọng số thì có thể tranh luận — câu nói *"Tôi tin tưởng hỗ trợ/kháng cự hơn RSI"* là một nhận định có nghĩa. Còn ngưỡng threshold là một con số trừu tượng trên một thang điểm mà người dùng chưa từng thấy, và thời gian suy giảm là một phỏng đoán mơ hồ. Đưa chúng vào form nhập liệu chỉ là ép người dùng đoán mò rồi ghi nhận phỏng đoán đó như một lựa chọn sáng suốt.
 
-So neither is decided by argument. Both become part of what a candidate *is*, and the
-leaderboard answers them:
+Vì vậy, không con số nào được chốt bằng tranh cãi lý thuyết. Cả hai trở thành một phần thuộc tính của chính ứng viên, và **bảng xếp hạng leaderboard sẽ đưa ra câu trả lời**:
 
-- `threshold` is a field on `CandidateSpec`, above 0 and below 1, on a grid of 0.1
-- decay length is an ordinary parameter declared in a strategy's metadata with a range,
-  so `decay: 0` is the old fade-nothing behaviour
+- `threshold` là một trường trong `CandidateSpec`, lớn hơn 0 và nhỏ hơn 1, nằm trên lưới bước nhảy 0.1.
+- Thời gian suy giảm (decay length) là một tham số bình thường được khai báo trong metadata của chiến lược với dải giá trị min/max, nhờ đó `decay: 0` biểu thị hành vi cũ không suy giảm.
 
-The consequence is the point. `MA+RSI @0.3` and `MA+RSI @0.5` are two candidates on one
-dataset, sitting on one board, differing in one number. Reading which is better is
-reading two rows.
+Lợi ích của cách tiếp cận này: `MA+RSI @0.3` và `MA+RSI @0.5` là hai ứng viên trên cùng một dataset, cùng nằm trên một bảng xếp hạng, chỉ khác nhau duy nhất một con số. Muốn biết cái nào tốt hơn chỉ việc đọc hai dòng trên bảng xếp hạng.
 
-Keeping them as constants in code would have made that impossible. Trying a second
-threshold would mean editing the composite, which changes what it does, which bumps its
-version under `0009` — and now the five results being compared come from five versions
-of the composite, none of which can be put beside the others honestly. The question
-would have to be answered by copying numbers onto paper, which is how it gets answered
-badly.
+Nếu giữ chúng dưới dạng hằng số ghi cứng trong code thì việc so sánh này là bất khả thi. Thử một ngưỡng thứ hai sẽ đồng nghĩa với việc sửa code tổ hợp, làm thay đổi hành vi, kéo theo việc phải tăng version theo ADR `0009` — và khi đó năm kết quả đem ra so sánh lại đến từ năm phiên bản code khác nhau, không thể đặt cạnh nhau một cách trung thực.
 
-Nothing draws these on day one. The first generator fixes the threshold at 0.3 and the
-decay at its default, exactly as it leaves weights equal, so the search reaches a working
-leaderboard before it starts spending its budget on extra dimensions. Opening them is a
-change inside the generator; the specification, the worker and the screens do not move.
+Bộ sinh ứng viên đầu tiên sẽ cố định ngưỡng ở mức 0.3 và thời gian suy giảm ở giá trị mặc định, tương tự như việc để trọng số bằng nhau, giúp hệ thống đạt tới trạng thái có bảng xếp hạng hoạt động được trước khi bắt đầu tiêu tốn ngân sách vào các chiều tham số mở rộng. Việc mở rộng không gian tìm kiếm là thay đổi nằm bên trong generator; đặc tả ứng viên, worker và các màn hình giao diện không cần sửa đổi.
 
-**Reading the answer is where this goes wrong.** Picking whichever threshold scored best
-on one dataset is the definition of overfitting — it fits the number to that stretch of
-data. The check is cheap: run it on two or three datasets, a different timeframe and a
-different month. If 0.4 wins everywhere it is real. If a different value wins each time,
-the threshold does not matter much, and the right conclusion is to keep 0.3 and record
-that it was measured and found insensitive. That second outcome reads like a failure and
-is not one: knowing which knobs are not worth turning is knowing the system.
+**Đọc câu trả lời cần tránh bẫy overfitting.** Chọn ngưỡng đạt điểm cao nhất trên một dataset duy nhất chính là định nghĩa kinh điển của hiện tượng quá khớp (overfitting) — nó khớp con số đó vào riêng đoạn dữ liệu đó. Cách kiểm tra rất đơn giản: chạy nó trên 2 hoặc 3 dataset khác nhau, khung thời gian khác nhau và tháng khác nhau. Nếu 0.4 chiến thắng ở mọi nơi thì nó là giá trị tối ưu thật. Nếu mỗi lần chạy ra một giá trị thắng cuộc khác nhau thì ngưỡng không quan trọng lắm, và kết luận đúng đắn là giữ nguyên 0.3 và ghi nhận lại rằng tham số này đã được đo lường và thấy không nhạy cảm. Kết quả thứ hai trông giống như thất bại nhưng thực ra không phải: biết được nút vặn nào không đáng bận tâm chính là hiểu sâu về hệ thống.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Leaving both as constants and picking by argument** — no extra field, no extra search
-dimension, and the report can state a number. It answers the question with an opinion in
-a project whose entire purpose is answering questions with experiments.
+**Giữ cả hai dưới dạng hằng số và chọn bằng tranh luận** — không thêm trường mới, không mở rộng không gian tìm kiếm. Nhưng nó trả lời câu hỏi bằng định kiến cá nhân trong một đồ án mà toàn bộ mục đích là trả lời các câu hỏi bằng thực nghiệm.
 
-**Asking the user on the single-run screen** — the form already collects strategies and
-parameters, so a threshold box costs nothing to add. It costs something to answer: the
-user has no basis, so the box collects a guess and dignifies it. It becomes reasonable
-only if the screen also draws the composite score per candle with the threshold lines on
-it, so the number is visible and adjustable by eye. That is worth building in T14, and it
-is a different thing from asking cold.
+**Hỏi người dùng trên màn hình chạy đơn lẻ (single-run screen)** — form đã có sẵn các trường, thêm ô nhập threshold không tốn công. Nhưng người dùng không có căn cứ để điền. Nó chỉ hợp lý khi màn hình vẽ thêm biểu đồ điểm tổng hợp trên từng cây nến kèm các đường kẻ ngưỡng trực quan để người dùng điều chỉnh bằng mắt.
 
-**A separate `signalKind: 'event' | 'state'` on strategy metadata**, with the composite
-treating the two differently — the explicit version of the fade. It reads more clearly
-than a decaying number, and the composite could hold an event signal for a fixed window.
-Rejected because it puts a second branch inside the combination and adds a field to a
-shared type to describe something the strategy can already express through the strength
-it returns. The strategy knows how long its own signal stays meaningful; the composite
-does not.
+**Tách thành thuộc tính `signalKind: 'event' | 'state'` trên metadata chiến lược** — phương án phân biệt tường minh giữa sự kiện tức thời và trạng thái kéo dài. Bị loại bỏ vì nó tạo thêm một nhánh rẽ bên trong phép kết hợp và thêm một trường vào shared type chỉ để diễn đạt thứ mà chiến lược vốn đã có thể thể hiện qua độ mạnh (strength) nó trả về.
 
-**Making the decay a fixed 0.7 / 0.4 / 0.2** — one less parameter, and honest enough for
-a demo. It is the same unargued number one level down, and the search engine is right
-there.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+Mỗi chiều tham số mới sẽ nhân rộng không gian tìm kiếm. Một ngưỡng với 5 giá trị và thời gian suy giảm với 11 giá trị sẽ mở rộng không gian của một tổ hợp 3 thành viên lên gấp 55 lần trên 36 bộ trọng số. Thuật toán Random Search lấy mẫu ngẫu nhiên chứ không vét cạn, nên trần giới hạn vẫn là điều kiện dừng ở task T19 — nhưng xác suất bốc trúng cùng một ứng viên hai lần sẽ giảm xuống, khiến `specHash` ít phát hiện trùng lặp hơn và ngân sách tìm kiếm bị phân tán nhiều hơn.
 
-Every dimension multiplies the search. A threshold on five values and a decay on eleven
-widen a three-member candidate's space by 55 on top of the 36 weight sets. Random Search
-samples rather than enumerates, so the ceiling stays the stop condition in T19 — but the
-chance of drawing the same candidate twice falls, which means `specHash` catches fewer
-duplicates and more budget goes to points that teach nothing.
+Mọi chiến lược dạng sự kiện (event-style) giờ đây bắt buộc phải tự cài đặt cơ chế suy giảm tín hiệu của chính mình.
 
-Every event-style strategy now has to implement its own fade. A strategy that forgets
-silently reverts to being outvoted by its state-like neighbours, and nothing catches it.
-
-`strength` now carries two meanings at once — how sure a strategy is, and how recent its
-signal is. Both are honestly *how much weight my opinion deserves right now*, but they
-are not the same thing, and a reader who is only told the first will misread the second.
-
-The overfitting check is a discipline, not a mechanism. Nothing in the system stops
-someone reading the top row of one leaderboard and calling it the answer.
+Thuộc tính `strength` giờ đây mang hai ý nghĩa cùng lúc — độ tự tin của chiến lược, và độ mới của tín hiệu. Cả hai bản chất đều thể hiện *tiếng nói của tôi đáng giá bao nhiêu ngay lúc này*, nhưng chúng không hoàn toàn đồng nhất.

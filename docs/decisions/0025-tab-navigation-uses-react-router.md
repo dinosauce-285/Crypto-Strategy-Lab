@@ -1,38 +1,19 @@
-# Tab navigation uses react-router
+# Điều hướng các tab Realtime/Backtest thông qua URL React Router
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The app is growing a second screen (Backtest, alongside Realtime) and the product call
-is that each is a real, addressable place — reload the page on `/backtest` and land on
-`/backtest`, not back at a default tab. That single requirement is what decides this:
-an in-memory tab index can't survive a reload or be pasted into a message, and building
-that back in by hand (reading a tab param out of `location`, writing it back on change,
-handling the initial load) is most of a router, worse-tested, for one component.
+Ứng dụng bắt đầu có màn hình thứ hai (Backtest, bên cạnh Realtime) và yêu cầu sản phẩm là mỗi màn hình phải là một địa chỉ URL thực tế, có thể định danh rõ ràng — tải lại trang trên đường dẫn `/backtest` phải giữ nguyên ở `/backtest`, không bị nhảy ngược về tab mặc định. Yêu cầu duy nhất đó đã định đoạt quyết định này: một biến state lưu index tab trong RAM không thể sống sót qua thao tác F5 reload trang hoặc khi người dùng copy dán URL cho người khác, và việc tự viết tay lại cơ chế đó (đọc tham số từ `window.location`, cập nhật URL khi chuyển tab, xử lý khi mới load) thực chất là tự viết một router phiên bản thiếu kiểm thử cho một component.
 
-`react-router` is the library every other choice in `AGENTS.md`'s stack already implies
-using something for this exact job (React + Vite has no built-in routing), and its
-`NavLink` gives the navbar its active-tab styling for free — `aria-current` handled by
-the library, not a second piece of state kept in sync with the URL by hand.
+Thư viện `react-router` là lựa chọn tự nhiên mà ngăn xếp công nghệ trong `AGENTS.md` hàm ý sử dụng cho nhiệm vụ này (React + Vite không có router tích hợp sẵn), và component `NavLink` của nó cung cấp sẵn kiểu dáng active cho thanh điều hướng — thuộc tính `aria-current` được thư viện tự động xử lý chuẩn xác mà không cần một biến state thứ hai phải đồng bộ thủ công với URL.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**In-memory tab state** (a `useState<'realtime' | 'backtest'>` in `App.tsx`). Zero new
-dependencies, and it was the default until this was raised explicitly — rejected only
-because reload-to-default and no shareable link are real regressions for a screen
-people will bookmark and refer back to, not because it's a bad pattern in general.
+**Lưu trạng thái tab trong bộ nhớ (In-memory state)** (dùng `useState<'realtime' | 'backtest'>` trong `App.tsx`). Không thêm thư viện phụ thuộc nào, và đây từng là cách làm ban đầu. Bị loại bỏ vì việc reload bị nhảy về tab mặc định và không có link chia sẻ được là điểm trừ lớn đối với một màn hình mà người dùng sẽ đánh dấu trang (bookmark) và tham chiếu thường xuyên.
 
-**Hand-rolled hash routing** (`location.hash`, no library). Avoids the dependency while
-still surviving reload, but it means writing and maintaining the parsing, the
-`popstate` handling and the active-link logic ourselves — the exact code `react-router`
-already has tests for — to save one dependency on a project that already has several.
+**Tự viết router dựa trên hash URL (`location.hash`, không dùng thư viện)** — tránh phụ thuộc ngoài trong khi vẫn giữ được trạng thái qua reload. Nhưng nó đồng nghĩa với việc phải tự viết và tự bảo trì việc parse URL, bắt sự kiện `popstate` và logic active link — chính là những đoạn code mà `react-router` đã có hàng nghìn bài test kiểm chứng.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A new frontend dependency, on a project where `apps/web`'s only runtime dependencies
-before this were `react`, `react-dom`, `socket.io-client` and `lightweight-charts` —
-one more library whose API the team now has to know, and one more thing to update.
+Thêm một thư viện phụ thuộc mới cho frontend, trên một ứng dụng mà trước đó chỉ có `react`, `react-dom`, `socket.io-client` và `lightweight-charts`.
 
-Two tabs today doesn't need a router's full feature set (nested routes, loaders, data
-APIs) — this is `BrowserRouter` + two `Route`s, most of the library unused. That's
-accepted now because the alternative (hand-rolled hash routing) is real code with real
-bugs to own, not because the two tabs justify the library's full weight on their own.
+Ở giai đoạn hai tab hiện tại, ứng dụng chưa khai thác hết các tính năng nâng cao của router (nested routes, loaders, data APIs) — hiện tại chỉ dùng `BrowserRouter` và các `Route` cơ bản. Chúng ta chấp nhận sự dư thừa nhỏ này vì phương án tự code router tiềm ẩn nhiều bug hơn.

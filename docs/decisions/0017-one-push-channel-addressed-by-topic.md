@@ -1,124 +1,41 @@
-# One push channel to the browser, addressed by topic
+# Trình duyệt nhận dữ liệu qua một kênh push duy nhất phân định theo topic
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A screen must not ask the server the same question over and over, so the server
-pushes instead — section 4 says it outright, and section 33 ends with the frontend
-receiving an event and the table updating with no reload. That is one channel out
-to the browser, and the question is what travels on it.
+Một màn hình không được liên tục hỏi server cùng một câu hỏi (không polling), vì vậy server sẽ chủ động đẩy dữ liệu (push) — mục 4 của đề bài nêu thẳng điều này, và mục 33 kết thúc bằng việc frontend nhận sự kiện và cập nhật bảng mà không cần reload trang. Đó là một kênh duy nhất đẩy dữ liệu ra trình duyệt, và câu hỏi là những gì sẽ được truyền trên kênh đó?
 
-It looks like a question about prices, because prices are the only thing that
-travels on it today. They are not. The same channel later carries
-`LeaderboardUpdated` from T18, search progress from T20 and loop state from T21, and
-those belong to three other people. A wire format designed for candles alone fits
-none of them, so each grows a channel of its own and the system ends with four
-mechanisms doing one job — the shape section 41 is written to expose, arrived at by
-neglect rather than by a bad decision.
+Vấn đề thoạt nhìn như chỉ xoay quanh giá cả, vì giá là thứ duy nhất truyền đi lúc ban đầu. Nhưng không phải vậy. Cùng một kênh này về sau sẽ mang theo sự kiện `LeaderboardUpdated` từ task T18, tiến độ tìm kiếm từ task T20 và trạng thái vòng lặp từ task T21, vốn thuộc về ba người khác nhau phát triển. Một cấu trúc dữ liệu đường truyền chỉ thiết kế riêng cho nến sẽ không vừa với bất kỳ dữ liệu nào khác, dẫn đến việc mỗi tính năng tự dựng một kênh WebSocket riêng và hệ thống kết thúc với 4 cơ chế khác nhau chỉ để làm cùng một việc — một biểu hiện lộn xộn mà mục 41 được viết ra để vạch trần.
 
-So the format is settled now, while only one of the four exists, and it settles four
-things.
+Vì vậy cấu trúc dữ liệu được thống nhất ngay từ bây giờ, khi mới chỉ có một trong bốn tính năng xuất hiện, và nó chốt bốn nguyên tắc cốt lõi:
 
-**One envelope.** Every message is a `type` and a `payload`, and `type` is a
-namespaced string. Nothing else is in the frame. A reader of any message knows where
-to look before knowing what kind of message it is.
+**Một phong bì đóng gói duy nhất (One envelope).** Mọi tin nhắn đều gồm một trường `type` và một trường `payload`, và `type` là một chuỗi có namespace rõ ràng. Không có gì khác nằm ngoài khung này. Người đọc bất kỳ tin nhắn nào cũng biết chính xác nơi cần nhìn trước khi cần biết đó là loại tin nhắn gì.
 
-**Addressed by a topic string.** A client subscribes to `market:BTCUSDT:5m`,
-`leaderboard:<datasetId>`, `search:<runId>` or `loop`. Those four filter by four
-entirely different keys — a pair and a timeframe, a dataset, a run, and nothing at
-all — and a string is the one shape that holds all four without the server being
-taught each of them. The server matches topics; it does not interpret them. Adding a
-fifth kind of traffic is a naming convention, not an edit to the delivery code, which
-is the property section 42 measures.
+**Phân định địa chỉ bằng chuỗi chủ đề (Topic string).** Một client đăng ký theo dõi `market:BTCUSDT:5m`, `leaderboard:<datasetId>`, `search:<runId>` hoặc `loop`. Bốn loại này lọc dữ liệu theo bốn loại khóa hoàn toàn khác nhau — cặp coin kèm timeframe, dataset, runId, hoặc không cần khóa nào cả — và một chuỗi string là cấu trúc duy nhất chứa được cả bốn mà không bắt server phải học logic chi tiết của từng loại. Server chỉ so khớp chuỗi topic; nó không diễn giải nội dung topic. Thêm một loại dữ liệu thứ năm chỉ là quy ước đặt tên mới, không cần sửa đổi mã nguồn chuyển phát dữ liệu — điều mà mục 42 của đề bài kiểm tra.
 
-Unsubscribing is per topic, so T08's requirement falls out with nothing extra: a
-chart changing its timeframe drops one topic and the other three charts do not move.
+Hủy đăng ký (unsubscribe) theo từng topic, nhờ đó yêu cầu của task T08 được đáp ứng tự nhiên: một biểu đồ đổi khung thời gian chỉ hủy một topic và ba biểu đồ còn lại không bị xáo trộn.
 
-**What a message carries depends on who computes the number.** If the server
-recomputes it on read, the message says only that it changed and the client asks
-again. Otherwise the message carries the value.
+**Nội dung tin nhắn phụ thuộc vào bên nào tính toán con số:** Nếu server tính toán lại dữ liệu trên mỗi lần đọc, tin nhắn chỉ thông báo rằng dữ liệu vừa thay đổi và client sẽ tự truy vấn lại. Ngược lại, tin nhắn sẽ mang theo trực tiếp giá trị dữ liệu mới.
 
-Today the leaderboard is the only thing on the notification side, and it is there for
-a specific reason: `0011` computes the board on every read, so a board attached to a
-message was computed at send time and can already be behind by the time it arrives —
-and a stale ranking looks exactly like a fresh one. Prices are on the other side
-because a tick arrives several times a second across four charts, and turning each
-into an HTTP round trip is absurd.
+Hiện tại bảng xếp hạng là đối tượng duy nhất nằm ở phía thông báo (notification-only), vì lý do cụ thể: ADR `0011` quy định bảng xếp hạng được tính toán lại trên mỗi lần đọc, vì vậy một bảng xếp hạng đính kèm vào tin nhắn đã được tính tại thời điểm gửi và có thể đã bị cũ ngay khi tới nơi — và một bảng xếp hạng bị cũ trông vẫn y hệt như mới. Ngược lại, giá cả nằm ở phía mang dữ liệu trực tiếp vì khớp lệnh (tick) đến nhiều lần mỗi giây trên bốn biểu đồ, nếu biến mỗi tick thành một lượt gọi HTTP thì hệ thống sẽ quá tải vô nghĩa.
 
-Both halves are forced, so the decision is really the rule itself. Written down, T18,
-T20 and T21 each know which side they are on. Left unwritten, three people guess, and
-the one who guesses wrong ships a screen that displays an old number convincingly.
+**Không gửi ảnh chụp ban đầu (snapshot) qua socket lúc kết nối.** Trạng thái ban đầu được lấy qua HTTP REST API; kênh push chỉ truyền những gì thay đổi sau đó. Task T06 đã có sẵn endpoint lấy nến để vẽ biểu đồ đầu tiên, vì vậy phương án ngược lại sẽ ép mỗi loại dữ liệu phải tự định nghĩa snapshot riêng qua socket, làm trùng lặp vô ích với endpoint HTTP sẵn có.
 
-**No snapshot on connect.** Initial state comes over HTTP; the channel carries only
-what changed afterwards. T06 already needs a candle endpoint to draw the first chart,
-so the alternative would have each kind of traffic define a snapshot of its own, three
-of which duplicate an endpoint that has to exist anyway.
+Hai ranh giới kỹ thuật quan trọng: Kênh này **không phải** là event bus của ADR `0003`. Bus sự kiện nội bộ phục vụ giao tiếp giữa các module backend, còn kênh này định hình cấu trúc dữ liệu đường truyền ra trình duyệt. Đấu thẳng bus sự kiện ra ngoài sẽ biến sự kiện nội bộ của module thành hợp đồng công khai với trình duyệt. Và ADR `0004` cũng đã phân định: việc gì không được mất mát phải đi qua hàng đợi BullMQ, việc gì chỉ cập nhật hiển thị giao diện thì đi qua kênh này, đó là lý do dữ liệu trên kênh này không cần cơ chế retry.
 
-Two boundaries hold this in place. This is **not** the event bus of `0003`: T02 owns
-the nine bus payloads, which are shaped for a module, and this record owns the wire
-format, which is shaped for a screen. Piping one into the other would make a module's
-internal event a public contract with the browser. And `0004` already drew the other
-line — anything whose loss breaks work goes through the queue, anything that only
-updates a display goes here, which is why nothing on this channel is retried.
+Hợp đồng này nằm trong `@csl/contracts` vì có tới ba module khác sẽ import nó.
 
-The contract lives in `@csl/contracts` because three modules besides this one will
-import it, and a wire format that two sides declare separately is a wire format that
-eventually disagrees with itself.
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-## What else we looked at
+**Đăng ký có kiểu dữ liệu chặt chẽ — `{ channel, filter }`** — phiên bản mà trình biên dịch có thể kiểm tra type. Mỗi loại luồng dữ liệu cần một cấu trúc filter riêng, khiến server phải thêm một nhánh rẽ tương ứng và việc thêm loại thứ năm sẽ đòi hỏi phải sửa server. Độ an toàn kiểu mà nó mang lại chỉ kiểm tra cấu trúc filter, không kiểm tra được việc topic đó có dữ liệu hay không.
 
-**A typed subscription — `{ channel, filter }`** — the version the compiler can check,
-and the one a TypeScript codebase reaches for first. Each kind of traffic needs its own
-filter shape, so the server grows a matching branch per kind and adding a fifth means
-editing it. That is exactly the cost section 42 asks us to measure, paid in the one
-place this record exists to keep cheap. The type safety it buys is real but narrow: it
-checks the filter's shape, not that the topic exists.
+**Dùng trực tiếp Rooms hoặc Namespaces của thư viện Socket** — không phải tự thiết kế. Nhưng nó đặt cơ chế định địa chỉ vào bên trong một thư viện phụ thuộc thay vì trong package contracts của dự án, biến một quyết định kiến trúc thành việc phụ thuộc vào thư viện bên ngoài, và việc đổi thư viện sau này sẽ làm gãy hợp đồng của mọi client.
 
-**The socket library's own rooms or namespaces** — nothing to design, and the library
-has already solved fan-out. It puts the addressing scheme inside a dependency rather
-than in the contracts package, so `ADR-001` would end up defending a library choice
-instead of a design, and swapping the library later would change the contract every
-client is written against.
+**Mọi tin nhắn đều mang theo toàn bộ dữ liệu** — client không phải hỏi lại, code đồng nhất. Nhưng nó phá vỡ ADR `0011` ở điểm trọng yếu nhất: bảng xếp hạng tính toán lúc đọc, nên dữ liệu mang đi đã bị cũ và không có gì cảnh báo bảng xếp hạng bị sai.
 
-**Every message carries its data** — the client never has to ask twice, and the code is
-uniform. It breaks `0011` at the only place that matters: the board is computed on read,
-so a board that travels is already behind, and nothing about a wrong ranking looks
-wrong.
+**Mọi tin nhắn chỉ là thông báo trơ trọi, client tự fetch lại toàn bộ** — một quy tắc duy nhất, payload nhẹ nhất. Nhưng một tick giá biến thành một lượt gọi HTTP nhân với 4 biểu đồ, hàng chục lượt mỗi giây.
 
-**Every message is a bare notification, client refetches everything** — one rule, no
-judgement calls, the smallest payloads. A price tick becomes an HTTP round trip, times
-four charts, several times a second.
+## Trade-offs (Đánh đổi)
 
-**A snapshot pushed on subscribe** — one step for the client instead of two, and no
-window between reading and subscribing. Each kind of traffic must then define what its
-snapshot is, and three of the four answers already exist as HTTP endpoints.
+Topic là một chuỗi string, vì vậy lỗi gõ sai chính tả không bị trình biên dịch phát hiện. Đăng ký nhầm `market:BTCUSDT:5min` sẽ không nhận được dữ liệu nào, và việc không nhận được gì trông y hệt như một thị trường đang đứng yên. Một hàm builder trong package contracts giúp hạn chế lỗi này ở phía client.
 
-**A separate channel per kind of traffic** — worth naming because it is what happens by
-default when nobody decides. Four transports, four reconnect stories, four things to
-explain in the architecture document.
-
-## Trade-offs
-
-A topic is a string, so a typo is not a compile error. Subscribing to
-`market:BTCUSDT:5min` receives nothing, and receiving nothing looks the same as a quiet
-market. A builder function in the contracts package narrows this on the client side and
-does nothing about a server publishing to a misspelled topic. This is the price of the
-one mechanism that holds four scoping keys, and it is the strongest argument the typed
-alternative had.
-
-Two rules now govern what a payload holds, and the line between them is a judgement
-about who computes a number. It is clear for the four kinds of traffic we have. A fifth
-that sits near the boundary gets decided by whoever writes it, and nothing catches the
-wrong call.
-
-No snapshot leaves a gap between the HTTP read and the subscription taking effect. A
-change landing in that window is missed. For prices the next tick repairs it; for
-anything shaped like an event it does not, and this record does not fix that — it
-narrows the window and accepts it.
-
-Nothing on this channel is delivered reliably, by design. A screen that misses a
-`leaderboard.changed` stays stale until something else moves it. That is the correct
-trade for a display channel and it is still a way for a user to see an old number.
-
-Because the contract sits in `@csl/contracts`, changing the envelope later breaks the
-build in three modules at once. That is what the package is for, and it is also what it
-costs.
+Dữ liệu trên kênh này không được đảm bảo phân phát tin cậy 100% (không có retry). Một màn hình bỏ lỡ thông báo `leaderboard.changed` sẽ hiển thị dữ liệu cũ cho đến khi có sự kiện tiếp theo. Đây là sự đánh đổi đúng đắn cho một kênh hiển thị giao diện bề mặt.

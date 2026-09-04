@@ -1,45 +1,19 @@
-# Historical candles are queryable by an explicit date range
+# Nến lịch sử có thể truy vấn theo khoảng ngày giờ tường minh
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-`GET /market/candles` only ever answered "give me the most recent N," which was
-everything T06's chart needed. Module 1's own example of historical data is a date
-range (`01/07 → 30/07`), and a backtest reads a dataset's own window, not whatever
-candle happens to be newest — T12 will ask this question again, and the Backtest tab
-asks it first.
+Trước đây `GET /market/candles` chỉ trả lời câu hỏi "cho tôi N cây nến gần đây nhất", vốn là tất cả những gì biểu đồ của task T06 cần. Tuy nhiên, ví dụ của chính Module 1 về dữ liệu lịch sử là một khoảng ngày giờ cụ thể (`01/07 → 30/07`), và một lượt backtest sẽ đọc cửa sổ dữ liệu của dataset chứ không đọc những cây nến mới nhất vừa xuất hiện — task T12 sẽ cần đến điều này, và tab Backtest là nơi cần đến đầu tiên.
 
-The endpoint stays a storage read. `0023` already decided backfill is bounded (1000
-candles, lazy on first watch) specifically so T19's search loop never reads live from
-Binance; a range query that fell back to fetching Binance for whatever the stored data
-doesn't cover would quietly reopen exactly that door for anyone who asks for an old
-enough window. So a range request answers from what is stored, in full, even when that
-is less than what was asked for — partial or empty, never an error, and never a fetch.
-Filling a specific gap on purpose (a "load more history" action) is a real feature, but
-a different one, for whoever builds the screen that needs it.
+Endpoint này duy trì bản chất là một thao tác đọc từ kho lưu trữ (storage read). ADR `0023` đã quyết định giới hạn việc nạp bù (1000 nến, tải lười khi theo dõi) nhằm mục đích để vòng lặp tìm kiếm của T19 không bao giờ đọc dữ liệu trực tiếp từ Binance; một câu truy vấn theo khoảng ngày giờ nếu âm thầm gọi lên Binance để bù đắp những khoảng trống dữ liệu trong DB sẽ mở lại cánh cửa nguy hiểm đó. Vì vậy, một yêu cầu truy vấn theo khoảng thời gian sẽ trả về trọn vẹn những gì đang có trong cơ sở dữ liệu, ngay cả khi dữ liệu ít hơn khoảng được yêu cầu — trả về một phần hoặc rỗng, tuyệt đối không báo lỗi giả và không gọi API sàn. Việc cố ý nạp thêm dữ liệu (hành động "tải thêm lịch sử") là một tính năng độc lập, dành cho màn hình nào thực sự cần.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Backfill the missing part of the range on demand, then answer.** The obvious way to
-make a request always "succeed" with the exact range asked for. Rejected because it's
-the rate-limit problem `0023` exists to prevent, arriving through a side door — a range
-query hitting an uncovered decade would fire the same unbounded burst of Binance calls
-a naive T19 loop would have.
+**Tự động gọi sàn nạp bù phần còn thiếu theo nhu cầu rồi mới trả lời** — cách hiển nhiên để yêu cầu luôn "thành công" với đúng khoảng dữ liệu mong muốn. Bị từ chối vì đây chính là vấn đề rate limit mà ADR `0023` sinh ra để chặn: một truy vấn rơi vào khoảng thời gian chưa từng nạp sẽ kích hoạt một cơn bão các lệnh gọi API Binance không kiểm soát.
 
-**Error on an uncovered range instead of returning partial data.** Simpler to reason
-about from the caller's side — you always know whether you got what you asked for. Cost
-more: a range that is 99% covered and 1% missing (the common case, since backfill only
-reaches back so far) becomes unusable instead of mostly usable, and the caller has no
-way to tell "nothing here" from "database down" without inspecting the body anyway.
+**Báo lỗi HTTP Error khi dải nến không bao phủ đầy đủ thay vì trả về dữ liệu từng phần** — bên gọi dễ lý luận hơn vì biết ngay có đủ dữ liệu hay không. Nhưng chi phí cao hơn: một khoảng thời gian bao phủ 99% và chỉ thiếu 1% sẽ bị biến thành không thể sử dụng được thay vì dùng được phần lớn, và bên gọi không thể phân biệt giữa "không có dữ liệu" với "database bị sập".
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A caller cannot tell, from this endpoint alone, whether a short result means the range
-is genuinely thin or just not backfilled that far back — both look identical. Answering
-that question needs a second signal (the earliest stored candle for the pair/timeframe,
-say), which this change does not add, because nothing calling this endpoint today needs
-it yet.
+Bên gọi API không thể phân biệt chỉ qua endpoint này liệu kết quả ngắn là do thị trường thực tế ít thanh khoản hay do hệ thống chưa nạp bù tới mốc thời gian xa như vậy.
 
-The endpoint now has two modes (`limit`-only, and `from`/`to`) instead of one, which is
-one more shape for a caller to hold in mind — accepted because the two modes answer
-genuinely different questions ("what just happened" versus "what happened between two
-points"), not because the API accreted options over time.
+Endpoint giờ đây có hai chế độ hoạt động (chỉ có `limit`, hoặc có `from`/`to`), đòi hỏi bên gọi phải nắm rõ cấu trúc — điều này được chấp nhận vì hai chế độ trả lời hai câu hỏi nghiệp vụ hoàn toàn khác nhau ("những gì vừa xảy ra" so với "những gì đã diễn ra giữa hai mốc thời gian").

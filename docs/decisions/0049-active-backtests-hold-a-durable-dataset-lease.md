@@ -1,41 +1,19 @@
-# Active backtests hold a durable Dataset lease
+# Các lượt backtest đang hoạt động nắm giữ một lease Dataset bền vững
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A Dataset may be deleted only when no Experiment refers to it, but an Experiment used to
-exist only after simulation finished. A single backtest or queued worker could therefore
-read a Dataset, run against it, and lose it before recording its result. The failure is
-not recoverable: the worker cannot reconstruct the rules or attach its result to a deleted
-Dataset.
+Một Dataset chỉ có thể bị xóa khi không có Thực nghiệm (Experiment) nào tham chiếu đến nó, nhưng một Experiment trước đây chỉ tồn tại sau khi quá trình mô phỏng đã kết thúc. Do đó, một lượt backtest đơn lẻ hoặc một worker trong hàng đợi có thể đọc một Dataset, chạy mô phỏng trên đó, và mất Dataset đó trước khi kịp ghi nhận kết quả của mình. Lỗi này không thể cứu vãn được: worker không thể tái tạo lại các quy tắc hoặc gắn kết quả của nó vào một Dataset đã bị xóa.
 
-An active calculation now creates a short-lived Dataset lease in Postgres before it starts,
-renews it every minute, yields after each processed candle so renewal can run, and removes it in `finally`. Each worker attempt owns a fresh lease
-id, so a retry never collides with the record a crashed attempt left behind. The transaction that writes an Experiment renews and verifies its lease before inserting, so a completed row cannot be written after protection was lost. Dataset deletion removes expired leases first, then relies on
-the same foreign-key restriction that protects Experiments. The lease is visible to both
-the API process and the separate worker process, so one tab cannot delete data another is
-actively using. A worker records its final failed Experiment before releasing its lease, so
-failure accounting receives the same deletion protection as a completed result.
+Một tác vụ tính toán đang hoạt động giờ đây sẽ tạo ra một lease Dataset ngắn hạn trong Postgres trước khi bắt đầu, gia hạn nó mỗi phút một lần, nhường quyền điều khiển sau mỗi cây nến được xử lý để việc gia hạn có thể chạy, và xóa nó trong khối `finally`. Mỗi lần thử của worker sở hữu một id lease mới, vì vậy việc thử lại không bao giờ xung đột với bản ghi mà một lần thử bị crash để lại phía sau. Giao dịch ghi lại một Experiment sẽ gia hạn và xác minh lease của nó trước khi chèn, do đó một hàng đã hoàn thành không thể được ghi sau khi quyền bảo vệ đã bị mất. Thao tác xóa Dataset sẽ xóa các lease đã hết hạn trước tiên, sau đó dựa vào chính ràng buộc khóa ngoại bảo vệ Experiments. Lease này hiển thị cho cả tiến trình API và tiến trình worker riêng biệt, vì vậy một tab không thể xóa dữ liệu mà một tab khác đang tích cực sử dụng. Worker ghi nhận Experiment thất bại cuối cùng trước khi giải phóng lease, do đó việc hạch toán thất bại cũng nhận được sự bảo vệ xóa giống như một kết quả đã hoàn thành.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Disable the controls in React** — useful feedback, but it protects only the tab that
-started the work. Another tab or a direct HTTP call can still delete the Dataset, so it
-cannot be the integrity boundary.
+**Vô hiệu hóa các nút điều khiển trong React** — phản hồi hữu ích, nhưng nó chỉ bảo vệ tab đã khởi động công việc. Một tab khác hoặc một lệnh gọi HTTP trực tiếp vẫn có thể xóa Dataset, vì vậy đây không thể là ranh giới toàn vẹn dữ liệu.
 
-**Create an Experiment with status `running` before simulation** — makes active work
-visible, but turns an Experiment into a partially known result. Crash recovery, duplicate
-handling and leaderboard filtering would all have to learn a third lifecycle state, which
-is more coupling than a temporary use record needs.
+**Tạo một Experiment với trạng thái `running` trước khi mô phỏng** — làm cho công việc đang hoạt động trở nên hiển thị, nhưng biến Experiment thành một kết quả chỉ biết được một phần. Việc phục hồi sau sự cố, xử lý trùng lặp và lọc bảng xếp hạng đều sẽ phải học thêm trạng thái vòng đời thứ ba, điều này gây ra nhiều sự ràng buộc hơn mức mà một bản ghi sử dụng tạm thời cần có.
 
-**Keep the lease only in process memory** — small and sufficient for one single backtest,
-but the worker is a separate process and a restart drops the protection exactly when it is
-needed.
+**Chỉ giữ lease trong bộ nhớ tiến trình** — nhỏ gọn và đủ dùng cho một lượt backtest đơn lẻ, nhưng worker là một tiến trình riêng biệt và việc khởi động lại sẽ làm mất sự bảo vệ chính xác vào lúc nó cần thiết nhất.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-The schema gains a small operational table and every backtest adds an insert, periodic
-renewals, and a delete. A crashed process can leave a lease behind until its expiry,
-temporarily refusing a safe deletion. Expired rows are removed at API and worker startup as
-well as before acquisition and deletion. That is preferable to allowing deletion while the
-work might still be live; the expiry bounds the inconvenience rather than making a Dataset
-undeletable forever.
+Lược đồ cơ sở dữ liệu có thêm một bảng vận hành nhỏ và mỗi lượt backtest bổ sung thêm một lệnh insert, các lần gia hạn định kỳ và một lệnh delete. Một tiến trình bị crash có thể để lại một lease phía sau cho đến khi nó hết hạn, tạm thời từ chối một yêu cầu xóa an toàn. Các hàng đã hết hạn được dọn dẹp khi khởi động API và worker cũng như trước khi lấy quyền và xóa. Điều đó tốt hơn là cho phép xóa trong khi công việc vẫn có thể đang chạy; thời hạn hết hạn sẽ giới hạn sự bất tiện này thay vì làm cho một Dataset vĩnh viễn không thể xóa được.

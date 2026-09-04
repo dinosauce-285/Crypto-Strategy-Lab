@@ -1,141 +1,101 @@
 # Crypto Strategy Lab
 
-A platform for combining crypto trading strategies, backtesting every combination,
-scoring it and ranking the results — then looping to find better ones.
+Nền tảng kết hợp các chiến lược giao dịch tiền mã hóa (crypto), kiểm thử lịch sử (backtest) từng tổ hợp, tính điểm đánh giá và xếp hạng kết quả — sau đó lặp lại tìm kiếm để phát hiện các cấu hình tối ưu hơn.
 
-What is being graded here is the architecture, not the returns. The measure is how many
-places have to change when a new strategy, a new search algorithm or a new exchange
-arrives. One new file is good. Six edits across the system is not.
+Trọng tâm chấm điểm của đồ án là **kiến trúc phần mềm**, không phải mức lợi nhuận đạt được. Thước đo chất lượng kiến trúc là số lượng vị trí phải chỉnh sửa khi có thêm một chiến lược mới, một thuật toán tìm kiếm mới hoặc một sàn giao dịch mới được tích hợp. Thêm một file mới duy nhất là tốt. Chỉnh sửa sáu vị trí rải rác trên toàn hệ thống là chưa đạt.
 
-[`AGENTS.md`](AGENTS.md) is the law. [`docs/architecture.md`](docs/architecture.md) is how
-the parts fit. [`docs/decisions/`](docs/decisions/) is why each one looks the way it does.
+Tài liệu chuẩn mực: [`AGENTS.md`](AGENTS.md) là quy tắc cốt lõi của dự án. [`docs/architecture.md`](docs/architecture.md) mô tả cách các thành phần khớp nối với nhau. [`docs/decisions/`](docs/decisions/) ghi nhận lý do và bối cảnh cho từng lựa chọn kỹ thuật.
 
-## Install
+## Cài đặt (Install)
 
-Node 22+ and pnpm 11+. Two containers have to be up — Postgres on 5432 and Redis on 6379.
-Locally those are the `ai_erp_db` and `redis` containers that already run; this project
-uses its own database inside the first and the default instance of the second.
+Yêu cầu môi trường: **Node 22+** và **pnpm 11+**. Hai container phải đang chạy — **Postgres** trên cổng 5432 và **Redis** trên cổng 6379. Ở môi trường local, có thể dùng các container `ai_erp_db` và `redis` đã chạy sẵn; dự án này sử dụng database riêng bên trong container Postgres và instance mặc định của Redis.
 
 ```bash
 docker exec ai_erp_db psql -U postgres -c "CREATE DATABASE crypto_strategy_lab;"
 
 cp apps/web/.env.example apps/web/.env
-pnpm env:decrypt          # needs .env.key from a teammate; writes apps/api/.env
+pnpm env:decrypt          # cần file .env.key từ thành viên nhóm; giải mã ra apps/api/.env
 
 pnpm install
 pnpm db:generate
 ```
 
-`apps/api/.env` is committed **encrypted** as `envs/api.env.age`. The private key
-`.env.key` never is — a teammate hands it over once through a private channel. Install
-`age` first (`sudo apt install age`, or a binary from the age releases page).
+Tệp `apps/api/.env` được commit dưới dạng **mã hóa** tại `envs/api.env.age`. Khóa bí mật `.env.key` tuyệt đối **không** được commit — được chia sẻ qua kênh nội bộ giữa các thành viên. Hãy cài đặt công cụ `age` trước (`sudo apt install age` hoặc tải binary từ trang phát hành của age).
 
-There are two env files, one per app, and the split is a security boundary rather than a
-preference: Vite inlines everything it loads into the shipped bundle, so `apps/web/.env`
-holds `VITE_`-prefixed public values only and every secret stays server-side. See
-*Environment* in [`AGENTS.md`](AGENTS.md).
+Dự án phân chia hai file `.env`, một cho mỗi ứng dụng, và sự phân chia này là ranh giới bảo mật: Vite sẽ đóng gói trực tiếp mọi biến môi trường được nạp vào bundle gửi đến client, do đó `apps/web/.env` chỉ chứa các biến công khai có tiền tố `VITE_`, còn tất cả bí mật (secrets) chỉ lưu ở phía server. Xem thêm mục *Environment* trong [`AGENTS.md`](AGENTS.md).
 
-Prisma 7 generates its client into `apps/api/src/generated/` (gitignored), so
-`pnpm db:generate` runs once after cloning and again after every schema change.
+Prisma 7 sinh mã client vào `apps/api/src/generated/` (được đưa vào gitignore), vì vậy lệnh `pnpm db:generate` cần chạy một lần sau khi clone dự án và chạy lại sau mỗi lần thay đổi schema database.
 
-## Run
+## Khởi chạy (Run)
 
-Two commands, in two terminals:
+Chạy hai lệnh sau trên hai terminal riêng biệt:
 
 ```bash
-pnpm dev        # API on :3001, web on :5173
-pnpm worker     # a backtest worker — start as many as you like
+pnpm dev        # API chạy tại cổng :3001, web chạy tại :5173
+pnpm worker     # Backtest worker — có thể bật bao nhiêu worker tùy ý
 ```
 
-Open http://localhost:5173. Five screens:
+Mở trình duyệt tại http://localhost:5173. Ứng dụng gồm năm màn hình:
 
-| Screen | What it does |
+| Màn hình | Chức năng |
 | --- | --- |
-| **Realtime** | four live charts of one pair at four timeframes, plus a trade tape |
-| **Backtest** | pick a dataset and a strategy, run one backtest, see its trades on the chart |
-| **Search** | start a bounded search run, watch it, pause or stop it |
-| **Leaderboard** | every completed experiment for a dataset, ranked |
-| **News** | collected articles and their sentiment split |
+| **Realtime** | Bốn biểu đồ trực tiếp của một cặp giao dịch trên 4 khung thời gian, kèm bảng khớp lệnh tức thời (trade tape) |
+| **Backtest** | Chọn một dataset và một chiến lược, thực hiện một lượt backtest đơn lẻ, hiển thị các điểm vào lệnh (trades) trực tiếp trên chart |
+| **Search** | Khởi chạy một tiến trình tìm kiếm chiến lược có giới hạn (bounded search run), theo dõi tiến độ, tạm dừng hoặc dừng hẳn |
+| **Leaderboard** | Bảng xếp hạng tất cả các thử nghiệm (experiments) đã hoàn thành cho một dataset |
+| **News** | Danh sách tin tức thu thập được và tỷ lệ phân loại cảm xúc (sentiment) |
 
-Without Redis the API still starts and every other screen works — starting a search run
-answers 503 rather than hanging, which is the difference between a missing service and a
-broken one.
+Nếu không có Redis, API vẫn khởi động bình thường và các màn hình khác vẫn hoạt động — khi bấm bắt đầu một search run, hệ thống sẽ trả về mã lỗi 503 thay vì bị treo vô thời hạn, phân biệt rõ giữa một dịch vụ chưa bật và một hệ thống bị lỗi code.
 
-The worker is a separate process on purpose: a backtest is CPU-bound, and running it
-inside the API would stall the very WebSocket that reports its progress
-([ADR 0004](docs/decisions/0004-bullmq-for-backtests.md)).
+Worker được tách thành một tiến trình độc lập có chủ đích: tác vụ backtest ngốn nhiều tài nguyên CPU (CPU-bound), nếu chạy chung trong tiến trình API sẽ làm nghẽn chính kết nối WebSocket dùng để đẩy tiến độ về cho giao diện ([ADR 0004](docs/decisions/0004-bullmq-for-backtests.md)).
 
-## Architecture
+## Kiến trúc tổng thể (Architecture)
 
-Three processes over one codebase, and a shared type package neither side owns.
+Ba tiến trình chạy trên một kho mã nguồn duy nhất (monorepo), cùng một package chia sẻ kiểu dữ liệu chung mà không bên nào độc quyền:
 
 ```
-apps/web            React + Vite — renders, never computes
-apps/api            NestJS — modules are the architecture
-apps/api (worker)   the same code, booted from BacktestWorkerModule, no HTTP
-packages/contracts  shared types, imported by both
+apps/web            React + Vite — chỉ render hiển thị, không xử lý logic tính toán
+apps/api            NestJS — module hóa thể hiện kiến trúc hệ thống
+apps/api (worker)   dùng chung codebase, khởi động từ BacktestWorkerModule, không mở cổng HTTP
+packages/contracts  chứa các kiểu dữ liệu dùng chung (shared types), được cả web và api import
 ```
 
-Data flows one way: exchange → market → indicator → strategy → backtest → evaluation →
-ranking → screen. Nothing downstream reaches back. A strategy contains trading logic and
-nothing else — no exchange calls, no database, no chart code — which is what makes adding
-one a single file plus a single line in `registered-strategies.ts`.
+Luồng dữ liệu di chuyển một chiều: sàn giao dịch (exchange) → dữ liệu thị trường (market) → chỉ báo (indicator) → chiến lược (strategy) → kiểm thử lịch sử (backtest) → đánh giá (evaluation) → xếp hạng (ranking) → màn hình (screen). Không có thành phần phía sau nào được gọi ngược về phía trước. Một chiến lược chỉ chứa duy nhất logic giao dịch — không gọi trực tiếp API sàn, không truy cập database, không render chart — nhờ đó việc thêm một chiến lược mới chỉ đơn giản là thêm một file và đăng ký một dòng trong `registered-strategies.ts`.
 
-Modules never call each other to announce something. Nine events do that, and the browser
-is reached through one Socket.IO channel addressed by topic, so a screen watching four
-charts holds one connection.
+Các module không bao giờ gọi trực tiếp nhau để phát thông báo. Hệ thống định nghĩa chín sự kiện nội bộ để thực hiện việc này, và trình duyệt được kết nối thông qua một kênh Socket.IO duy nhất phân định theo chủ đề (topic), giúp màn hình dù đang theo dõi 4 biểu đồ cùng lúc vẫn chỉ duy trì duy nhất một kết nối mạng.
 
-The full picture — system context, module decomposition, component responsibilities, and
-the data, realtime, strategy and search flows — is
-[`docs/architecture.md`](docs/architecture.md).
+Tài liệu kiến trúc chi tiết toàn diện — bao gồm ngữ cảnh hệ thống (system context), phân rã module, trách nhiệm thành phần, và các luồng dữ liệu, realtime, strategy, search — được trình bày tại [`docs/architecture.md`](docs/architecture.md).
 
-## Demo
+## Kịch bản Demo (Demo)
 
-The path through the app, in the order the brief asks for it:
+Trình tự trải nghiệm ứng dụng theo các yêu cầu của đề bài:
 
-1. **Realtime** — open BTCUSDT, watch four timeframes update and the trade tape fill.
-2. **Backtest** — pick a dataset, choose a strategy and its parameters, run it. Trades
-   are drawn on the chart and the metrics panel fills.
-3. **Search** — pick the strategies allowed into the run, give it a bound, start it.
-   Progress shows candidates tested, queue depth, failures, average backtest time and the
-   current leader.
-4. **Leaderboard** — ranked results for the dataset. Click one to inspect its trades.
-5. **News** — collect articles, see the sentiment split and how it feeds the sentiment
-   strategy.
+1. **Realtime** — mở cặp BTCUSDT, quan sát 4 khung thời gian cùng cập nhật trực tiếp và bảng khớp lệnh liên tục nhận dữ liệu.
+2. **Backtest** — chọn một bộ dataset, chọn một chiến lược cùng các tham số tương ứng, bấm chạy. Các điểm vào lệnh (trades) được vẽ trực tiếp lên biểu đồ và panel chỉ số hiệu suất được tính toán đầy đủ.
+3. **Search** — chọn các chiến lược cho phép tham gia tìm kiếm, đặt giới hạn số lượng ứng viên/thời gian, bắt đầu chạy. Tiến độ hiển thị số ứng viên đã thử, độ sâu hàng đợi, số lỗi, thời gian backtest trung bình và chiến lược dẫn đầu hiện tại.
+4. **Leaderboard** — xem kết quả xếp hạng các chiến lược cho dataset. Bấm vào một kết quả để kiểm tra chi tiết các giao dịch.
+5. **News** — thu thập bài báo tin tức, quan sát tỷ lệ tâm lý tích cực/tiêu cực/trung tính và cách dữ liệu này được đưa vào chiến lược tin tức.
 
-Steps 3 and 4 do not yet complete: every candidate a search run queues fails, because the
-worker asks for an evaluator nothing provides. The single backtest of step 2 takes a
-different path and works. Both open seams are written up in the last section of
-[`docs/architecture.md`](docs/architecture.md).
+## Các câu lệnh (Scripts)
 
-## Scripts
-
-| Command | Does |
+| Câu lệnh | Chức năng |
 | --- | --- |
-| `pnpm dev` | API and web together, colour-coded output |
-| `pnpm dev:api` · `pnpm dev:web` | one side only |
-| `pnpm worker` | one backtest worker |
-| `pnpm build` | contracts, then API, then web |
-| `pnpm lint` | across the workspace, plus the UI token check |
-| `pnpm quality` | lint + build — the gate the git hooks run |
-| `pnpm db:generate` | regenerate the Prisma client |
-| `pnpm db:migrate` · `pnpm db:studio` | Prisma migrations, Prisma Studio |
-| `pnpm commit` | guided conventional commit — use this, not `git commit` |
-| `pnpm decision "<the choice>"` | start a decision record |
-| `pnpm env:encrypt` · `pnpm env:decrypt` | the API env, encrypted with age |
+| `pnpm dev` | Chạy đồng thời API và Web với log phân biệt màu sắc |
+| `pnpm dev:api` · `pnpm dev:web` | Khởi chạy riêng rẽ từng phía API hoặc Web |
+| `pnpm worker` | Khởi chạy một tiến trình backtest worker |
+| `pnpm build` | Build lần lượt contracts, sau đó đến API, rồi đến Web |
+| `pnpm lint` | Kiểm tra quy chuẩn mã nguồn toàn workspace kèm kiểm tra UI token |
+| `pnpm quality` | Chạy lint + build — cổng kiểm tra tự động chạy bởi git hooks |
+| `pnpm db:generate` | Sinh lại mã nguồn Prisma client |
+| `pnpm db:migrate` · `pnpm db:studio` | Quản lý migration Prisma và mở giao diện trực quan Prisma Studio |
+| `pnpm commit` | Công cụ hướng dẫn viết commit chuẩn Conventional Commits — khuyến nghị dùng thay cho `git commit` |
+| `pnpm decision "<the choice>"` | Khởi tạo nhanh một tệp quyết định kiến trúc (ADR) |
+| `pnpm env:encrypt` · `pnpm env:decrypt` | Mã hóa và giải mã file môi trường API bằng công cụ age |
 
-## Contributing
+## Đóng góp mã nguồn (Contributing)
 
-Branch per task, named after its ID in [`docs/project-breakdown.html`](docs/project-breakdown.html):
-`T11-strategy-registry`. Commit with `pnpm commit` — it writes a conventional message and
-takes the scope from the branch name, so that branch produces `feat(strategy-registry): …`.
+Mỗi nhánh (branch) ứng với một tác vụ, được đặt tên theo mã ID trong [`docs/project-breakdown.html`](docs/project-breakdown.html): ví dụ `T11-strategy-registry`. Thực hiện commit bằng lệnh `pnpm commit` — lệnh này sẽ tạo commit message theo chuẩn conventional và tự động lấy scope từ tên nhánh, ví dụ nhánh trên sẽ sinh message dạng `feat(strategy-registry): …`.
 
-A change that moves a contract, the schema, how modules talk, or the scoring rules needs a
-record under [`docs/decisions/`](docs/decisions/) in the same change. The pre-push hook
-refuses the push otherwise, and the reason is that a decision made in chat and never
-written down does not exist.
+Bất kỳ thay đổi nào làm thay đổi contract dữ liệu chung, schema database, cách thức giao tiếp giữa các module hoặc công thức tính điểm kiểm thử bắt buộc phải tạo một bản ghi quyết định kiến trúc trong thư mục [`docs/decisions/`](docs/decisions/) ngay trong commit đó. Hook pre-push của git sẽ từ chối lệnh push nếu thiếu bản ghi này, bởi vì một quyết định chỉ bàn luận qua chat mà không được ghi lại thì coi như không tồn tại.
 
-Agent instructions: [`AGENTS.md`](AGENTS.md) is the shared law, and
-[`docs/agent-harness.md`](docs/agent-harness.md) tells Claude, Codex, Cursor, Windsurf or
-another coding agent how to build its own local harness. Tool-specific files stay local
-and ignored; the committed files are the contract.
+Chỉ dẫn dành cho AI coding agent: [`AGENTS.md`](AGENTS.md) là quy tắc chung bắt buộc, và [`docs/agent-harness.md`](docs/agent-harness.md) hướng dẫn cách các agent như Claude, Codex, Cursor, Windsurf tự thiết lập môi trường (harness) cục bộ phù hợp. Mọi file cấu hình đặc thù của từng công cụ phải được lưu ở các thư mục gitignored; chỉ những file được commit mới là hợp đồng chuẩn mực của dự án.

@@ -1,88 +1,32 @@
-# Domain errors carry their HTTP status and a global filter maps them
+# Lỗi miền nghiệp vụ tự mang mã trạng thái HTTP và một bộ lọc toàn cục sẽ ánh xạ chúng
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The API had two ways of answering a bad request and no rule for choosing between them.
-`market.controller.ts` and `news.controller.ts` check their input closely and raise
-`BadRequestException` by hand. `search.controller.ts` wraps its calls in a `try/catch` and
-maps three domain errors to three status codes. `leaderboard.controller.ts` and the dataset
-creation endpoint check nothing at all. Nothing in the codebase said which of these was the
-house style, so each new endpoint picked one, and the quality of the answer a caller gets
-depends on which endpoint they happened to call.
+API từng có hai cách xử lý một yêu cầu không hợp lệ (bad request) và không có quy tắc nào để lựa chọn giữa chúng.
+`market.controller.ts` và `news.controller.ts` kiểm tra chặt chẽ dữ liệu đầu vào và ném ra `BadRequestException` một cách thủ công. `search.controller.ts` bọc các lệnh gọi trong một khối `try/catch` và ánh xạ ba lỗi miền nghiệp vụ sang ba mã trạng thái. `leaderboard.controller.ts` và endpoint tạo dataset thì hoàn toàn không kiểm tra gì cả. Không có điều gì trong codebase nói lên phong cách chuẩn của dự án là gì, do đó mỗi endpoint mới tự chọn một kiểu, và chất lượng phản hồi mà phía gọi nhận được phụ thuộc vào việc họ tình cờ gọi vào endpoint nào.
 
-The cost is not evenly spread. `spec-validator.ts` writes genuinely useful refusals —
-`member ma has a weight outside (0,1] on the 0.1 grid`, `member weights sum to 0, not 1` —
-and throws them as `InvalidSpecError`. No controller catches that, so Nest returns `500
-Internal server error` with an empty body. The diagnosis is produced and then discarded at
-the exact moment it is worth something.
+Chi phí không được phân bổ đồng đều. `spec-validator.ts` viết ra các thông điệp từ chối thực sự hữu ích — ví dụ: `member ma has a weight outside (0,1] on the 0.1 grid`, `member weights sum to 0, not 1` — và ném chúng ra dưới dạng `InvalidSpecError`. Không có controller nào bắt lỗi đó, vì vậy Nest trả về mã `500 Internal server error` với body trống rỗng. Lời chẩn đoán lỗi hữu ích vừa được tạo ra đã bị vứt bỏ ngay tại thời điểm nó đáng giá nhất.
 
-So: an error that a caller can provoke declares the status it deserves, and one filter
-turns it into that response. `DomainError` is an abstract class with an abstract `status`;
-every such error extends it. The filter imports that base class and nothing else, so a
-cross-cutting file never reaches into a module and the dependency direction stays one-way.
+Vì vậy: một lỗi mà phía gọi có thể gây ra sẽ tự khai báo mã trạng thái mà nó xứng đáng nhận, và một bộ lọc duy nhất sẽ chuyển đổi nó thành phản hồi tương ứng. `DomainError` là một lớp trừu tượng với một thuộc tính trừu tượng `status`; mọi lỗi nghiệp vụ thuộc loại này đều kế thừa từ nó. Bộ lọc chỉ import lớp cơ sở đó và không gì khác, do đó một file xử lý xuyên suốt (cross-cutting) không bao giờ chạm sâu vào bên trong một module và hướng phụ thuộc luôn là một chiều.
 
-Putting the status on the error rather than in a table inside the filter is the part doing
-the work. The person who adds an error is the person who knows what it means, and they are
-already in the file. If saying so requires opening a second file, it will be skipped, and a
-skipped entry is a 500 — the failure this record exists to remove, returning through the
-mechanism meant to prevent it. A status that lives next to the message is also read by
-whoever changes the message, which is when the two most often stop agreeing.
+Việc đặt mã trạng thái ngay trên chính lỗi thay vì đặt trong một bảng ánh xạ bên trong bộ lọc là điểm then chốt phát huy hiệu quả. Người tạo ra lỗi chính là người hiểu rõ ý nghĩa của nó nhất, và họ đã đang mở file đó ra làm việc. Nếu việc khai báo đòi hỏi phải mở thêm một file thứ hai, bước này chắc chắn sẽ bị bỏ qua, và một mục bị bỏ quên sẽ trở thành lỗi 500 — chính là lỗi mà bản ghi quyết định này sinh ra để loại bỏ, quay trở lại thông qua chính cơ chế định ngăn chặn nó. Một mã trạng thái nằm ngay cạnh thông điệp lỗi cũng sẽ được đọc bởi bất kỳ ai sửa đổi thông điệp đó, vốn là thời điểm mà cả hai dễ bị lệch pha nhất.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Nest's global `ValidationPipe` with `class-validator` DTOs** — the framework's own
-answer, the one the audit names, and the first thing a reviewer will ask about. It costs
-two dependencies and, more expensively, request shapes rewritten as classes carrying
-decorators. Those shapes already exist as types in `@csl/contracts`, imported by both apps;
-a decorated class is a second copy of something the contracts package owns, and two copies
-drift the first time one is edited. The rules already in force do not survive the move
-either: `from` and `to` must be supplied together or not at all, `strategyRefs` is
-de-duplicated by `id@version`, a weight must land on the 0.1 grid. None is a decorator
-without a custom validator behind it. What is actually on offer is `class-validator`
-handling the easy half of validation and the existing parse functions handling the hard
-half, and a reader having to learn which half lives where. That is one more paradigm than
-the problem has.
+**Bộ lọc toàn cục `ValidationPipe` của Nest với các DTO dùng `class-validator`** — giải pháp chính thống của framework, phương án được nêu trong đợt audit, và là điều đầu tiên mà người review sẽ hỏi tới. Nó tiêu tốn thêm hai thư viện phụ thuộc và tốn kém hơn là phải viết lại hình dạng yêu cầu thành các class mang decorator. Các hình thái đó đã tồn tại dưới dạng type trong `@csl/contracts`, được cả hai ứng dụng import; một class có decorator sẽ là bản sao thứ hai của thứ mà package contracts sở hữu, và hai bản sao sẽ bị lệch pha ngay lần đầu tiên một bên được chỉnh sửa. Các quy tắc hiện hành cũng không thể chuyển đổi dễ dàng: `from` và `to` phải được cung cấp cùng nhau hoặc không cung cấp cả hai, `strategyRefs` được khử trùng lặp theo `id@version`, một trọng số phải nằm trên lưới 0.1. Không có quy tắc nào trong số này có thể là một decorator mà không cần viết custom validator phía sau. Điều thực tế nhận được là `class-validator` xử lý một nửa dễ của việc xác thực còn các hàm phân tích cú pháp hiện có xử lý nửa khó, và người đọc phải học xem nửa nào nằm ở đâu. Đó là thêm một mô hình thừa thãi cho bài toán.
 
-**A mapping table inside the filter** — `InvalidSpecError → 400`, `QueueUnavailableError →
-503`, written in one readable block. It reads well and it inverts the dependency: the
-cross-cutting file would import from `search/`, `market/`, `news/`, so the one file that
-must not know about modules would know about all of them. `BACKEND_CONSTRAINT.md` calls
-that layering only points one way, and this would point it both.
+**Một bảng ánh xạ bên trong bộ lọc** — `InvalidSpecError → 400`, `QueueUnavailableError → 503`, được viết trong một khối dễ đọc. Trông thì trực quan nhưng nó đảo ngược hướng phụ thuộc: file xử lý xuyên suốt sẽ phải import từ `search/`, `market/`, `news/`, khiến cho file duy nhất không được phép biết về các module lại biết về tất cả các module. `BACKEND_CONSTRAINT.md` quy định việc phân tầng chỉ trỏ một chiều, và phương án này sẽ trỏ theo cả hai chiều.
 
-**Extending `HttpException` directly in the domain code** — shortest path by far, since
-Nest already renders those correctly with no filter at all. It puts `@nestjs/common` inside
-validators and services, which is the layer that is supposed to survive the framework being
-replaced. A validator that imports HTTP vocabulary is a validator that cannot be reused by
-the queue worker, which has no HTTP.
+**Kế thừa `HttpException` trực tiếp trong mã nghiệp vụ domain** — con đường ngắn nhất, vì Nest đã render chúng chính xác mà không cần bộ lọc nào. Nhưng nó đưa `@nestjs/common` vào bên trong các validator và service, vốn là tầng được kỳ vọng sẽ tồn tại nguyên vẹn nếu framework bị thay thế. Một validator import từ vựng HTTP là một validator không thể tái sử dụng cho queue worker, nơi hoàn toàn không có HTTP.
 
-**Leave the `try/catch` in each controller and simply add the missing ones** — no new
-concept, nothing to learn, and it is exactly the status quo that produced the drift. It is
-N places to keep right instead of one, and every new error means revisiting every
-controller that can raise it. The endpoints that check nothing today are not the product of
-a decision anyone would defend; they are the product of this being the cheapest thing to
-skip.
+**Giữ nguyên `try/catch` ở mỗi controller và chỉ cần bổ sung những chỗ còn thiếu** — không có khái niệm mới, không phải học gì thêm, và đó chính xác là hiện trạng đã tạo ra sự sai lệch ban đầu. Nó tạo ra N nơi cần duy trì tính đúng đắn thay vì một nơi duy nhất, và mỗi lỗi mới đồng nghĩa với việc phải xem xét lại mọi controller có thể ném ra nó. Các endpoint hiện không kiểm tra gì hôm nay không phải là sản phẩm của một quyết định có chủ đích mà ai đó bảo vệ; chúng là sản phẩm của việc đây là thứ rẻ nhất có thể bỏ qua.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Domain code now names an HTTP status, and HTTP is a transport concern one layer below where
-it now appears. What bounds the leak is that it is a number and not a framework: a
-`DomainError` subclass holds `409`, not a Nest import, so the queue worker can raise the
-same error and ignore the field. It is still a leak, and someone will eventually argue it
-should have been an abstract kind — `conflict`, `not-found` — mapped to numbers at the
-edge. That indirection buys nothing today, when there is exactly one edge.
+Mã miền nghiệp vụ giờ đây gọi tên một mã trạng thái HTTP, và HTTP là mối quan tâm tầng vận chuyển nằm dưới một tầng so với nơi nó xuất hiện. Điều giới hạn sự rò rỉ này là nó chỉ là một con số chứ không phải một framework: lớp con của `DomainError` giữ giá trị `409`, chứ không phải một import của Nest, vì vậy queue worker có thể ném ra cùng một lỗi và phớt lờ trường đó. Đó vẫn là một sự rò rỉ ranh giới, và ai đó cuối cùng có thể lập luận rằng nó nên là một phân loại trừu tượng — `conflict`, `not-found` — được ánh xạ thành các con số ở rìa hệ thống. Sự gián tiếp đó hiện không mang lại lợi ích gì, khi hiện tại chỉ có duy nhất một rìa giao tiếp.
 
-Anything that does not extend `DomainError` still becomes a 500, and that is deliberate.
-The parse functions throw `TypeError`, and so does every real bug — `undefined.foo` is a
-`TypeError` too. A filter that turned every `TypeError` into a 400 would hand the caller a
-plausible message for a fault that is ours, and drop it out of the logs where a 500 belongs.
-The cost is that each parse function still needs its refusal translated at the boundary
-until it raises a `DomainError` of its own.
+Bất cứ thứ gì không kế thừa `DomainError` vẫn sẽ trở thành 500, và điều đó là có chủ ý. Các hàm parse ném ra `TypeError`, và mọi bug thực tế cũng vậy — `undefined.foo` cũng là một `TypeError`. Một bộ lọc biến mọi `TypeError` thành 400 sẽ trao cho người gọi một thông báo có vẻ hợp lý cho một lỗi thực chất thuộc về chúng ta, và làm biến mất nó khỏi log nơi mà lỗi 500 thuộc về. Cái giá phải trả là mỗi hàm parse vẫn cần được dịch thông báo từ chối ở ranh giới cho đến khi nó tự ném ra một `DomainError` của riêng mình.
 
-One filter is one place every error passes through, so when it is wrong it is wrong
-everywhere at once, and the blast radius of a bad edit there is the whole API. That is the
-same property that makes it worth having.
+Một bộ lọc duy nhất là nơi mọi lỗi đều đi qua, vì vậy khi nó sai thì nó sẽ sai ở tất cả mọi nơi cùng lúc, và bán kính ảnh hưởng của một chỉnh sửa tồi ở đây là toàn bộ API. Đó cũng chính là đặc tính làm cho nó đáng để sở hữu.
 
-The message on a `DomainError` is now the message the caller reads. It was already true of
-the hand-written `BadRequestException` calls, but it was true of five of them; it is now
-true of every error in the set, which makes those strings a surface that changes behaviour
-for whoever is parsing them, and someone eventually will be.
+Thông điệp trong một `DomainError` giờ đây là thông điệp mà bên gọi đọc được. Điều này trước đây chỉ đúng với năm lệnh gọi `BadRequestException` viết tay; giờ đây nó đúng với mọi lỗi trong tập hợp, biến các chuỗi ký tự đó thành một bề mặt giao tiếp có thể làm thay đổi hành vi của bất kỳ ai đang phân tích chúng, và cuối cùng chắc chắn sẽ có người làm như vậy.

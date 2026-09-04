@@ -1,65 +1,27 @@
-# Sentiment classification calls the Groq API, behind a provider interface
+# Phân loại cảm xúc tin tức gọi API Groq, đứng sau interface provider
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 44 forbids the crawler calling the model directly, and section 40 asks two
-questions that are one question about blast radius: if the news service fails does
-the chart still work, and if the sentiment model changes is the strategy engine
-affected. What those questions are testing is the boundary, not the deployment
-topology. So the boundary is what we build: a `SentimentProvider` interface with one
-method, and everything above it knows only that interface.
+Mục 44 của đề bài nghiêm cấm crawler gọi trực tiếp mô hình AI, và mục 40 đặt ra hai câu hỏi thực chất cùng hướng về một vấn đề: bán kính ảnh hưởng khi có sự cố (blast radius). Cụ thể: nếu service tin tức bị lỗi thì biểu đồ có còn hoạt động không, và nếu mô hình sentiment thay đổi thì engine chiến lược có bị ảnh hưởng không? Những câu hỏi đó nhằm kiểm tra ranh giới kiến trúc chứ không phải cách thức triển khai hạ tầng. Vì vậy, ranh giới là thứ chúng ta tập trung xây dựng: một interface `SentimentProvider` với một phương thức duy nhất, và mọi thành phần phía trên chỉ biết đến interface này.
 
-Groq behind that interface means there is no model to host, no Python runtime, no
-model weights to download on every teammate's machine, and no GPU question. The
-whole project stays TypeScript, which keeps the shared contracts package covering
-every process we run.
+Đặt Groq phía sau interface đó đồng nghĩa với việc không cần tự host mô hình cục bộ, không cần runtime Python, không cần tải hàng gigabyte model weights về máy của từng thành viên, và không phải đau đầu về bài toán GPU. Toàn bộ dự án tiếp tục đồng nhất bằng TypeScript, giúp package contracts dùng chung bao phủ trọn vẹn mọi tiến trình mà chúng ta chạy.
 
-The thing that makes a hosted API safe here is that section 29 already tells us to
-store the label and score alongside the article. So Groq is called once per article
-at ingest time and never again. Backtests read stored scores from the database, the
-sentiment strategy reads stored scores, and the demo reads stored scores. The
-external dependency sits at the edge of the system on the ingest path, not on the
-path that anything gets graded on.
+Yếu tố giúp việc dùng API hosted ở đây trở nên an toàn tuyệt đối là mục 29 của đề bài đã yêu cầu lưu nhãn (label) và điểm số (score) cùng với bài báo vào database. Do đó Groq chỉ được gọi đúng một lần duy nhất cho mỗi bài báo tại thời điểm thu nạp (ingest time) và không bao giờ gọi lại nữa. Các lượt backtest đọc điểm số đã lưu từ database, chiến lược sentiment đọc điểm số đã lưu, và kịch bản demo cũng đọc điểm số đã lưu. Phụ thuộc bên ngoài nằm ở rìa ngoài cùng của hệ thống trên luồng nạp tin tức, hoàn toàn không nằm trên luồng chạy backtest vốn là phần được chấm điểm.
 
-Keeping it behind an interface is what makes this reversible. If Groq turns out to
-be wrong — rate limits, cost, quality on crypto headlines — swapping in a local
-HuggingFace model or a hosted alternative is one provider binding, and nothing above
-the interface changes. That is the same mechanism used for the strategy registry and
-the search generator, applied to a third seam.
+Việc giữ nó đứng sau một interface giúp quyết định này có thể đảo ngược bất cứ lúc nào (reversible). Nếu Groq gặp vấn đề — giới hạn tần suất (rate limits), chi phí, hoặc chất lượng phân tích tiêu đề crypto chưa ưng ý — việc hoán đổi sang một mô hình HuggingFace chạy local hay một nhà cung cấp cloud khác chỉ là thay đổi một provider binding duy nhất, không dòng code nào phía trên interface bị xáo trộn. Đây chính là cơ chế đã áp dụng thành công cho strategy registry và bộ sinh ứng viên tìm kiếm.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**A local HuggingFace model in a separate Python service** — the version this
-project would have used by default. It keeps everything inside our system and works
-offline, but it costs a second runtime, model weights on every machine, and a
-process that must be running before the news pipeline means anything. It also makes
-the stack polyglot for one small service.
+**Tự chạy mô hình HuggingFace cục bộ trong một service Python riêng** — phương án mà thông thường dự án dạng này sẽ chọn mặc định. Nó giữ mọi thứ bên trong hệ thống nội bộ và hoạt động được offline, nhưng cái giá phải trả là thêm một runtime thứ hai, dung lượng model weights nặng nề trên mọi máy phát triển, và một tiến trình bắt buộc phải bật thì pipeline tin tức mới chạy được. Nó cũng biến ngăn xếp công nghệ thành đa ngôn ngữ (polyglot) chỉ vì một service nhỏ.
 
-**A local model inside the backend process** — cheapest to run of the local options,
-and the one that fails the section 40 questions outright. A slow model load delays
-startup for the charts, and an inference crash takes down more than sentiment.
+**Chạy mô hình cục bộ trực tiếp bên trong tiến trình backend** — phương án nhẹ nhất trong các lựa chọn chạy local, nhưng là phương án trượt ngay lập tức các câu hỏi kiểm tra ở mục 40. Việc nạp mô hình chậm sẽ làm chậm quá trình khởi động biểu đồ, và một sự cố crash khi suy luận AI (inference) sẽ đánh sập toàn bộ backend chứ không chỉ riêng tính năng sentiment.
 
-**Another hosted sentiment API** — same shape as Groq. Groq wins on latency and on
-being an LLM we can prompt, which means the classification can be tuned by rewriting
-a prompt rather than retraining anything.
+**Một dịch vụ API sentiment thương mại khác** — tương tự như Groq. Groq thắng nhờ độ trễ cực thấp và bản chất là một LLM có thể tinh chỉnh prompt linh hoạt, cho phép cải thiện chất lượng phân loại chỉ bằng cách viết lại prompt thay vì phải huấn luyện lại mô hình.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Sentiment analysis is now a prompt to somebody else's model rather than a model we
-run. Section 2 asks for sentiment analysis "using a machine learning model", and a
-grader may reasonably expect to see a model rather than an API call. The provider
-interface is the answer to that if it is raised — we can demonstrate a local model
-behind the same interface — but this is a real exposure and worth being ready for
-rather than surprised by.
+Phân tích cảm xúc giờ đây là một câu prompt gửi tới mô hình của bên thứ ba thay vì một mô hình chúng ta tự kiểm soát và chạy trực tiếp. Mục 2 của đề bài yêu cầu phân tích cảm xúc "sử dụng mô hình học máy", và một giám khảo chấm thi hoàn toàn có thể kỳ vọng nhìn thấy một model file thực tế thay vì một lệnh gọi API. Interface provider chính là câu trả lời kiến trúc chuẩn mực nếu vấn đề này được nêu ra — chúng ta có thể dễ dàng trình diễn một model local đứng sau cùng interface đó — nhưng đây là một điểm cần chuẩn bị sẵn tâm thế phản biện chứ không để bị bất ngờ.
 
-Ingestion now needs the network and an API key. The key is a secret that must stay
-out of the repository, which is a new class of thing this project has to handle
-correctly. And an article that fails classification needs a defined state — left
-unscored and retried, rather than silently stored as neutral, or the sentiment
-strategy will quietly train on holes.
+Quy trình nạp tin giờ đây phụ thuộc vào kết nối Internet và API key. Key là một secret bắt buộc phải giữ ngoài git repository, tạo ra một loại tài nguyên nhạy cảm mà dự án phải xử lý đúng quy chuẩn. Và một bài báo bị lỗi phân loại cần có trạng thái rõ ràng — giữ nguyên trạng thái chưa chấm điểm để thử lại sau, tuyệt đối không âm thầm gán nhãn trung tính (neutral), nếu không chiến lược sentiment sẽ vô tình bị sai lệch dữ liệu.
 
-LLM output is not deterministic in the way a classifier is. The same headline can
-come back with a slightly different score on a re-run, which sits awkwardly beside
-the reproducibility that section 36 demands of backtests. Storing the score once and
-never recomputing it is what keeps backtests reproducible, so the store-on-ingest
-rule is load-bearing rather than an optimisation.
+Đầu ra của LLM không có tính tất định tuyệt đối như một bộ phân loại truyền thống. Cùng một tiêu đề có thể nhận về điểm số hơi lệch nhau trong các lần gọi khác nhau, điều này có vẻ đi ngược lại tính tái lập (reproducibility) mà mục 36 đòi hỏi ở backtest. Việc lưu điểm số cố định một lần duy nhất vào database và không bao giờ tính toán lại chính là yếu tố bảo toàn tính tái lập cho backtest, vì vậy quy tắc "lưu ngay khi nạp" là một trụ cột kiến trúc bắt buộc, không chỉ đơn thuần là tối ưu hiệu năng.

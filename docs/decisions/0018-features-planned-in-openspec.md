@@ -1,106 +1,38 @@
-# Features are planned in OpenSpec, and the reasoning still lives in docs/decisions/
+# Các tính năng được lập kế hoạch qua OpenSpec, và lập luận vẫn lưu tại docs/decisions/
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-A task card says what "done" means. A decision record says why a choice went one way.
-Between those two there is a gap nobody was filling: what exactly is being built, in
-what order, and what the system is able to do once it is finished.
+Một thẻ task trên Trello cho biết định nghĩa "hoàn thành" là gì. Một bản ghi ADR giải thích tại sao một lựa chọn kỹ thuật lại đi theo hướng đó. Giữa hai tài liệu đó tồn tại một khoảng trống chưa ai lấp đầy: chính xác những gì đang được xây dựng, theo thứ tự nào, và hệ thống có khả năng làm được những gì sau khi hoàn thành.
 
-Until now that gap lived in whoever was holding the task in their head, and in
-`.claude/plans/`, which is gitignored and per-person by design. It does not survive
-the session, and it certainly does not survive being handed to someone else.
+Trước đây khoảng trống đó chỉ nằm trong đầu của người trực tiếp làm task, hoặc trong `.claude/plans/` vốn bị gitignore và mang tính cá nhân cục bộ. Nó không tồn tại lâu hơn một phiên làm việc, và chắc chắn biến mất khi chuyển giao cho thành viên khác.
 
-OpenSpec fills it with three committed artefacts per change — a proposal, a task
-checklist, and a spec describing the capability afterwards. The third one is the part
-with no equivalent here. We have twenty-nine rows describing *work*, and sixteen
-records describing *decisions*, and nothing describing what the system does. Section
-45 asks for exactly that at hand-in, and the breakdown warns that writing slice 5 from
-memory at the end is how it goes wrong. Specs that accrete as each slice closes are
-the cheap version of that document.
+OpenSpec lấp đầy khoảng trống đó bằng ba tài liệu được commit cho mỗi đợt thay đổi — một đề xuất (proposal), một checklist nhiệm vụ (tasks.md), và một bản đặc tả (spec) mô tả năng lực của hệ thống sau khi hoàn thành. Bản đặc tả này là phần chưa từng có ở đây. Chúng ta có 29 dòng mô tả *công việc*, 16 bản ghi mô tả *quyết định kiến trúc*, nhưng chưa có tài liệu mô tả toàn diện *hệ thống làm được những gì*. Mục 45 của đề bài yêu cầu chính xác điều đó khi bàn giao, và bản phân rã cảnh báo rằng việc viết slice 5 từ trí nhớ vào tuần cuối cùng là cách chắc chắn dẫn đến sai sót. Các bản spec được bồi đắp dần sau mỗi slice hoàn thành chính là phiên bản chuẩn bị sớm và nhẹ nhàng nhất cho tài liệu báo cáo đó.
 
-Now is when it costs least. Slice 0 is closed and every remaining slice is feature
-work, so adopting it here means the specs are written as we go rather than
-reconstructed in the last week.
+**Nửa quan trọng hơn công cụ: chỉ có duy nhất một nơi lưu giữ lập luận kỹ thuật.**
 
-**The half that matters more than the tool: there is still one home for reasoning.**
+Quy trình mặc định của OpenSpec sinh ra một tệp `design.md` cho mỗi thay đổi, nhưng repo này vốn đã có sẵn thư mục `docs/decisions/`. Cả hai đều cùng trả lời câu hỏi "tại sao chúng ta chọn giải pháp này". Hai nơi cùng làm một nhiệm vụ là điều bị nghiêm cấm, và nó sẽ làm xé lẻ chính tài liệu mà mục 45 chấm điểm — một nửa lập luận nằm ở ADR, một nửa nằm ở thư mục change, không bên nào trọn vẹn.
 
-OpenSpec's stock workflow generates a `design.md` per change, and this repo already has
-`docs/decisions/`. Both answer "why did we choose this". Two homes for one job is the
-second pattern that `development-rules.md` refuses, and here it would split the very
-artefact section 45 marks — half the argument in an ADR, half in a change folder,
-neither complete.
+Vì vậy thư mục change của OpenSpec không tạo file `design.md`. Cấu trúc của dự án là `proposal → specs → tasks`, và ba thành phần này trả lời ba câu hỏi hoàn toàn khác nhau: spec nói hệ thống làm được gì, ADR nói tại sao chọn cách đó, task nói bước tiếp theo cần làm gì. Một lựa chọn đủ lớn để tranh luận sẽ trở thành một tệp ADR, và mọi thứ nhỏ hơn chỉ là các đầu việc task được viết cụ thể để không ai phải tự suy luận lại.
 
-So the change folder does not get one. The project schema is `proposal → specs →
-tasks`, and the three answer different questions: a spec says what the system does, a
-record says why that was chosen, a task says what to do next. What would have gone into
-`design.md` splits along the same line — a choice big enough to argue is a record, and
-everything smaller is a task, written concretely enough that nobody re-derives it.
+Ranh giới giữa một change và một ADR được tự động hóa bằng công cụ:
+- Bản đề xuất (proposal) có mục **Decisions** gồm hai dòng: *Settled* dẫn link các ADR nền tảng mà thay đổi dựa vào; *To settle* nêu tên lựa chọn mà nó phải tạo ADR mới, hoặc ghi rõ là không có. Nó chỉ dẫn link chứ không chép lại lập luận.
+- Nhóm task 0 của mọi checklist nhiệm vụ luôn là viết bản ghi ADR đó, được sắp xếp trước đoạn code cần dùng nó. Lệnh `pnpm decision "<the choice>"` tự động cấp số tiếp theo, tạo sẵn 3 đề mục và thêm dòng vào index.
+- Lệnh `pnpm decision --check` chạy khi commit và từ chối bất kỳ bản ghi nào có đề mục trống hoặc chưa có trong index. Cổng kiểm soát pre-push gate vẫn chặn push nếu đụng vào contracts, schema Prisma hoặc `*.module.ts` mà thiếu ADR đi kèm.
 
-The seam between a change and a record is mechanical rather than remembered, because
-remembering is what fails in week nine:
+Thư mục `openspec/` được lưu trong git; các skill sinh tự động trong `.claude/` thì không, đúng như quy chuẩn của agent harness.
 
-- The proposal has a **Decisions** section of two lines. *Settled* links the records the
-  change builds on; *To settle* names the choice it owes one, or says there is none. It
-  links and never restates, so the argument exists once.
-- Group 0 of every task list is writing that record, ordered before the code that
-  assumes it. `pnpm decision "<the choice>"` takes the next number, writes the three
-  headings and adds the index line, so the clerical half stops being a reason to skip it.
-- `pnpm decision --check` runs on commit and refuses a record with an empty section or
-  one missing from the index. The pre-push gate still refuses a push touching
-  `packages/contracts/src`, `schema.prisma`, `prisma.config.ts` or a `*.module.ts` with
-  no record beside it — but group 0 has normally caught it a day earlier, which is the
-  point. A gate is a bad place to learn that a decision needed writing down.
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-`openspec/` is committed; the generated skills under `.claude/` are not, exactly like
-every other harness file — `AGENTS.md` already permits a local harness to add skills,
-and a spec only the author can read is a note to self.
+**Không dùng gì cả — chỉ giữ thẻ task, ADR và code** — cách đã vận hành trơn tru ở slice 0, không có độ dốc học tập và không thêm công cụ phụ thuộc. Nhưng nó thua ở điểm được chấm: Tài liệu kiến trúc sẽ phải viết ở phút chót từ trí nhớ, và lúc đó các lý lẽ đã bị phai nhạt.
 
-## What else we looked at
+**OpenSpec chỉ dùng cục bộ, gitignore thư mục `openspec/`** — không làm phình hợp đồng chung của repo. Nhưng nó biến bản đặc tả thành ghi chú cá nhân, triệt tiêu phần lớn giá trị chia sẻ của đặc tả.
 
-**Nothing — keep the card, the ADR and the code.** It is what carried slice 0, it has no
-learning curve and no dependency, and for a five-person term project that is a serious
-argument. It loses on the one thing that is marked: the Architecture Document gets
-written at the end from memory, and by then the reasons have gone soft. This was the
-closest call.
+**Tự viết tay các spec trong thư mục `docs/`** — không phụ thuộc công cụ CLI. Nhưng không có gì ràng buộc spec đồng bộ với các thay đổi mã nguồn, trong khi bước lưu trữ archive của OpenSpec đảm bảo chính xác điều đó.
 
-**OpenSpec local-only, `openspec/` gitignored.** No widening of the shared contract, no
-record needed, and the tool still helps whoever installed it. It also turns a spec into a
-private note, which removes most of what a spec is for.
+## Trade-offs (Đánh đổi)
 
-**Lean harder on `.claude/plans/`.** It already exists and is already where the `planner`
-agent writes. It is gitignored and per-person on purpose, and its shape is whatever the
-agent produced that day, so nothing accumulates.
+Mỗi tính năng giờ đây có thể kéo theo ba tài liệu — một thẻ task, một thư mục change, và đôi khi một tệp ADR. Đối với một task nhỏ, thủ tục này có thể nhiều hơn bản thân công việc thực tế.
 
-**Hand-written specs under `docs/`.** No dependency, no CLI, complete control of the
-format. Nothing then keeps a spec in step with the change that altered it, and the
-archive step is precisely the part that does that.
+Lệnh `pnpm decision` lấy số thứ tự tiếp theo bằng cách đọc thư mục cục bộ, vì vậy hai nhánh git cùng tạo ADR trong một tuần sẽ có thể lấy trùng số. Khi merge vào nhánh `dev` sẽ phát hiện ra và phải đổi tên một file mà các tài liệu khác đã dẫn link.
 
-## Trade-offs
-
-Every feature now carries up to three artefacts — a card, a change folder, sometimes an
-ADR. For a small task that is more ceremony than the task, and the temptation will be to
-skip the change folder for exactly the tasks where the record would have been cheapest.
-
-The line between a record and a task is a judgement made per point, and getting it wrong
-is invisible: a task that should have been a record simply never gets marked. The
-pre-push gate catches the cases that touch contracts, schema or module wiring, and
-nothing catches the rest.
-
-`pnpm decision` takes the next number by reading the folder, so two branches writing a
-record in the same week both take it. Nothing notices until they meet on `dev`, and then
-somebody renames a file other records already link to.
-
-`openspec/` widens the shared contract that `docs/agent-harness.md` deliberately keeps
-small. A second tool now has a say in how work is described, and if it is abandoned
-later the folder is left behind looking authoritative.
-
-The generated skills live under `.claude/`, which is gitignored, so every teammate runs
-`openspec init` themselves. Two things then bite each of them: OpenSpec writes a nested
-`metadata:` block that the repo's frontmatter parser rejected until we widened it — and
-that fix is also under `.claude/`, also not in git. And telemetry is on by default, stored
-in `~/.config/openspec` rather than in the repo, so opting out is per-machine too. Both
-belong in the setup instructions or they will be discovered one teammate at a time.
-
-The tool is at `^1.9.0` and regenerates its own skill files on update, so a minor release
-can change the frontmatter shape our parser now accepts. That is a dependency on someone
-else's format, taken for a convenience rather than for a requirement.
+Thư mục `openspec/` làm mở rộng hợp đồng chia sẻ chung của repo mà tài liệu `docs/agent-harness.md` luôn cố gắng giữ ở mức tối giản.

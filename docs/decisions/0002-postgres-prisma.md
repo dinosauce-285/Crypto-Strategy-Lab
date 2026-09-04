@@ -1,72 +1,33 @@
-# PostgreSQL for all data, accessed through Prisma
+# PostgreSQL cho toàn bộ dữ liệu, truy xuất thông qua Prisma
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Five of the six data groups the brief lists are ordinary relational data with real
-relationships: an experiment points at a strategy version and a dataset, trades
-belong to an experiment, news attaches to a coin. Section 36 demands that an old
-experiment always knows exactly which strategy version produced it — a foreign key
-makes the database enforce that, where a document store would leave it as a
-convention someone eventually forgets.
+Năm trong số sáu nhóm dữ liệu mà đề bài liệt kê là dữ liệu quan hệ thông thường với các mối quan hệ thực sự: một lượt thử nghiệm (experiment) trỏ đến một phiên bản chiến lược và một dataset, các giao dịch (trades) thuộc về một experiment, tin tức gắn liền với một đồng coin. Mục 36 yêu cầu một thử nghiệm cũ phải luôn biết chính xác phiên bản chiến lược nào đã tạo ra nó — khóa ngoại (foreign key) của cơ sở dữ liệu quan hệ sẽ tự động thực thi điều đó, trong khi một document store phi quan hệ sẽ để lại việc đó dưới dạng quy ước mà sớm muộn cũng sẽ có người quên kiểm tra.
 
-Ranking is the other reason. If the leaderboard is recomputed from experiment
-results rather than stored, Top-K is one query with a grouping and a window
-function. That is a few lines written once, against an aggregation pipeline that
-has to be debugged.
+Tính năng xếp hạng (ranking) là lý do quan trọng thứ hai. Nếu bảng xếp hạng được tính toán lại trực tiếp từ kết quả các experiment thay vì lưu tĩnh vào bảng, thì việc lấy Top-K chỉ là một câu truy vấn SQL duy nhất kết hợp nhóm dữ liệu (`GROUP BY`) và hàm cửa sổ (`WINDOW FUNCTION`). Đó là vài dòng lệnh viết một lần là xong, so với một pipeline aggregation phức tạp cần phải debug.
 
-The one genuinely schemaless thing we have is the candidate specification and the
-per-strategy parameter sets, which differ by strategy type. A `jsonb` column covers
-that inside the relational model, so flexibility exists exactly where it is needed
-without introducing a second database to hold one field.
+Thành phần thực sự không có cấu trúc cố định (schemaless) duy nhất trong hệ thống là bản đặc tả ứng viên (candidate specification) và các bộ tham số riêng của từng loại chiến lược. Cột dữ liệu kiểu `jsonb` giải quyết trọn vẹn điều này ngay bên trong mô hình quan hệ, mang lại sự linh hoạt đúng nơi cần thiết mà không phải đưa thêm một cơ sở dữ liệu NoSQL thứ hai chỉ để chứa một trường thông tin.
 
-Candle volume is smaller than it feels — roughly 350,000 rows for one pair across
-six timeframes and six months. An index on pair, timeframe and open time is
-sufficient, so a dedicated time-series store would be solving a problem we do not
-have, and section 38 asks what architectural problem each added technology solves.
+Khối lượng dữ liệu nến thực tế nhỏ hơn cảm giác ban đầu — khoảng 350.000 dòng cho một cặp coin trên 6 khung thời gian trong 6 tháng. Một index trên bộ ba trường (pair, timeframe, openTime) là hoàn toàn đủ đáp ứng, vì vậy một cơ sở dữ liệu chuỗi thời gian chuyên dụng (time-series database) sẽ là giải quyết một bài toán mà hệ thống không hề gặp phải, trong khi mục 38 của đề bài hỏi rất rõ: mỗi công nghệ đưa vào giải quyết bài toán kiến trúc cụ thể nào.
 
-Prisma because it generates the TypeScript types from the schema, so those types
-flow straight into the shared contracts package. Changing a column without changing
-the code becomes a compile error — the same argument that made one language across
-both ends worth it. Migrations are versioned files in git, which extends section
-36's reproducibility to the schema itself, and the schema file is readable enough to
-go into the architecture document instead of being redrawn and left to drift.
+Chọn Prisma vì nó tự động sinh mã kiểu TypeScript từ schema, và các kiểu dữ liệu đó chảy thẳng vào package contracts dùng chung. Việc đổi tên một cột trong database mà quên sửa code sẽ biến thành lỗi biên dịch ngay lập tức — cùng một lập luận thuyết phục đã giúp việc đồng nhất một ngôn ngữ trở nên đáng giá. Các migration là các file được đánh phiên bản trong git, mở rộng tính tái lập của mục 36 lên chính schema cơ sở dữ liệu, và file schema đủ rõ ràng, súc tích để đưa trực tiếp vào tài liệu kiến trúc thay vì phải vẽ lại sơ đồ ERD thủ công rồi để nó bị lỗi thời theo thời gian.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**SQLite** — no service to run, which is genuinely attractive early on. It fails at
-one specific point: it locks the whole database on write, so the moment several
-backtest workers write results in parallel it serialises. That happens in the
-search slice, meaning we would migrate after real data exists, which is the worst
-time to do it.
+**SQLite** — không cần cài đặt service, rất hấp dẫn trong giai đoạn đầu. Nhưng nó thất bại ở một điểm chí mạng: SQLite khóa toàn bộ cơ sở dữ liệu khi ghi (write lock), vì vậy khoảnh khắc nhiều worker backtest cùng ghi kết quả song song, hệ thống sẽ bị tuần tự hóa và tắc nghẽn. Điều đó sẽ xảy ra ở lát cắt tìm kiếm (search slice), đồng nghĩa với việc chúng ta sẽ phải migrate database sau khi đã có dữ liệu thật — thời điểm tồi tệ nhất để làm việc này.
 
-**MySQL** — would work. Postgres wins on more mature `jsonb` and on window
-functions for ranking, but the gap is small; if the team already had MySQL running
-it would not be worth switching for.
+**MySQL** — hoàn toàn dùng được. Postgres thắng nhờ hỗ trợ kiểu `jsonb` hoàn thiện hơn và các hàm window functions mạnh mẽ cho việc xếp hạng, nhưng khoảng cách không quá lớn; nếu nhóm đã có sẵn MySQL đang chạy thì không đáng để đổi.
 
-**MongoDB** — gives up foreign keys, and with them the cheapest answer to section
-36. The schema flexibility it offers is real but only needed in one column, which
-`jsonb` already covers.
+**MongoDB** — từ bỏ các ràng buộc khóa ngoại, và cùng với đó là cách đơn giản và rẻ nhất để thỏa mãn mục 36 của đề bài. Tính linh hoạt schema của MongoDB là có thật nhưng hệ thống chỉ cần linh hoạt ở đúng một cột, vốn đã được `jsonb` của Postgres bao phủ hoàn hảo.
 
-**TimescaleDB or InfluxDB** — right answer at a scale we will not reach, and a
-technology we would have to justify against section 38 without a driver to point at.
+**TimescaleDB hoặc InfluxDB** — là câu trả lời đúng ở quy mô hàng triệu giao dịch mỗi giây mà đồ án không bao giờ chạm tới. Đây là công nghệ mà chúng ta sẽ rất khó biện minh trước câu hỏi của mục 38 vì không có động lực kiến trúc thực tế nào bắt buộc phải dùng.
 
-**TypeORM instead of Prisma** — integrates more naturally with Nest's dependency
-injection, since entities and repositories are injectable in the usual way. Its
-type safety is looser and its migrations are fiddlier. The trade is integration
-against types, and we take types because contracts between modules are the thing
-being marked.
+**TypeORM thay vì Prisma** — tích hợp tự nhiên hơn với Dependency Injection của NestJS vì entities và repositories có thể inject theo cách thông thường. Nhưng khả năng đảm bảo an toàn kiểu (type safety) của TypeORM lỏng lẻo hơn và cơ chế migration phức tạp hơn. Đánh đổi ở đây là sự tích hợp mượt mà lấy sự an toàn về kiểu dữ liệu, và chúng ta ưu tiên an toàn kiểu vì hợp đồng giữa các module chính là phần được chấm điểm.
 
-**Drizzle instead of Prisma** — excellent types, closer to raw SQL, lighter. Loses
-on the volume of examples and documentation, which is a real cost for a student
-team hitting an unfamiliar tool under deadline.
+**Drizzle thay vì Prisma** — hệ thống kiểu xuất sắc, gần với SQL thuần, nhẹ hơn. Nhưng thua kém về số lượng tài liệu và ví dụ thực tế, vốn là chi phí rủi ro lớn đối với một nhóm sinh viên phải tiếp cận công cụ mới dưới áp lực thời hạn nộp bài.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-Prisma is weak at complex and dynamic SQL. The Top-K ranking query is likely to
-need raw SQL, which Prisma supports but which sits outside its type safety — the
-one place we lose the guarantee we chose it for. If the system turns out to be full
-of queries like that, this is the decision to revisit.
+Prisma xử lý chưa tối ưu ở các câu truy vấn SQL phức tạp và động. Câu truy vấn xếp hạng Top-K có khả năng sẽ phải dùng SQL thô (`$queryRaw`), điều mà Prisma có hỗ trợ nhưng nằm ngoài lớp bảo vệ an toàn kiểu — nơi duy nhất chúng ta tạm mất đi sự đảm bảo mà chúng ta đã chọn Prisma vì nó. Nếu hệ thống xuất hiện quá nhiều câu truy vấn dạng này, đây sẽ là quyết định cần phải xem xét lại.
 
-Postgres is a service, not a file. Every teammate and every demo machine needs it
-running, so setup instructions and the demo checklist carry more weight than they
-would with an embedded database. That is the price of surviving parallel workers.
+PostgreSQL là một dịch vụ độc lập, không phải là một file nhúng. Mọi thành viên trong nhóm và mọi máy tính demo đều phải bật dịch vụ này lên, do đó hướng dẫn thiết lập và checklist demo đòi hỏi sự cẩn thận hơn so với việc dùng cơ sở dữ liệu nhúng. Đó là cái giá phải trả để hệ thống chịu được các worker chạy song song.

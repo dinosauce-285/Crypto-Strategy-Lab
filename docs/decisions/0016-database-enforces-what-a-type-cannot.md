@@ -1,103 +1,37 @@
-# The database mirrors the contracts, and enforces only what a type cannot
+# Các bảng phản ánh đúng contract, Postgres chỉ ràng buộc những gì hệ thống type không thể
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Every shape in `@csl/contracts` now needs a column to live in, and the translation
-is not mechanical. A `Timeframe` is one of six strings; a price is a decimal string;
-a timestamp is a number of milliseconds. Postgres has an opinion about each of
-those, and taking its opinion everywhere would mean the shared types and the tables
-slowly stop describing the same thing.
+Mỗi cấu trúc dữ liệu trong `@csl/contracts` giờ đây cần một cột tương ứng trong cơ sở dữ liệu, và việc chuyển đổi này không đơn thuần là thao tác máy móc. Một `Timeframe` là một trong sáu chuỗi ký tự; một mức giá là một chuỗi thập phân; một timestamp là một số nguyên mili-giây. PostgreSQL có các kiểu dữ liệu riêng cho từng loại đó, và nếu áp dụng cứng nhắc các kiểu của Postgres ở mọi nơi thì các shared types và các bảng dữ liệu sẽ dần dần không còn mô tả cùng một thứ.
 
-The rule we settled on is narrow: the tables copy the contracts, and the database
-adds a constraint only where a TypeScript type is incapable of holding the
-guarantee. A type cannot say *this experiment's dataset exists*, or *this candidate
-was tested once*, or *these two trades are not both trade #3*. Those become foreign
-keys and unique indexes. A type can perfectly well say *timeframe is one of six
-strings* — so the database is left out of it.
+Quy tắc được chốt rất rõ ràng: **các bảng dữ liệu sao chép nguyên vẹn các contracts, và cơ sở dữ liệu chỉ bổ sung ràng buộc ở những nơi mà hệ thống kiểu TypeScript bất lực không thể tự đảm bảo**. Một kiểu dữ liệu TypeScript không thể khẳng định *dataset của thử nghiệm này có thực sự tồn tại trong DB hay không*, hoặc *ứng viên này đã từng được kiểm thử hay chưa*, hoặc *hai giao dịch này không được cùng mang số thứ tự #3*. Những điều đó trở thành các khóa ngoại (foreign keys) và unique indexes trong PostgreSQL. Ngược lại, một TypeScript type hoàn toàn có thể đảm bảo *timeframe bắt buộc phải là một trong sáu chuỗi ký tự cố định* — vì vậy tầng database không cần can thiệp vào việc đó.
 
-Four consequences follow, and they are the substance of this record.
+Bốn hệ quả kỹ thuật kéo theo:
 
-**Closed lists are text columns.** `Timeframe`, `EntryPrice`, `DrawdownMode`,
-`StrategyGroup`, the experiment status, the trade side and the sentiment label are
-all `String`. A Postgres enum would be a second declaration of a list that already
-exists in the contracts package, kept in step by hand — the arrangement `0012`
-rejected when it turned down a config file for strategy metadata. Three of the seven
-also cannot spell their own values as Prisma identifiers: `1m` starts with a digit,
-`signal-close` and `per-candle` carry hyphens. They would need `@map`, which leaves
-the client naming a member `m1` while the contract says `'1m'`, so every repository
-would carry a translation table in both directions. Enumerating only the four clean
-lists would split the schema by a syntax accident rather than by meaning.
+**Các danh sách hữu hạn (closed lists) được lưu dưới dạng cột `String`.** Các trường `Timeframe`, `EntryPrice`, `DrawdownMode`, `StrategyGroup`, trạng thái experiment, chiều trade và nhãn sentiment đều là `String`. Định nghĩa Enum trong Postgres sẽ là một bản khai báo danh sách thứ hai lặp lại những gì đã có trong package contracts, phải duy trì đồng bộ thủ công — điều mà ADR `0012` đã thẳng thừng từ chối. Hơn nữa, ba trong số bảy danh sách không thể đặt tên trực tiếp làm định danh Prisma: `1m` bắt đầu bằng chữ số, `signal-close` và `per-candle` chứa dấu gạch nối. Chúng sẽ cần dùng `@map`, khiến mã client phải gọi `m1` trong khi contract ghi `'1m'`, buộc mọi repository phải duy trì bảng ánh xạ hai chiều phức tạp.
 
-**Timestamps are `timestamptz(3)`, and become epoch milliseconds at the repository
-boundary.** The contracts use numbers because that is what crosses a socket and a
-queue without ceremony. `BigInt` looks like the faithful column, but Prisma hands
-back a JavaScript `bigint`, which does not survive `JSON.stringify` and does not
-compare against a `number` — so it needs converting too, and adds a serialisation
-trap on top. A `timestamptz` converts once in a place that already exists, and in
-exchange the database can do range scans, and a person reading the table sees a date
-rather than a thirteen-digit integer.
+**Mốc thời gian lưu dạng `timestamptz(3)`, và chuyển thành epoch milliseconds tại ranh giới repository.** Package contracts dùng số nguyên mili-giây (`number`) vì đây là định dạng truyền qua WebSocket và hàng đợi BullMQ mượt mà nhất. Kiểu `BigInt` thoạt nhìn có vẻ trung thực với cột số, nhưng Prisma trả về kiểu `bigint` của JavaScript — kiểu này không hỗ trợ `JSON.stringify` và không so sánh trực tiếp được với `number`, dẫn đến bẫy lỗi tuần tự hóa. Kiểu `timestamptz` chỉ chuyển đổi một lần duy nhất tại repository, đổi lại database có thể quét chỉ mục theo khoảng thời gian cực nhanh, và con người mở bảng ra xem sẽ thấy ngày giờ rõ ràng thay vì một dãy số nguyên 13 chữ số.
 
-**Prices are `Decimal(38,18)`; ratios are `double`.** The contracts keep prices as
-decimal strings precisely so nothing is rounded before it lands, and a float column
-would undo that at the last step. Win rate, total return and drawdown are derived
-comparison numbers with no such history, so they cost nothing as floats.
+**Mức giá lưu dạng `Decimal(38,18)`; tỷ lệ lưu dạng `double`.** Contracts lưu giá dưới dạng chuỗi decimal chính xác để không bao giờ bị làm tròn trước khi lưu vào DB, và cột Float sẽ phá hủy độ chính xác đó ở bước cuối cùng. Ngược lại, tỷ lệ thắng (win rate), tổng lợi nhuận và drawdown là các con số so sánh phái sinh không đòi hỏi bảo toàn tuyệt đối từng số thập phân, nên lưu dưới dạng float không tốn kém gì.
 
-**The metrics are columns, not a json blob.** The leaderboard is an `ORDER BY` over
-them — `0011` — and ordering by a json field means the database cannot use an index
-and the query cannot be typed. They are all nullable, because a failed run has no
-metrics at all and a zero would be a lie the leaderboard cannot tell apart from a
-strategy that made nothing.
+**Các chỉ số hiệu suất là các cột riêng biệt, không gom vào blob JSON.** Bảng xếp hạng leaderboard thực hiện câu lệnh `ORDER BY` trực tiếp trên các chỉ số này (ADR `0011`) — và việc sắp xếp trên một trường JSON sẽ khiến database không thể tận dụng index và câu truy vấn không có type an toàn. Tất cả các cột này đều chấp nhận giá trị `null` (nullable), vì một lượt chạy thất bại sẽ không có chỉ số nào, và nếu gán số 0 thì sẽ là một sự giả dối mà bảng xếp hạng không thể phân biệt được với một chiến lược chạy hòa vốn.
 
-Two smaller things are decided here for the same reason. The `Candle` table has no
-`closed` column: only closed candles are stored, and the one still forming lives on
-the socket of T07, so a column would exist to always hold the same value. And
-`Dataset` carries a unique index over all nine of its columns, because two rows
-describing the same window judged by the same rules would split one leaderboard into
-two that each look complete.
+Bảng `Candle` không có cột `closed`: chỉ những cây nến đã đóng mới được lưu vào database, còn cây nến đang hình thành thì nằm trên WebSocket. Bảng `Dataset` có unique index trên toàn bộ 9 cột của nó, ngăn chặn việc hai dòng mô tả cùng một khung thời gian với cùng quy tắc phán quyết làm xé lẻ bảng xếp hạng thành hai bản trông có vẻ hoàn chỉnh.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Prisma enums with `@map`** — the version where the database refuses a bad value
-outright, which is the ordinary answer and the one `0002` would seem to argue for.
-It buys a guarantee that is already held one layer up, and charges a hand-written
-mapping in every repository that touches a timeframe. Worth revisiting if raw SQL
-ever writes these columns, because that is the one path where the TypeScript type is
-not standing in front of the insert.
+**Prisma Enums kết hợp `@map`** — phiên bản mà database từ chối các giá trị sai ngay lập tức. Nhưng nó mua một sự đảm bảo vốn đã được giữ chặt ở tầng TypeScript ngay phía trên, và bắt mọi repository phải viết code ánh xạ thủ công.
 
-**Metrics in the `spec` json, or in a json column of their own** — fewer columns, and
-adding Sharpe later would not be a migration. It puts the leaderboard's sort key
-inside a blob, which is the one place it must not be.
+**Lưu các chỉ số metrics bên trong trường JSON `spec`** — ít cột hơn, và việc thêm chỉ số Sharpe sau này không cần migration. Nhưng nó đặt khóa sắp xếp của leaderboard vào bên trong một blob JSON, điều tối kỵ về hiệu năng.
 
-**A `Leaderboard` table** — section 35 lists it as a sixth data group and this is the
-obvious place to create it. `0011` already decided against storing a rank, and this
-schema is where that decision either holds or quietly does not.
+**Tạo bảng `Leaderboard` riêng** — đề bài mục 35 từng liệt kê nó như một nhóm dữ liệu thứ sáu. ADR `0011` đã quyết định không lưu cứng thứ hạng, và schema này là nơi quyết định đó được thực thi kiên định.
 
-**Epoch milliseconds as `BigInt`, matching the contracts exactly** — no conceptual
-conversion at all, and the column means literally what the type means. Rejected
-above on the JavaScript side of the trade rather than the database side.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+Lỗi chính tả có thể lọt vào bảng dữ liệu nếu viết raw SQL. `timeframe: '5mm'` sẽ bị từ chối bởi TypeScript và validator của contracts, nhưng nếu một câu lệnh SQL thô ghi thẳng vào bảng thì database sẽ không ngăn cản.
 
-A typo reaches the table. `timeframe: '5mm'` is rejected by TypeScript and by the
-validator the contracts package says has to exist, and by nothing else. Anything that
-writes through raw SQL — the ranking query of `0011` is the likely candidate — sits
-outside both, and there is no third net under it.
+Timestamp phải chuyển đổi hai lần trên mỗi lượt đọc và ghi, được viết bằng tay trong từng repository.
 
-Timestamps convert twice on every read and every write, and the conversion is written
-by hand in each repository. It is two lines each time, and two lines repeated in eight
-places is how a rounding difference eventually appears in one of them.
+Ràng buộc `@@unique([datasetId, specHash])` đồng nghĩa với việc một ứng viên đã thất bại không thể chỉ đơn giản là chạy lại — dòng dữ liệu cũ bắt buộc phải được xóa trước. Điều này đúng với một đặc tả chứa chiến lược không tồn tại (lỗi vĩnh viễn), nhưng sẽ cần xử lý khéo léo đối với một job chết do worker bị crash đột ngột.
 
-`@@unique([datasetId, specHash])` means a candidate that failed cannot simply be run
-again — the row has to be deleted first. That is correct for a specification naming a
-strategy that does not exist, which `0007` calls permanently broken, and wrong for a
-run that died because a worker was killed. Whoever writes the retry path in T19 has to
-tell those two apart, and the database will not help.
-
-The five backtest rules are columns, so adding a sixth judging rule later is a
-migration, and every dataset that already exists predates it with no record of what
-its value would have been. `0010` accepted that; this is where it becomes real.
-
-Nothing enforces that `Strategy` is append-only. It is a rule in `0009` and a habit in
-the registry's startup code, and a single `update` would erase the only record of what
-`v1` was. A trigger could close that, at the cost of logic living in the database
-where nobody reviews it.
+Toàn bộ 5 quy tắc backtest đều là các cột dữ liệu, vì vậy thêm quy tắc thứ sáu sau này sẽ cần chạy migration, và các dataset cũ sẽ không có thông tin về giá trị mặc định của quy tắc mới.

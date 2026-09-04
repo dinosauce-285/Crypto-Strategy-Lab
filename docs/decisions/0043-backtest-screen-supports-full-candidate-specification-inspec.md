@@ -1,40 +1,19 @@
-# Backtest screen supports full candidate specification inspection and auto execution
+# Màn hình Backtest hỗ trợ kiểm tra chi tiết đặc tả ứng viên đầy đủ và tự động thực thi
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 46 step 6 requires that clicking a ranked strategy on the Leaderboard opens
-the visual chart displaying buy and sell markers, moving averages, support/resistance
-levels, and trade performance metrics. In the system, strategies discovered by search
-are composite candidate specifications (`CandidateSpec`) combining multiple members
-with weights and specific parameters.
+Section 46 bước 6 yêu cầu khi nhấp vào một chiến lược được xếp hạng trên Leaderboard, hệ thống sẽ mở biểu đồ trực quan hiển thị các điểm đánh dấu mua và bán, các đường trung bình động, các mức hỗ trợ/kháng cự và các chỉ số hiệu suất giao dịch. Trong hệ thống, các chiến lược được phát hiện bởi quá trình tìm kiếm là các đặc tả ứng viên tổng hợp (`CandidateSpec`) kết hợp nhiều thành viên với các trọng số và tham số cụ thể.
 
-Navigating to the Backtest screen with the full `CandidateSpec` and automatically
-triggering backtest execution preserves the full fidelity of the candidate recipe.
-The server executes the composite strategy and returns the trade history, metrics,
-and indicator overlays (MA, Bollinger Bands, Support/Resistance). The user is
-presented immediately with the interactive candlestick chart, trade logs, and metrics
-panel without needing to re-select parameters or manually press run.
+Việc điều hướng đến màn hình Backtest với `CandidateSpec` đầy đủ và tự động kích hoạt thực thi backtest giúp bảo toàn độ trung thực toàn vẹn của công thức ứng viên. Máy chủ thực thi chiến lược tổng hợp và trả về lịch sử giao dịch, các chỉ số và các lớp phủ chỉ báo (MA, Bollinger Bands, Support/Resistance). Người dùng được hiển thị ngay lập tức biểu đồ nến tương tác, nhật ký giao dịch và bảng chỉ số mà không cần phải chọn lại tham số hay bấm nút chạy thủ công.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**An inline inspection modal or panel directly on the Leaderboard screen** — this would
-avoid page navigation, but duplicates the candlestick chart, indicator overlay logic,
-and trade logs table across two separate screens, bloating frontend bundle size and
-maintenance burden.
+**Một modal hoặc panel kiểm tra nội tuyến trực tiếp trên màn hình Leaderboard** — phương án này tránh được việc điều hướng trang, nhưng làm trùng lặp biểu đồ nến, logic phủ chỉ báo và bảng nhật ký giao dịch trên hai màn hình riêng biệt, làm phình to kích thước gói bundle frontend và gánh nặng bảo trì.
 
-**Truncating the composite recipe to its first member (`members[0]`)** — this treats
-every candidate as a single strategy. While simple, it completely breaks composite
-recipes produced by search (e.g. `MA + RSI + Bollinger + SR`), rendering inaccurate
-trades and indicators that do not reflect the ranked strategy's true performance.
+**Cắt ngắn công thức tổng hợp chỉ lấy thành viên đầu tiên (`members[0]`)** — cách này coi mỗi ứng viên như một chiến lược đơn lẻ. Mặc dù đơn giản, nó phá vỡ hoàn toàn các công thức kết hợp do tìm kiếm tạo ra (ví dụ: `MA + RSI + Bollinger + SR`), dẫn đến việc hiển thị các giao dịch và chỉ báo không chính xác, không phản ánh đúng hiệu suất thực sự của chiến lược được xếp hạng.
 
-**Navigating with pre-filled inputs without auto-running** — requiring the user to
-manually click "Run Backtest" after clicking a leaderboard item leaves the screen in an
-unpopulated idle state, violating the quick inspection workflow of §46 step 6.
+**Điều hướng với các trường đầu vào được điền sẵn nhưng không tự động chạy** — yêu cầu người dùng nhấp thủ công vào "Run Backtest" sau khi nhấp vào một mục trên bảng xếp hạng sẽ khiến màn hình ở trạng thái nhàn rỗi không có dữ liệu, vi phạm quy trình kiểm tra nhanh của §46 bước 6.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-The Backtest screen's strategy configuration panel must support dual modes: editing
-single strategy parameters dynamically via dropdown, and displaying read-only composite
-recipe cards with member weights and parameters when inspecting composite candidates.
-An explicit "Switch to Standalone" action is provided if the user wishes to transition
-back to standalone strategy configuration.
+Bảng cấu hình chiến lược của màn hình Backtest phải hỗ trợ chế độ kép: chỉnh sửa các tham số chiến lược đơn lẻ linh hoạt qua dropdown, và hiển thị các thẻ công thức tổng hợp chỉ đọc với trọng số và tham số của các thành viên khi kiểm tra các ứng viên kết hợp. Một hành động tường minh "Switch to Standalone" (Chuyển sang chế độ độc lập) được cung cấp nếu người dùng muốn chuyển trở lại cấu hình chiến lược đơn lẻ.

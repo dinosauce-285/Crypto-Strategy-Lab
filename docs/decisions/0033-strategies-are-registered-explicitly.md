@@ -1,48 +1,25 @@
-# Strategies are registered explicitly
+# Các chiến lược được đăng ký một cách tường minh qua danh sách
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-Section 12 asks for a registry, and section 41 grades the shape by adding a new
-strategy under pressure. We choose an explicit list of registrations: a strategy
-exports its metadata and factory, and one line adds it to the registry.
+Mục 12 của đề bài yêu cầu phải có một Registry quản lý chiến lược, và mục 41 chấm điểm thiết kế này bằng cách yêu cầu thêm một chiến lược mới trực tiếp trong buổi bảo vệ. Chúng ta chọn giải pháp đăng ký tường minh qua danh sách: mỗi chiến lược export metadata và factory của nó, và thêm đúng một dòng vào registry là hoàn thành việc đăng ký.
 
-That keeps the cost visible. Adding MACD is one new strategy file plus one new entry in
-`registered-strategies.ts`; the factory, backtester, UI forms, search space and chart
-do not learn a new strategy name. It also fits Nest better than filesystem discovery:
-the registry is a provider, the strategy table is synced from metadata at startup, and
-the worker receives the same provider when it rebuilds a queued candidate.
+Cách làm này giữ cho chi phí phát triển luôn tường minh. Bổ sung chiến lược MACD chỉ là thêm một file chiến lược mới cộng với một dòng khai báo trong `registered-strategies.ts`; xưởng khởi tạo (factory), bộ chạy backtest, form giao diện, không gian tìm kiếm và biểu đồ hoàn toàn không cần học thêm tên chiến lược mới. Nó cũng khớp hoàn hảo với triết lý của NestJS hơn là cơ chế tự động quét thư mục (filesystem discovery): registry là một provider, bảng `Strategy` trong database được đồng bộ tự động từ metadata lúc server khởi động, và tiến trình worker nhận cùng một provider đó khi tái tạo các ứng viên từ hàng đợi.
 
-Explicit registration is also the easiest version to defend in a live demo. The line
-that proves a strategy is available is plain code, checked by TypeScript and reviewed
-like any other dependency.
+Đăng ký tường minh cũng là phương án dễ bảo vệ nhất trong buổi demo trực tiếp. Dòng code chứng minh chiến lược đã sẵn sàng hoạt động là mã nguồn thuần túy, được TypeScript kiểm tra kiểu và được review như bất kỳ dependency nào khác.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Scanning a directory** -- attractive because adding a file appears to be enough. It
-costs runtime loading rules: built TypeScript no longer has the same shape as source,
-test runners and production resolve modules differently, and duplicate ids are found
-only after the scan has walked the filesystem. It also hides the extension point from
-the audience section 41 is written for.
+**Tự động quét thư mục (Directory scanning)** — thoạt nhìn rất hấp dẫn vì chỉ cần thả một file vào thư mục là xong. Nhưng nó phải trả giá bằng các quy tắc nạp module lúc runtime: mã nguồn TypeScript sau khi build không còn cùng cấu trúc với file gốc, các test runner và môi trường production giải quyết đường dẫn module khác nhau, và việc trùng lặp id chiến lược chỉ được phát hiện sau khi đã quét toàn bộ ổ đĩa. Nó cũng giấu nhẹm điểm mở rộng khỏi tầm mắt của ban giám khảo mục 41.
 
-**Hard-coded construction inside the factory** -- `if id === "ma"` and then another
-branch for RSI. It is the exact hard-coded strategy anti-pattern from section 44, and
-every new strategy edits the factory that should have stayed closed.
+**Khởi tạo bằng logic rẽ nhánh viết cứng trong Factory** — `if id === "ma"` rồi thêm nhánh khác cho RSI. Đây chính là anti-pattern viết cứng chiến lược mà mục 44 nêu tên, và mỗi chiến lược mới sẽ phải mở sửa class Factory vốn nên được đóng kín đối với việc sửa đổi (Open/Closed Principle).
 
-**Database-driven strategy definitions** -- useful if strategies were scripts or remote
-plugins, but here the behavior is TypeScript code already deployed with the worker. A
-row can describe a strategy, but it cannot construct the class without a registry
-somewhere else, so it would add a second source of truth rather than replace one.
+**Định nghĩa chiến lược từ cơ sở dữ liệu** — chỉ hữu ích nếu các chiến lược là các đoạn script động hoặc remote plugin. Nhưng ở đây hành vi là mã nguồn TypeScript đã được deploy cùng với worker. Một dòng dữ liệu trong DB chỉ có thể mô tả chiến lược chứ không thể tự khởi tạo class nếu thiếu registry, do đó nó chỉ tạo thêm nguồn sự thật thứ hai thay vì thay thế nguồn cũ.
 
-## Trade-offs
+## Trade-offs (Đánh đổi)
 
-A new strategy still needs one edit outside its own file. Forgetting the registration
-line means the file compiles but the strategy is unavailable.
+Thêm một chiến lược mới vẫn cần sửa một dòng code bên ngoài file của chính nó. Quên thêm dòng đăng ký này sẽ khiến file dù compile thành công nhưng chiến lược vẫn không hiển thị trên hệ thống.
 
-The registry is not a plugin loader. Adding behavior still requires a code change and a
-deployment, which is right for this project but less dynamic than loading external
-packages.
+Registry này không phải là một plugin loader động tải các gói package ngoài.
 
-Because the list is explicit, merge conflicts can happen when two people add strategies
-at once. The conflict is small and obvious, but it is still a cost of choosing one
-central list.
-
+Vì danh sách là tường minh, xung đột git (merge conflict) có thể xảy ra khi hai người cùng thêm hai chiến lược khác nhau vào cùng một file danh sách. Xung đột này rất nhỏ và dễ giải quyết, nhưng là cái giá của việc tập trung về một danh sách duy nhất.

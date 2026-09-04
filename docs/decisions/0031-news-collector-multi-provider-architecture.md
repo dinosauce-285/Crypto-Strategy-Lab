@@ -1,29 +1,27 @@
-# News collector sits behind a multi-provider port and decouples sentiment via the event bus
+# Kiến trúc đa nhà cung cấp cho tin tức và tách rời phân tích cảm xúc
 
-## Why this
+## Why this (Lý do lựa chọn)
 
-The news subsystem must ingest market-moving articles across diverse sources—ranging from structured REST endpoints (CryptoCompare) to semi-structured syndicated feeds (CoinDesk, Cointelegraph RSS)—while satisfying two core architectural mandates: zero direct coupling to machine learning models (brief section 44) and zero ripple effect when adding new news sources (brief section 40).
+Hệ thống con thu thập tin tức phải thu nạp các bài báo ảnh hưởng đến thị trường từ nhiều nguồn đa dạng — từ các endpoint REST có cấu trúc (CryptoCompare) đến các nguồn cấp RSS feeds bán cấu trúc (CoinDesk, Cointelegraph RSS) — đồng thời phải đáp ứng hai yêu cầu kiến trúc cốt lõi: tuyệt đối không gắn chặt trực tiếp vào mô hình học máy (anti-pattern mục 44) và không gây hiệu ứng gợn sóng (ripple effect) khi bổ sung nguồn tin tức mới (mục 40).
 
-Putting news sources behind an abstract `NewsProviderPort` isolates provider-specific transport, schema parsing, rate-limiting, and error handling from the rest of the application. Adding an RSS feed or exchange news stream requires only implementing one new provider class and registering it in `NewsModule`, without touching ingestion or storage logic.
+Đặt các nguồn cấp tin tức đứng sau interface trừu tượng `NewsProviderPort` giúp cách ly hoàn toàn giao thức truyền tải, cách parse schema, kiểm soát rate limit và xử lý lỗi đặc thù của từng nhà cung cấp ra khỏi phần còn lại của ứng dụng. Việc thêm một nguồn RSS feed mới hoặc một luồng tin tức sàn giao dịch chỉ đòi hỏi cài đặt duy nhất một class provider mới và đăng ký nó trong `NewsModule`, không cần chạm vào logic thu nạp hay lưu trữ.
 
-Section 44 explicitly forbids the crawler from calling the sentiment model directly ("Crawler welded to ML" anti-pattern). Instead, `NewsService` coordinates providers, persists raw normalized articles through `NewsRepository` into PostgreSQL with deduplication on article URL, and emits `EVENTS.NewsCollected` (`news.collected`) over the in-process event bus (`EventEmitter2`, ADR 0003). Downstream sentiment analysis (T23) subscribes to this event independently, keeping the blast radius strictly partitioned: a failure or slowdown in sentiment classification cannot stall news ingestion or corrupt market data ingestion pipelines.
+Mục 44 nghiêm cấm crawler gọi trực tiếp mô hình phân tích cảm xúc (anti-pattern "Crawler welded to ML"). Thay vào đó, `NewsService` điều phối các provider, lưu các bài báo đã chuẩn hóa thông qua `NewsRepository` vào cơ sở dữ liệu PostgreSQL với cơ chế chống trùng lặp theo URL bài báo, rồi phát sự kiện `EVENTS.NewsCollected` (`news.collected`) lên bus sự kiện nội tiến trình (`EventEmitter2`, ADR `0003`). Module phân tích cảm xúc sentiment (task T23) đăng ký lắng nghe sự kiện này một cách độc lập, giúp khoanh vùng bán kính ảnh hưởng khi có sự cố: một sự cố hay sự chậm trễ trong phân loại cảm xúc tuyệt đối không thể làm nghẽn tiến trình thu thập tin tức hay làm ảnh hưởng đến dữ liệu thị trường.
 
-Database-level deduplication via unique constraints on `url` (ADR 0016) guarantees idempotency during scheduled crawls and backfill operations without requiring error-prone in-memory set tracking across restarts.
+Cơ chế chống trùng lặp cấp cơ sở dữ liệu thông qua ràng buộc unique index trên trường `url` (ADR `0016`) đảm bảo tính lũy thừa (idempotency) cho các đợt crawl định kỳ mà không cần duy trì bộ nhớ đệm RAM phức tạp dễ mất khi restart server.
 
-## What else we looked at
+## What else we looked at (Các phương án khác đã cân nhắc)
 
-**Direct synchronous sentiment scoring inside the crawler** — the simplest end-to-end flow. Rejected because it directly violates section 44 and fails the isolation questions in section 40: if the sentiment model API (Groq) throttles or goes down, news collection halts; if sentiment classification is slow, crawl throughput collapses.
+**Chấm điểm cảm xúc đồng bộ trực tiếp bên trong crawler** — luồng xử lý đơn giản nhất từ đầu đến cuối. Bị từ chối vì vi phạm trực tiếp mục 44 và trượt bài kiểm tra cô lập của mục 40: nếu API mô hình sentiment (Groq) bị bóp băng thông hoặc sập, việc thu thập tin tức sẽ bị đình trệ; nếu phân loại chậm, tốc độ crawl sẽ sụp đổ.
 
-**Single hardcoded provider without an abstraction port** — fetching news solely from CryptoCompare REST API. Rejected because crypto news is fragmented across proprietary feeds and independent editorial RSS sources. A hardcoded implementation couples the service to one vendor's payload format and makes adding fallback sources require modifying the service core.
+**Chỉ dùng một nhà cung cấp ghi cứng không qua abstraction port** — chỉ lấy tin từ CryptoCompare REST API. Bị loại bỏ vì tin tức crypto bị phân mảnh khắp nơi. Cài đặt ghi cứng sẽ gắn chặt service vào một nhà cung cấp duy nhất và việc thêm nguồn dự phòng sẽ đòi hỏi sửa đổi lõi của service.
 
-**Heavy asynchronous message queue (BullMQ/RabbitMQ) for ingestion** — using dedicated background workers for every fetched article. BullMQ is already reserved for heavy backtesting compute workloads (ADR 0004). News collection is periodic I/O batch ingestion; adding message broker infrastructure here adds operational complexity without benefit, whereas the in-process event bus provides adequate decoupling with zero overhead.
+**Dùng hàng đợi thông điệp nặng (BullMQ/RabbitMQ) cho việc thu nạp tin** — dùng worker riêng cho từng bài báo. BullMQ đã được dành riêng cho các tác vụ tính toán backtest nặng (ADR `0004`). Việc thu thập tin tức chỉ là các đợt I/O định kỳ; đưa thêm hạ tầng message broker vào đây chỉ làm tăng độ phức tạp vận hành mà không đem lại lợi ích, trong khi in-process event bus đáp ứng hoàn hảo sự tách rời với chi phí bằng 0.
 
-**In-memory deduplication cache** — tracking seen URLs in a memory set or Redis cache before inserting. Rejected because it does not survive process restarts, cannot guarantee atomicity across multiple concurrent crawler runs, and duplicates state that PostgreSQL already enforces natively with its unique index on `News.url`.
+## Trade-offs (Đánh đổi)
 
-## Trade-offs
+Việc chấm điểm cảm xúc đạt tính nhất quán sau cùng (eventually consistent) thay vì có sẵn ngay lúc nạp. Bài báo ban đầu được lưu khi chưa có điểm sentiment (`sentiment: null`), và điểm số được gắn sau khi consumer hoàn thành phân loại.
 
-Sentiment scoring is eventually consistent rather than immediately available on ingest. Articles are initially stored unscored (`sentiment: null`), and sentiment is attached asynchronously when the event consumer completes classification. Queries requesting immediate news after a crawl may observe unscored records for a brief window.
+Việc chuẩn hóa các nhà cung cấp khác nhau về cùng một schema `NewsItem` chung (`id`, `title`, `content`, `source`, `publishedAt`, `crawledAt`, `relatedCoins`, `url`) chấp nhận mức mẫu số chung thấp nhất. Các trường metadata đặc thù của riêng nguồn tin (danh mục tùy biến, đối tượng tác giả gốc) sẽ bị lược bỏ.
 
-Normalizing diverse providers into the shared `NewsItem` schema (`id`, `title`, `content`, `source`, `publishedAt`, `crawledAt`, `relatedCoins`, `url`) forces a lowest-common-denominator representation. Source-specific metadata fields not captured by the schema (such as custom provider categories or raw author objects) are discarded.
-
-Multi-provider coordination increases variance in crawl execution times. Because RSS feeds and REST APIs have different latency profiles and rate limits, `NewsService` must tolerate individual provider timeouts and partial failures gracefully so that one failing feed does not prevent other providers from persisting their collected articles.
+Điều phối đa nhà cung cấp làm tăng độ biến thiên về thời gian thực thi crawl. Vì RSS feeds và REST APIs có độ trễ khác nhau, `NewsService` phải có cơ chế chịu lỗi từng phần để một feed bị timeout không ngăn cản các nguồn khác lưu bài báo vào DB.
